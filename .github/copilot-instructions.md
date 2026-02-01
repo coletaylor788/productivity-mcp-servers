@@ -54,7 +54,7 @@ Every plan must end with a checklist like this:
 
 ### Documentation
 - [ ] README.md updated (if user-facing changes)
-- [ ] docs/SURVEY.md updated (if architecture changed)
+- [ ] docs/architecture.md updated (if architecture changed)
 - [ ] Plan marked as complete with date
 ```
 
@@ -100,9 +100,13 @@ Review the checklist one final time before declaring the task complete.
 gmail-mcp/
 ├── src/gmail_mcp/       # Source code
 │   ├── server.py        # MCP server implementation
+│   ├── auth.py          # OAuth & Keychain storage
+│   ├── config.py        # Config directory management
 │   └── __init__.py      # Package init
 ├── docs/                # Documentation
-│   ├── SURVEY.md        # Repo overview & architecture
+│   ├── architecture.md  # Repo overview & architecture
+│   ├── auth.md          # Authentication details
+│   ├── tools.md         # MCP tools reference
 │   └── plans/           # Implementation plans
 ├── tests/               # Test files
 ├── pyproject.toml       # Dependencies & config
