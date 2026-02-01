@@ -74,7 +74,7 @@ pip install -e .
   "mcpServers": {
     "gmail": {
       "command": "/path/to/gmail-mcp/.venv/bin/python",
-      "args": ["-m", "gmail_mcp.server"]
+      "args": ["-m", "gmail_mcp"]
     }
   }
 }
@@ -91,7 +91,7 @@ Add to `~/.claude/claude.json`:
   "mcpServers": {
     "gmail": {
       "command": "/path/to/gmail-mcp/.venv/bin/python",
-      "args": ["-m", "gmail_mcp.server"]
+      "args": ["-m", "gmail_mcp"]
     }
   }
 }
