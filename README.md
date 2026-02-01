@@ -104,12 +104,28 @@ No parameters required.
 
 ### list_emails
 
-List recent emails from your inbox.
+List emails from Gmail with optional filters.
 
 **Parameters:**
 - `max_results` (optional): Maximum emails to return (default: 10, max: 50)
+- `label` (optional): Filter by Gmail label (INBOX, SENT, DRAFTS, SPAM, TRASH, STARRED, IMPORTANT, or custom)
+- `category` (optional): Filter by Gmail category (primary, social, promotions, updates, forums)
+- `unread_only` (optional): Only return unread emails (default: false)
+- `query` (optional): Raw Gmail search query for advanced filtering
 
-**Example:** "Show me my last 5 emails"
+**Examples:**
+- "Show me my last 5 emails"
+- "Show me unread emails in my primary inbox"
+- "List emails from boss@company.com in the last week"
+
+**Query Examples:**
+The `query` parameter accepts Gmail search syntax:
+- `from:sender@example.com` - From specific sender
+- `subject:meeting` - Subject contains "meeting"
+- `has:attachment` - Has attachments
+- `newer_than:7d` - Last 7 days
+- `older_than:1m` - Older than 1 month
+- Combine: `from:boss@company.com newer_than:7d has:attachment`
 
 ## Security
 

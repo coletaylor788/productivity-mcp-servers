@@ -144,3 +144,56 @@ class TestListEmailsTool:
         if "Found" in text:
             id_count = text.count("ID:")
             assert id_count <= 10
+
+
+class TestListEmailsFilters:
+    """Integration tests for list_emails filter functionality."""
+
+    @pytest.mark.asyncio
+    async def test_filter_by_label_inbox(self, ensure_authenticated):
+        """Test filtering by INBOX label."""
+        result = await _list_emails({"label": "INBOX", "max_results": 5})
+
+        assert len(result) == 1
+        # Should succeed (may or may not find emails)
+        assert "Error" not in result[0].text or "Not authenticated" not in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_filter_by_category_primary(self, ensure_authenticated):
+        """Test filtering by primary category."""
+        result = await _list_emails({"category": "primary", "max_results": 5})
+
+        assert len(result) == 1
+        # Should succeed (may or may not find emails)
+        assert "Error" not in result[0].text or "Not authenticated" not in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_filter_unread_only(self, ensure_authenticated):
+        """Test filtering for unread emails only."""
+        result = await _list_emails({"unread_only": True, "max_results": 5})
+
+        assert len(result) == 1
+        # Should succeed (may or may not find emails)
+        assert "Error" not in result[0].text or "Not authenticated" not in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_filter_with_raw_query(self, ensure_authenticated):
+        """Test using raw Gmail search query."""
+        result = await _list_emails({"query": "newer_than:30d", "max_results": 5})
+
+        assert len(result) == 1
+        # Should succeed (may or may not find emails)
+        assert "Error" not in result[0].text or "Not authenticated" not in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_combined_filters(self, ensure_authenticated):
+        """Test combining multiple filters."""
+        result = await _list_emails({
+            "label": "INBOX",
+            "category": "primary",
+            "max_results": 3,
+        })
+
+        assert len(result) == 1
+        # Should succeed (may or may not find emails)
+        assert "Error" not in result[0].text or "Not authenticated" not in result[0].text

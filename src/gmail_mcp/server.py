@@ -27,14 +27,43 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="list_emails",
-            description="List recent emails from Gmail inbox",
+            description=(
+                "List emails from Gmail with optional filters. "
+                "Use 'query' for advanced Gmail search syntax."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "max_results": {
                         "type": "integer",
-                        "description": "Maximum number of emails to return (default: 10, max: 50)",
+                        "description": (
+                            "Maximum number of emails to return (default: 10, max: 50)"
+                        ),
                         "default": 10,
+                    },
+                    "label": {
+                        "type": "string",
+                        "description": (
+                            "Filter by Gmail label: INBOX, SENT, DRAFTS, SPAM, TRASH, "
+                            "STARRED, IMPORTANT, or custom label name"
+                        ),
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": ["primary", "social", "promotions", "updates", "forums"],
+                        "description": "Filter by Gmail category tab",
+                    },
+                    "unread_only": {
+                        "type": "boolean",
+                        "description": "Only return unread emails",
+                        "default": False,
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Raw Gmail search query. Examples: 'from:sender@example.com', "
+                            "'subject:meeting', 'has:attachment', 'newer_than:7d'"
+                        ),
                     },
                 },
             },
@@ -90,13 +119,50 @@ async def _list_emails(arguments: dict[str, Any]) -> list[TextContent]:
 
     max_results = min(arguments.get("max_results", 10), 50)
 
+    # Build query string from filters
+    query_parts = []
+    label_ids = []
+
+    # Handle label filter
+    label = arguments.get("label")
+    if label:
+        # System labels can be used directly as labelIds
+        system_labels = [
+            "INBOX", "SENT", "DRAFTS", "SPAM", "TRASH",
+            "STARRED", "IMPORTANT", "UNREAD",
+        ]
+        if label.upper() in system_labels:
+            label_ids.append(label.upper())
+        else:
+            # Custom labels need to use label: query syntax
+            query_parts.append(f"label:{label}")
+
+    # Handle category filter
+    category = arguments.get("category")
+    if category:
+        query_parts.append(f"category:{category}")
+
+    # Handle unread_only filter
+    if arguments.get("unread_only"):
+        query_parts.append("is:unread")
+
+    # Handle raw query
+    raw_query = arguments.get("query")
+    if raw_query:
+        query_parts.append(raw_query)
+
+    # Combine query parts
+    query = " ".join(query_parts) if query_parts else None
+
     try:
-        results = (
-            service.users()
-            .messages()
-            .list(userId="me", maxResults=max_results)
-            .execute()
-        )
+        # Build API request
+        request_kwargs = {"userId": "me", "maxResults": max_results}
+        if label_ids:
+            request_kwargs["labelIds"] = label_ids
+        if query:
+            request_kwargs["q"] = query
+
+        results = service.users().messages().list(**request_kwargs).execute()
 
         messages = results.get("messages", [])
         if not messages:

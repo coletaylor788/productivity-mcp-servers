@@ -129,3 +129,167 @@ class TestListEmails:
             # Verify the API was called with max 50
             call_args = mock_service.users.return_value.messages.return_value.list.call_args
             assert call_args.kwargs["maxResults"] == 50
+
+
+class TestListEmailsFilters:
+    """Tests for list_emails filter functionality."""
+
+    @pytest.mark.asyncio
+    async def test_label_filter_uses_label_ids_for_system_labels(self):
+        """System labels (INBOX, SENT, etc.) use labelIds parameter."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({"label": "INBOX"})
+
+            call_args = mock_list.call_args
+            assert "labelIds" in call_args.kwargs
+            assert "INBOX" in call_args.kwargs["labelIds"]
+
+    @pytest.mark.asyncio
+    async def test_label_filter_case_insensitive(self):
+        """Label filter is case-insensitive for system labels."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({"label": "inbox"})
+
+            call_args = mock_list.call_args
+            assert "INBOX" in call_args.kwargs["labelIds"]
+
+    @pytest.mark.asyncio
+    async def test_custom_label_uses_query(self):
+        """Custom labels use the query parameter."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({"label": "MyCustomLabel"})
+
+            call_args = mock_list.call_args
+            assert "q" in call_args.kwargs
+            assert "label:MyCustomLabel" in call_args.kwargs["q"]
+
+    @pytest.mark.asyncio
+    async def test_category_filter_adds_to_query(self):
+        """Category filter adds category:{name} to query."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({"category": "primary"})
+
+            call_args = mock_list.call_args
+            assert "q" in call_args.kwargs
+            assert "category:primary" in call_args.kwargs["q"]
+
+    @pytest.mark.asyncio
+    async def test_unread_only_filter_adds_to_query(self):
+        """unread_only filter adds is:unread to query."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({"unread_only": True})
+
+            call_args = mock_list.call_args
+            assert "q" in call_args.kwargs
+            assert "is:unread" in call_args.kwargs["q"]
+
+    @pytest.mark.asyncio
+    async def test_raw_query_passed_through(self):
+        """Raw query parameter is passed through to API."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({"query": "from:boss@example.com newer_than:7d"})
+
+            call_args = mock_list.call_args
+            assert "q" in call_args.kwargs
+            assert "from:boss@example.com newer_than:7d" in call_args.kwargs["q"]
+
+    @pytest.mark.asyncio
+    async def test_filters_combine_with_and_logic(self):
+        """Multiple filters combine with AND logic (space-separated)."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({
+                "category": "primary",
+                "unread_only": True,
+                "query": "has:attachment",
+            })
+
+            call_args = mock_list.call_args
+            query = call_args.kwargs["q"]
+            assert "category:primary" in query
+            assert "is:unread" in query
+            assert "has:attachment" in query
+
+    @pytest.mark.asyncio
+    async def test_label_and_query_combine(self):
+        """System label (labelIds) and query can combine."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({
+                "label": "INBOX",
+                "unread_only": True,
+            })
+
+            call_args = mock_list.call_args
+            assert "INBOX" in call_args.kwargs["labelIds"]
+            assert "is:unread" in call_args.kwargs["q"]
+
+    @pytest.mark.asyncio
+    async def test_no_filters_no_query(self):
+        """When no filters provided, no query parameter is set."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.messages.return_value.list
+        mock_list.return_value.execute.return_value = {"messages": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            await _list_emails({})
+
+            call_args = mock_list.call_args
+            assert "q" not in call_args.kwargs or call_args.kwargs.get("q") is None
