@@ -64,7 +64,8 @@ class TestAuthenticateFlow:
         assert email is not None
         assert "@" in email
         assert is_authenticated()
-        print(f"\n✓ Successfully authenticated as: {email}")
+        domain = email.split("@", 1)[1] if "@" in email else "unknown domain"
+        print(f"\n✓ Successfully authenticated (email domain: {domain})")
 
 
 class TestAuthenticateTool:
