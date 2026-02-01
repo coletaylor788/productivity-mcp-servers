@@ -72,13 +72,15 @@ pip install -e .
 ```json
 {
   "mcpServers": {
-    "gmail": {
+    "gmail-mcp": {
       "command": "/path/to/gmail-mcp/.venv/bin/python",
       "args": ["-m", "gmail_mcp"]
     }
   }
 }
 ```
+
+> **Note:** If you have the Gmail connector enabled in Claude Desktop, use a different name like `gmail-mcp` or `gmail-readwrite` to avoid conflicts.
 
 4. Restart Claude Desktop
 
@@ -89,7 +91,7 @@ Add to `~/.claude/claude.json`:
 ```json
 {
   "mcpServers": {
-    "gmail": {
+    "gmail-mcp": {
       "command": "/path/to/gmail-mcp/.venv/bin/python",
       "args": ["-m", "gmail_mcp"]
     }
