@@ -23,32 +23,74 @@ Read any other docs that exist - this is the source of truth for the project.
 
 ### 2. Plan Before Implementing
 For new features or significant changes:
-1. Create a plan document in `docs/plans/` (e.g., `docs/plans/thread-support.md`)
+1. Create a plan document in `docs/plans/` (e.g., `docs/plans/002-feature-name.md`)
 2. Include: summary, API details, implementation steps, testing approach
-3. **Wait for user approval before proceeding to implementation**
+3. **Include a checklist section** (see template below)
+4. **Wait for user approval before proceeding to implementation**
+
+#### Plan Checklist Template
+Every plan must end with a checklist like this:
+
+```markdown
+---
+
+## Checklist
+
+### Implementation
+- [ ] Step 1 description
+- [ ] Step 2 description
+- [ ] ...
+
+### Testing
+- [ ] All unit tests written
+- [ ] All unit tests passing
+- [ ] Integration tests written (if applicable)
+- [ ] Integration tests passing (if applicable)
+
+### Cleanup
+- [ ] Code linting passes (`ruff check src/ tests/`)
+- [ ] No unused imports or dead code
+- [ ] Code is readable and well-commented where needed
+
+### Documentation
+- [ ] README.md updated (if user-facing changes)
+- [ ] docs/SURVEY.md updated (if architecture changed)
+- [ ] Plan marked as complete with date
+```
 
 ### 3. Implement
 - Follow the coding guidelines below
 - Make incremental, testable changes
-- Write/update tests alongside implementation
-- Keep docs updated as you go - don't wait until the end
+- **Update the plan checklist as you complete each step**
+- Check off implementation items as they're done
 
 ### 4. Test
-- Run unit tests: `TODO`
-- Run integration tests: `TODO`
-- Ensure all tests pass before moving on
+- Run unit tests: `pytest tests/`
+- Run linter: `ruff check src/ tests/`
+- **Check off testing items in the plan as tests pass**
+- If tests fail and you need to change code, **uncheck the relevant implementation items** and fix them
 
 ### 5. Clean Up
 - Remove any unused code, imports, or files
 - Simplify overly complex logic
 - Re-run tests to confirm nothing broke
+- **Check off cleanup items in the plan**
 
 ### 6. Update Docs
 After implementation is complete:
 - Update relevant docs in `docs/` if architecture changed
 - Update `README.md` with new user-facing features
-- Archive or remove completed plans from `docs/plans/`
-- Author new docs as needed to capture important decisions or patterns
+- Mark plan as complete with date in the status line
+- **Check off documentation items in the plan**
+
+### 7. Verify Complete
+**You are not done until every checkbox in the plan is checked.**
+Review the checklist one final time before declaring the task complete.
+
+### ⚠️ IMPORTANT
+- **You are NOT done until the entire plan checklist is complete.**
+- **You may NOT skip any checklist item without explicit user approval.**
+- If you cannot complete an item, stop and ask the user before proceeding.
 
 ---
 

@@ -1,19 +1,17 @@
 # Gmail MCP Server
 
-A Model Context Protocol (MCP) server that provides Gmail integration for AI assistants.
+A Model Context Protocol (MCP) server for Gmail integration with AI assistants like Claude.
 
 ## Features
 
-- **Search emails** - Search Gmail using Gmail's native search syntax
-- **Read emails** - Read the full content of specific emails
-- **Send emails** - Compose and send emails
-- **List labels** - View all Gmail labels/folders
+- **Secure authentication** - OAuth tokens stored in macOS Keychain (never on disk)
+- **List emails** - View recent emails from your inbox
 
 ## Prerequisites
 
-- Python 3.10 or higher
+- Python 3.10+
+- macOS (uses Keychain for secure token storage)
 - A Google Cloud project with the Gmail API enabled
-- OAuth 2.0 credentials (Desktop application type)
 
 ## Setup
 
@@ -27,87 +25,100 @@ A Model Context Protocol (MCP) server that provides Gmail integration for AI ass
 4. Create OAuth 2.0 credentials:
    - Navigate to "APIs & Services" > "Credentials"
    - Click "Create Credentials" > "OAuth client ID"
-   - Select "Desktop application" as the application type
+   - Select **"Desktop application"** as the application type
    - Download the credentials JSON file
-5. Save the credentials file as `credentials.json` in the project root
 
-### 2. Install Dependencies
+### 2. Save Credentials
+
+Save the downloaded `credentials.json` to:
+
+```
+~/.config/gmail-mcp/credentials.json
+```
+
+Create the directory if needed:
 
 ```bash
+mkdir -p ~/.config/gmail-mcp
+mv ~/Downloads/credentials.json ~/.config/gmail-mcp/
+```
+
+### 3. Install
+
+```bash
+# Clone the repo
+git clone https://github.com/yourusername/gmail-mcp.git
+cd gmail-mcp
+
 # Create and activate a virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate
 
 # Install the package
 pip install -e .
 ```
 
-### 3. Authenticate
+### 4. Configure Claude
 
-Run the server once to complete OAuth authentication:
-
-```bash
-python -m gmail_mcp.server
-```
-
-This will open a browser window for Google OAuth. After authenticating, a `token.json` file will be created.
-
-## Configuration
-
-### Environment Variables
-
-- `GMAIL_CREDENTIALS_PATH` - Path to OAuth credentials file (default: `credentials.json`)
-- `GMAIL_TOKEN_PATH` - Path to store OAuth token (default: `token.json`)
-
-### VS Code / Copilot Integration
-
-Add to your VS Code settings or `.vscode/mcp.json`:
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
-  "servers": {
+  "mcpServers": {
     "gmail": {
-      "command": "python",
-      "args": ["-m", "gmail_mcp.server"],
-      "cwd": "/path/to/gmail-mcp",
-      "env": {
-        "GMAIL_CREDENTIALS_PATH": "/path/to/credentials.json",
-        "GMAIL_TOKEN_PATH": "/path/to/token.json"
-      }
+      "command": "/path/to/gmail-mcp/.venv/bin/python",
+      "args": ["-m", "gmail_mcp.server"]
     }
   }
 }
 ```
 
+Or for Claude Code, add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "gmail": {
+      "command": "/path/to/gmail-mcp/.venv/bin/python",
+      "args": ["-m", "gmail_mcp.server"]
+    }
+  }
+}
+```
+
+### 5. Authenticate
+
+In Claude, ask it to authenticate with Gmail. It will call the `authenticate` tool, which opens your browser for OAuth login. After you grant access, the refresh token is securely stored in your macOS Keychain.
+
 ## Available Tools
 
-### gmail_search
+### authenticate
 
-Search for emails using Gmail's search syntax.
+Authenticate with Gmail. Opens browser for OAuth login.
 
-**Parameters:**
-- `query` (required): Gmail search query (e.g., `from:example@gmail.com`, `subject:meeting`, `is:unread`)
-- `max_results` (optional): Maximum number of results (default: 10)
+```
+No parameters required.
+```
 
-### gmail_read
+**Example:** "Authenticate with Gmail"
 
-Read the full content of a specific email.
+### list_emails
 
-**Parameters:**
-- `message_id` (required): The ID of the email message
-
-### gmail_send
-
-Send an email.
+List recent emails from your inbox.
 
 **Parameters:**
-- `to` (required): Recipient email address
-- `subject` (required): Email subject
-- `body` (required): Email body content
+- `max_results` (optional): Maximum emails to return (default: 10, max: 50)
 
-### gmail_list_labels
+**Example:** "Show me my last 5 emails"
 
-List all labels in the Gmail account. No parameters required.
+## Security
+
+- **Refresh tokens** are stored in macOS Keychain, encrypted at rest
+- **Access tokens** are kept in memory only (never persisted)
+- **Client credentials** (`credentials.json`) stay local in `~/.config/gmail-mcp/`
+- The server requests **read-only** Gmail access (`gmail.readonly` scope)
+
+You can inspect or delete stored credentials in Keychain Access.app (search for "gmail-mcp").
 
 ## Development
 

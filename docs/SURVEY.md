@@ -2,40 +2,46 @@
 
 ## Summary
 
-**Purpose:** MCP server for Gmail integration with AI assistants  
-**Status:** MVP with 4 basic tools, no tests, minimal error handling  
-**Next Steps:** Error handling → Thread support → Draft management → Tests
+**Purpose:** MCP server for Gmail integration with AI assistants (Claude, Claude Code)  
+**Status:** MVP with secure auth and list_emails tool, well-tested  
+**Next Steps:** Add search, read, send tools → Thread support → Draft management
 
 | Aspect | Current State |
 |--------|---------------|
-| **Tools** | 4 tools: `gmail_search`, `gmail_read`, `gmail_send`, `gmail_list_labels` |
-| **Auth** | OAuth 2.0 via local browser flow, stores token.json |
-| **Scopes** | `readonly`, `send`, `modify` |
-| **Tests** | None implemented (pytest configured but no test files) |
-| **Error handling** | Minimal - no try/except around API calls |
+| **Tools** | 2 tools: `authenticate`, `list_emails` |
+| **Auth** | OAuth 2.0 via browser, refresh token in macOS Keychain |
+| **Scopes** | `gmail.readonly` only |
+| **Tests** | 24 unit tests covering config, auth, server |
+| **Error handling** | Good - user-friendly messages for common failures |
 
 ---
 
 ## Current Architecture
 
 ```
-server.py (239 lines, single file)
-├── Auth: get_gmail_service() - handles OAuth flow
-├── MCP: list_tools() - defines 4 tools
-├── MCP: call_tool() - routes to handlers
-└── Handlers: _search_emails, _read_email, _send_email, _list_labels
+src/gmail_mcp/
+├── config.py    # Config dir and credentials path management
+├── auth.py      # OAuth flow, Keychain token storage
+└── server.py    # MCP tools: authenticate, list_emails
 ```
 
 ### File Structure
 ```
 gmail-mcp/
 ├── src/gmail_mcp/
-│   ├── __init__.py      # Package init, version
-│   └── server.py        # All MCP logic (239 lines)
+│   ├── __init__.py      # Package init
+│   ├── config.py        # Config management
+│   ├── auth.py          # Authentication & Keychain
+│   └── server.py        # MCP server & tools
+├── tests/
+│   ├── test_config.py   # Config unit tests
+│   ├── test_auth.py     # Auth unit tests
+│   └── test_server.py   # Server unit tests
+├── docs/
+│   ├── SURVEY.md        # This file
+│   └── plans/           # Feature plans
 ├── .github/
 │   └── copilot-instructions.md
-├── .vscode/
-│   └── mcp.json         # MCP server config for VS Code
 ├── pyproject.toml       # Dependencies, build config
 ├── README.md            # User-facing docs
 └── .gitignore
@@ -46,6 +52,13 @@ gmail-mcp/
 - `google-api-python-client>=2.100.0` - Gmail API
 - `google-auth-httplib2>=0.1.0` - Auth transport
 - `google-auth-oauthlib>=1.0.0` - OAuth flow
+- `keyring>=24.0.0` - macOS Keychain access
+
+### Security Model
+- OAuth client credentials in `~/.config/gmail-mcp/credentials.json`
+- Refresh token stored in macOS Keychain (encrypted at rest)
+- Access tokens kept in memory only
+- Config dir created with 700 permissions
 
 ---
 
@@ -55,19 +68,19 @@ gmail-mcp/
 
 | Gap | Description | Priority |
 |-----|-------------|----------|
-| No thread support | Can't view email conversations as threads | High |
-| No draft management | Can't save, edit, or send drafts | High |
+| No search | Can't search emails by query | High |
+| No read | Can't view full email content | High |
+| No send | Can't compose/send emails | High |
+| No thread support | Can't view email conversations as threads | Medium |
+| No draft management | Can't save, edit, or send drafts | Medium |
 | No attachment handling | Can't read or send attachments | Medium |
-| No label management | Can't add/remove labels from emails | Medium |
-| No reply/forward | Can't reply to or forward emails | Medium |
-| No trash/archive | Can't move emails to trash or archive | Low |
+| No label management | Can't add/remove labels from emails | Low |
 
 ### Robustness - Technical Debt
 
 | Gap | Description | Priority |
 |-----|-------------|----------|
-| No error handling | API failures crash the server | Critical |
-| No pagination | Limited to max_results per call | Medium |
+| No pagination | Limited to 50 emails per call | Medium |
 | No rate limiting | Could hit Gmail API quotas | Low |
 | No retry logic | Transient failures not handled | Low |
 
@@ -75,9 +88,8 @@ gmail-mcp/
 
 | Gap | Description | Priority |
 |-----|-------------|----------|
-| Zero test coverage | No confidence in changes | High |
-| Single file architecture | Hard to maintain as it grows | Medium |
-| No type checking | Type hints present but not enforced | Low |
+| No integration tests | Manual testing only for real Gmail | Medium |
+| No CI/CD | Tests not run automatically | Low |
 
 ---
 
@@ -85,21 +97,19 @@ gmail-mcp/
 
 ### Current Scopes
 ```python
-SCOPES = [
-    "https://www.googleapis.com/auth/gmail.readonly",   # Read emails
-    "https://www.googleapis.com/auth/gmail.send",       # Send emails
-    "https://www.googleapis.com/auth/gmail.modify",     # Modify labels, drafts
-]
+SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]  # Read-only
 ```
 
 ### Key API Endpoints Used
-- `users.messages.list` - Search/list emails
-- `users.messages.get` - Read email content
-- `users.messages.send` - Send email
-- `users.labels.list` - List labels
+- `users.messages.list` - List emails
+- `users.messages.get` - Read email metadata/snippet
+- `users.getProfile` - Get authenticated user's email
 
 ### Endpoints Needed for New Features
+- `users.messages.get (format=full)` - Read full email content
+- `users.messages.list (q=...)` - Search emails
+- `users.messages.send` - Send email (requires `gmail.send` scope)
 - `users.threads.list` / `users.threads.get` - Thread support
 - `users.drafts.*` - Draft management
-- `users.messages.modify` - Label management
+- `users.messages.modify` - Label management (requires `gmail.modify` scope)
 - `users.messages.attachments.get` - Attachments
