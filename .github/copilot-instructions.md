@@ -1,6 +1,6 @@
-# Gmail MCP Server - Copilot Instructions
+# Productivity MCP Servers - Copilot Instructions
 
-Python-based MCP server for Gmail integration with AI assistants.
+A monorepo of MCP servers for productivity tools (Gmail, and more to come).
 
 **Target clients:** Claude, Claude Code  
 **Runtime:** Local only
@@ -14,16 +14,18 @@ Python-based MCP server for Gmail integration with AI assistants.
 ## Workflow
 
 ### 1. Understand First
-Before making changes, read the `docs/` directory to understand the current state:
-- `docs/` - All project documentation (architecture, patterns, decisions)
-- `docs/plans/` - Implementation plans for features in progress
-- `README.md` - User-facing documentation
+Before making changes, read the relevant docs:
+- Root `docs/plans/` - Cross-cutting implementation plans
+- `servers/<name>/docs/` - Server-specific documentation
+- `servers/<name>/README.md` - Server setup and usage
 
 Read any other docs that exist - this is the source of truth for the project.
 
 ### 2. Plan Before Implementing
 For new features or significant changes:
-1. Create a plan document in `docs/plans/` (e.g., `docs/plans/002-feature-name.md`)
+1. Create a plan document:
+   - Server-specific: `servers/<name>/docs/plans/NNN-feature-name.md`
+   - Cross-cutting: `docs/plans/NNN-feature-name.md`
 2. Include: summary, API details, implementation steps, testing approach
 3. **Include a checklist section** (see template below)
 4. **Wait for user approval before proceeding to implementation**
@@ -103,43 +105,52 @@ After all checklist items are complete:
 ## Project Structure
 
 ```
-gmail-mcp/
-├── src/gmail_mcp/       # Source code
-│   ├── server.py        # MCP server implementation
-│   ├── auth.py          # OAuth & Keychain storage
-│   ├── config.py        # Config directory management
-│   └── __init__.py      # Package init
-├── docs/                # Documentation
-│   ├── architecture.md  # Repo overview & architecture
-│   ├── auth.md          # Authentication details
-│   ├── tools.md         # MCP tools reference
-│   └── plans/           # Implementation plans
-├── tests/               # Test files
-├── pyproject.toml       # Dependencies & config
-└── README.md            # User docs
+productivity-mcp-servers/
+├── .github/
+│   └── copilot-instructions.md  # These instructions
+├── README.md                    # Monorepo overview
+├── docs/
+│   └── plans/                   # Cross-cutting plans
+└── servers/
+    └── gmail-mcp/               # Gmail MCP server
+        ├── .venv/               # Server's virtual environment
+        ├── pyproject.toml       # Server dependencies
+        ├── README.md            # Server setup & usage
+        ├── src/gmail_mcp/       # Source code
+        ├── tests/               # Tests
+        └── docs/
+            ├── architecture.md
+            ├── auth.md
+            ├── tools.md
+            └── plans/           # Gmail-specific plans
 ```
 
-## Key Technologies
+## Server-Specific Guidelines
 
+### Gmail MCP (`servers/gmail-mcp/`)
+
+**Key Technologies:**
 - **MCP SDK**: `mcp` package for Model Context Protocol
 - **Google APIs**: `google-api-python-client` for Gmail API
 - **OAuth**: `google-auth-oauthlib` for authentication
 
-## Coding Guidelines
-
+**Coding Guidelines:**
 1. **Async First**: All tool handlers must be async functions
 2. **Error Handling**: Wrap Gmail API calls in try/except with helpful messages
 3. **Type Hints**: Use Python type hints throughout
 4. **Scopes**: Request only the Gmail API scopes needed
 
-## Adding New Tools
-
+**Adding New Tools:**
 1. Add tool definition in `list_tools()` with JSON schema
 2. Add handler case in `call_tool()`
 3. Implement helper function (e.g., `_new_tool()`)
 4. Add tests
-5. Update README.md with tool documentation
+5. Update server README.md with tool documentation
 
-## Testing
-
-Run tests with `pytest`. Mock Gmail API calls to avoid requiring credentials.
+**Testing:**
+```bash
+cd servers/gmail-mcp
+source .venv/bin/activate
+pytest tests/
+ruff check src/ tests/
+```
