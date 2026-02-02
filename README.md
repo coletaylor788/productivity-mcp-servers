@@ -23,6 +23,50 @@ pip install -e .
 
 See [servers/gmail-mcp/README.md](./servers/gmail-mcp/README.md) for full setup instructions including Google OAuth configuration.
 
+## Configuring Claude
+
+After installing a server, configure Claude to use it.
+
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "gmail-mcp": {
+      "command": "/path/to/productivity-mcp-servers/servers/gmail-mcp/.venv/bin/python",
+      "args": ["-m", "gmail_mcp"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving.
+
+### Claude Code (VS Code / CLI)
+
+Edit `~/.claude/claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "gmail-mcp": {
+      "command": "/path/to/productivity-mcp-servers/servers/gmail-mcp/.venv/bin/python",
+      "args": ["-m", "gmail_mcp"]
+    }
+  }
+}
+```
+
+### Finding Your Path
+
+Run this from a server directory to get the exact Python path:
+
+```bash
+echo "$(pwd)/.venv/bin/python"
+```
+
 ## Architecture
 
 ```

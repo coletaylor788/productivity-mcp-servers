@@ -63,49 +63,7 @@ pip install -e .
 
 ### 4. Configure Claude
 
-#### Option A: Claude Desktop
-
-1. Open Claude Desktop settings
-2. Edit the config file at `~/Library/Application Support/Claude/claude_desktop_config.json`
-3. Add the gmail server (replace `/path/to/gmail-mcp` with your actual path):
-
-```json
-{
-  "mcpServers": {
-    "gmail-mcp": {
-      "command": "/path/to/gmail-mcp/.venv/bin/python",
-      "args": ["-m", "gmail_mcp"]
-    }
-  }
-}
-```
-
-> **Note:** If you have the Gmail connector enabled in Claude Desktop, use a different name like `gmail-mcp` or `gmail-readwrite` to avoid conflicts.
-
-4. Restart Claude Desktop
-
-#### Option B: Claude Code (VS Code / CLI)
-
-Add to `~/.claude/claude.json`:
-
-```json
-{
-  "mcpServers": {
-    "gmail-mcp": {
-      "command": "/path/to/gmail-mcp/.venv/bin/python",
-      "args": ["-m", "gmail_mcp"]
-    }
-  }
-}
-```
-
-#### Finding Your Path
-
-Run this in the gmail-mcp directory to get the exact path:
-
-```bash
-echo "$(pwd)/.venv/bin/python"
-```
+See the [root README](../../README.md#configuring-claude) for Claude Desktop and Claude Code configuration instructions.
 
 ### 5. Authenticate
 
