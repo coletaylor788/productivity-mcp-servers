@@ -666,22 +666,22 @@ class TestArchiveEmail:
     async def test_returns_error_when_not_authenticated(self):
         """Returns error when not authenticated."""
         with patch("gmail_mcp.server.is_authenticated", return_value=False):
-            result = await _archive_email({"email_id": "123"})
+            result = await _archive_email({"email_ids": ["123"]})
             assert "Not authenticated" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_returns_error_when_email_id_missing(self):
-        """Returns error when email_id not provided."""
+    async def test_returns_error_when_email_ids_missing(self):
+        """Returns error when email_ids not provided."""
         with (
             patch("gmail_mcp.server.is_authenticated", return_value=True),
             patch("gmail_mcp.server.get_gmail_service", return_value=MagicMock()),
         ):
             result = await _archive_email({})
-            assert "email_id is required" in result[0].text
+            assert "email_ids is required" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_archives_email_successfully(self):
-        """Archives email by removing INBOX label."""
+    async def test_archives_single_email_successfully(self):
+        """Archives a single email by removing INBOX label."""
         mock_service = MagicMock()
         mock_modify = mock_service.users.return_value.messages.return_value.modify
         mock_modify.return_value.execute.return_value = {}
@@ -690,9 +690,9 @@ class TestArchiveEmail:
             patch("gmail_mcp.server.is_authenticated", return_value=True),
             patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
         ):
-            result = await _archive_email({"email_id": "123"})
+            result = await _archive_email({"email_ids": ["123"]})
 
-            assert "archived successfully" in result[0].text
+            assert "Archived 1 email(s)" in result[0].text
             mock_modify.assert_called_once_with(
                 userId="me",
                 id="123",
@@ -700,8 +700,47 @@ class TestArchiveEmail:
             )
 
     @pytest.mark.asyncio
-    async def test_returns_error_on_api_failure(self):
-        """Returns error when Gmail API fails."""
+    async def test_archives_multiple_emails_successfully(self):
+        """Archives multiple emails in a single call."""
+        mock_service = MagicMock()
+        mock_modify = mock_service.users.return_value.messages.return_value.modify
+        mock_modify.return_value.execute.return_value = {}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _archive_email({"email_ids": ["123", "456", "789"]})
+
+            assert "Archived 3 email(s)" in result[0].text
+            assert mock_modify.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_reports_partial_failures(self):
+        """Reports both successes and failures when some emails fail."""
+        mock_service = MagicMock()
+        mock_modify = mock_service.users.return_value.messages.return_value.modify
+
+        # First call succeeds, second fails, third succeeds
+        mock_modify.return_value.execute.side_effect = [
+            {},
+            Exception("Not found"),
+            {},
+        ]
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _archive_email({"email_ids": ["123", "456", "789"]})
+
+            assert "Archived 2 email(s)" in result[0].text
+            assert "Failed to archive 1 email(s)" in result[0].text
+            assert "456: Not found" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_all_fail(self):
+        """Reports all failures when every email fails."""
         mock_service = MagicMock()
         mock_modify = mock_service.users.return_value.messages.return_value.modify
         mock_modify.return_value.execute.side_effect = Exception("API error")
@@ -710,6 +749,8 @@ class TestArchiveEmail:
             patch("gmail_mcp.server.is_authenticated", return_value=True),
             patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
         ):
-            result = await _archive_email({"email_id": "123"})
+            result = await _archive_email({"email_ids": ["123", "456"]})
 
-            assert "Error archiving email" in result[0].text
+            assert "Failed to archive 2 email(s)" in result[0].text
+            assert "123: API error" in result[0].text
+            assert "456: API error" in result[0].text

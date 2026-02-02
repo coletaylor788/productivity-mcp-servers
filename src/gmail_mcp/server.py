@@ -119,16 +119,17 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="archive_email",
-            description="Archive an email (remove from inbox, keep in All Mail).",
+            description="Archive one or more emails (remove from inbox, keep in All Mail).",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "email_id": {
-                        "type": "string",
-                        "description": "The email ID to archive",
+                    "email_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Array of email IDs to archive",
                     },
                 },
-                "required": ["email_id"],
+                "required": ["email_ids"],
             },
         ),
     ]
@@ -533,27 +534,34 @@ async def _archive_email(arguments: dict[str, Any]) -> list[TextContent]:
             )
         ]
 
-    email_id = arguments.get("email_id")
-    if not email_id:
-        return [TextContent(type="text", text="Error: email_id is required.")]
+    email_ids = arguments.get("email_ids", [])
+    if not email_ids:
+        return [TextContent(type="text", text="Error: email_ids is required.")]
 
-    try:
-        # Remove INBOX label (archive)
-        service.users().messages().modify(
-            userId="me",
-            id=email_id,
-            body={"removeLabelIds": ["INBOX"]},
-        ).execute()
+    successes = []
+    failures = []
 
-        return [
-            TextContent(
-                type="text",
-                text=f"Email {email_id} archived successfully.",
-            )
-        ]
+    for email_id in email_ids:
+        try:
+            service.users().messages().modify(
+                userId="me",
+                id=email_id,
+                body={"removeLabelIds": ["INBOX"]},
+            ).execute()
+            successes.append(email_id)
+        except Exception as e:
+            failures.append(f"{email_id}: {e}")
 
-    except Exception as e:
-        return [TextContent(type="text", text=f"Error archiving email: {e}")]
+    # Build response
+    lines = []
+    if successes:
+        lines.append(f"Archived {len(successes)} email(s).")
+    if failures:
+        lines.append(f"Failed to archive {len(failures)} email(s):")
+        for failure in failures:
+            lines.append(f"  - {failure}")
+
+    return [TextContent(type="text", text="\n".join(lines))]
 
 
 async def main():

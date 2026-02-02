@@ -188,14 +188,15 @@ Download attachments from an email.
 
 ### archive_email
 
-Archive an email (remove from inbox, keep in All Mail).
+Archive one or more emails (remove from inbox, keep in All Mail).
 
 **Parameters:**
-- `email_id` (required): The email ID to archive
+- `email_ids` (required): Array of email IDs to archive
 
 **Examples:**
 - "Archive email abc123"
-- "Move that email out of my inbox"
+- "Archive these 5 emails"
+- "Move those emails out of my inbox"
 
 ## Security
 

@@ -312,7 +312,7 @@ No attachments found in this email.
 
 ## archive_email
 
-Archive an email (remove from inbox, keep in All Mail).
+Archive one or more emails (remove from inbox, keep in All Mail).
 
 ### Input Schema
 
@@ -320,12 +320,13 @@ Archive an email (remove from inbox, keep in All Mail).
 {
   "type": "object",
   "properties": {
-    "email_id": {
-      "type": "string",
-      "description": "The email ID to archive"
+    "email_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Array of email IDs to archive"
     }
   },
-  "required": ["email_id"]
+  "required": ["email_ids"]
 }
 ```
 
@@ -333,20 +334,33 @@ Archive an email (remove from inbox, keep in All Mail).
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `email_id` | string | (required) | Email ID to archive |
+| `email_ids` | array | (required) | Array of email IDs to archive |
 
 ### Output
 
-**Success:**
+**Success (single):**
 ```
-Email abc123 archived successfully.
+Archived 1 email(s).
+```
+
+**Success (batch):**
+```
+Archived 5 email(s).
+```
+
+**Partial failure:**
+```
+Archived 3 email(s).
+Failed to archive 2 email(s):
+  - abc123: Not found
+  - def456: Permission denied
 ```
 
 ### Usage Examples
 
 - "Archive email abc123"
-- "Move that email out of my inbox"
-- "Archive the last email"
+- "Archive these 5 emails"
+- "Move those emails out of my inbox"
 
 ---
 

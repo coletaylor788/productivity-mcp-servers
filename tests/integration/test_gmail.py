@@ -410,10 +410,10 @@ class TestArchiveEmailTool:
         message_id = test_email_to_archive["id"]
 
         # Archive the email
-        result = await _archive_email({"email_id": message_id})
+        result = await _archive_email({"email_ids": [message_id]})
 
         assert len(result) == 1
-        assert "archived successfully" in result[0].text
+        assert "Archived 1 email(s)" in result[0].text
 
         # Verify the email no longer has INBOX label
         service = get_gmail_service()
