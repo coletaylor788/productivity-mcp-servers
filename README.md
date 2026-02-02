@@ -178,12 +178,13 @@ Download attachments from an email.
 
 **Parameters:**
 - `email_id` (required): The email ID (from list_emails)
-- `attachment_id` (optional): Specific attachment ID (downloads all if omitted)
+- `filename` (optional): Specific attachment filename to download (downloads all if omitted)
 - `save_to` (optional): Directory to save files (default: ~/Downloads)
 
 **Examples:**
 - "Download attachments from email abc123"
 - "Save the PDF attachment to my Documents folder"
+- "Download report.pdf from that email"
 
 ### archive_email
 

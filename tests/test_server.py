@@ -580,6 +580,84 @@ class TestGetAttachments:
             assert (tmp_path / "test.pdf").exists()
             assert (tmp_path / "test.pdf").read_bytes() == file_content
 
+    @pytest.mark.asyncio
+    async def test_filters_by_filename(self, tmp_path):
+        """Downloads only the attachment matching the filename filter."""
+        import base64
+        txt_content = b"Text content"
+
+        mock_service = MagicMock()
+        mock_get = mock_service.users.return_value.messages.return_value.get
+        mock_get.return_value.execute.return_value = {
+            "payload": {
+                "mimeType": "multipart/mixed",
+                "parts": [
+                    {
+                        "mimeType": "application/pdf",
+                        "filename": "document.pdf",
+                        "body": {"attachmentId": "att1", "size": 100},
+                    },
+                    {
+                        "mimeType": "text/plain",
+                        "filename": "notes.txt",
+                        "body": {"attachmentId": "att2", "size": 50},
+                    },
+                ],
+            },
+        }
+
+        mock_att = mock_service.users.return_value.messages.return_value.attachments
+        mock_att_get = mock_att.return_value.get
+        # Return txt content when requested
+        mock_att_get.return_value.execute.return_value = {
+            "data": base64.urlsafe_b64encode(txt_content).decode()
+        }
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _get_attachments({
+                "email_id": "123",
+                "filename": "notes.txt",
+                "save_to": str(tmp_path),
+            })
+
+            assert "Downloaded 1 attachment" in result[0].text
+            assert (tmp_path / "notes.txt").exists()
+            # PDF should NOT be downloaded
+            assert not (tmp_path / "document.pdf").exists()
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_filename_not_found(self, tmp_path):
+        """Returns error when specified filename doesn't exist."""
+        mock_service = MagicMock()
+        mock_get = mock_service.users.return_value.messages.return_value.get
+        mock_get.return_value.execute.return_value = {
+            "payload": {
+                "mimeType": "multipart/mixed",
+                "parts": [
+                    {
+                        "mimeType": "application/pdf",
+                        "filename": "document.pdf",
+                        "body": {"attachmentId": "att1", "size": 100},
+                    },
+                ],
+            },
+        }
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _get_attachments({
+                "email_id": "123",
+                "filename": "nonexistent.txt",
+                "save_to": str(tmp_path),
+            })
+
+            assert "Attachment 'nonexistent.txt' not found" in result[0].text
+
 
 class TestArchiveEmail:
     """Tests for archive_email tool."""

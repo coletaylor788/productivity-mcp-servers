@@ -102,9 +102,12 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "The email ID (from list_emails)",
                     },
-                    "attachment_id": {
+                    "filename": {
                         "type": "string",
-                        "description": "Specific attachment ID (downloads all if omitted)",
+                        "description": (
+                            "Specific attachment filename to download "
+                            "(downloads all if omitted)"
+                        ),
                     },
                     "save_to": {
                         "type": "string",
@@ -385,8 +388,7 @@ async def _get_email(arguments: dict[str, Any]) -> list[TextContent]:
             for att in attachments:
                 size_kb = att["size"] / 1024
                 output.append(
-                    f"- {att['filename']} ({att['mimeType']}, {size_kb:.1f} KB, "
-                    f"ID: {att['id']})"
+                    f"- {att['filename']} ({att['mimeType']}, {size_kb:.1f} KB)"
                 )
 
         return [TextContent(type="text", text="\n".join(output))]
@@ -441,7 +443,7 @@ async def _get_attachments(arguments: dict[str, Any]) -> list[TextContent]:
     if not email_id:
         return [TextContent(type="text", text="Error: email_id is required.")]
 
-    attachment_id = arguments.get("attachment_id")
+    filename_filter = arguments.get("filename")
     save_to = arguments.get("save_to", "~/Downloads")
     save_dir = Path(save_to).expanduser()
 
@@ -465,14 +467,14 @@ async def _get_attachments(arguments: dict[str, Any]) -> list[TextContent]:
         if not attachments:
             return [TextContent(type="text", text="No attachments found in this email.")]
 
-        # Filter to specific attachment if requested
-        if attachment_id:
-            attachments = [a for a in attachments if a["id"] == attachment_id]
+        # Filter to specific attachment if filename specified
+        if filename_filter:
+            attachments = [a for a in attachments if a["filename"] == filename_filter]
             if not attachments:
                 return [
                     TextContent(
                         type="text",
-                        text=f"Attachment with ID '{attachment_id}' not found.",
+                        text=f"Attachment '{filename_filter}' not found.",
                     )
                 ]
 

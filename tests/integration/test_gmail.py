@@ -355,6 +355,35 @@ class TestGetAttachmentsTool:
         assert downloaded_file.exists()
         assert b"Test attachment content" in downloaded_file.read_bytes()
 
+    @pytest.mark.asyncio
+    async def test_get_attachments_filters_by_filename(self, test_email_with_attachment, tmp_path):
+        """Test that get_attachments can filter by filename."""
+        result = await _get_attachments({
+            "email_id": test_email_with_attachment["id"],
+            "filename": "test_attachment.txt",
+            "save_to": str(tmp_path),
+        })
+
+        assert len(result) == 1
+        text = result[0].text
+
+        assert "Downloaded 1 attachment" in text
+        assert (tmp_path / "test_attachment.txt").exists()
+
+    @pytest.mark.asyncio
+    async def test_get_attachments_returns_error_for_nonexistent_filename(
+        self, test_email_with_attachment, tmp_path
+    ):
+        """Test that get_attachments returns error for non-existent filename."""
+        result = await _get_attachments({
+            "email_id": test_email_with_attachment["id"],
+            "filename": "nonexistent.pdf",
+            "save_to": str(tmp_path),
+        })
+
+        assert len(result) == 1
+        assert "not found" in result[0].text
+
 
 class TestArchiveEmailTool:
     """Integration tests for archive_email tool."""

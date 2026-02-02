@@ -261,9 +261,9 @@ Download attachments from an email.
       "type": "string",
       "description": "The email ID (from list_emails)"
     },
-    "attachment_id": {
+    "filename": {
       "type": "string",
-      "description": "Specific attachment ID (downloads all if omitted)"
+      "description": "Specific attachment filename to download (downloads all if omitted)"
     },
     "save_to": {
       "type": "string",
@@ -279,7 +279,7 @@ Download attachments from an email.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `email_id` | string | (required) | Email ID from list_emails |
-| `attachment_id` | string | - | Specific attachment to download |
+| `filename` | string | - | Specific attachment filename to download |
 | `save_to` | string | ~/Downloads | Directory to save files |
 
 ### Output
