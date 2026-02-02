@@ -46,7 +46,3 @@ Update `archive_email` to accept a list of email IDs so multiple emails can be a
 - [x] Update `docs/tools.md`
 - [x] Update `README.md`
 - [x] Mark plan as complete with date
-
-### Final
-- [ ] Changes committed with descriptive message
-- [ ] Changes pushed to remote

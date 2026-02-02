@@ -56,11 +56,9 @@ Every plan must end with a checklist. **The checklist is a live status document*
 - [ ] README.md updated (if user-facing changes)
 - [ ] docs/architecture.md updated (if architecture changed)
 - [ ] Plan marked as complete with date
-
-### Final
-- [ ] Changes committed with descriptive message
-- [ ] Changes pushed to remote
 ```
+
+**⚠️ After all checklist items are complete, commit and push your changes.**
 
 ### 3. Implement
 - Follow the coding guidelines below
@@ -88,16 +86,15 @@ After implementation is complete:
 - **Check off documentation items in the plan**
 
 ### 7. Commit & Push
+After all checklist items are complete:
 - Commit all changes with a descriptive message
 - Push to remote
-- **Check off the commit/push item in the plan**
 
 ### 8. Verify Complete
-**You are not done until every checkbox in the plan is checked.**
-Review the checklist one final time before declaring the task complete.
+**You are not done until every checkbox in the plan is checked and changes are pushed.**
 
 ### ⚠️ IMPORTANT
-- **You are NOT done until the entire plan checklist is complete.**
+- **You are NOT done until the entire plan checklist is complete and changes are pushed.**
 - **You may NOT skip any checklist item without explicit user approval.**
 - If you cannot complete an item, stop and ask the user before proceeding.
 
