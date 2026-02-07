@@ -5,11 +5,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from gmail_mcp.server import (
+    _add_label,
     _archive_email,
     _authenticate,
     _extract_body_parts,
     _get_attachments,
     _get_email,
+    _get_label_id,
     _list_emails,
     _sanitize_filename,
 )
@@ -752,5 +754,178 @@ class TestArchiveEmail:
             result = await _archive_email({"email_ids": ["123", "456"]})
 
             assert "Failed to archive 2 email(s)" in result[0].text
+            assert "123: API error" in result[0].text
+            assert "456: API error" in result[0].text
+
+
+class TestGetLabelId:
+    """Tests for _get_label_id helper."""
+
+    def test_returns_system_label_id(self):
+        """Returns uppercase name for system labels."""
+        mock_service = MagicMock()
+        assert _get_label_id(mock_service, "STARRED") == "STARRED"
+        assert _get_label_id(mock_service, "IMPORTANT") == "IMPORTANT"
+        assert _get_label_id(mock_service, "INBOX") == "INBOX"
+        # Should not call the API for system labels
+        mock_service.users.return_value.labels.return_value.list.assert_not_called()
+
+    def test_system_label_case_insensitive(self):
+        """System label lookup is case-insensitive."""
+        mock_service = MagicMock()
+        assert _get_label_id(mock_service, "starred") == "STARRED"
+        assert _get_label_id(mock_service, "Important") == "IMPORTANT"
+
+    def test_returns_custom_label_id(self):
+        """Looks up custom label via API and returns its ID."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.labels.return_value.list
+        mock_list.return_value.execute.return_value = {
+            "labels": [
+                {"id": "Label_1", "name": "Work"},
+                {"id": "Label_2", "name": "Personal"},
+            ]
+        }
+        assert _get_label_id(mock_service, "Work") == "Label_1"
+
+    def test_custom_label_case_insensitive(self):
+        """Custom label lookup is case-insensitive."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.labels.return_value.list
+        mock_list.return_value.execute.return_value = {
+            "labels": [{"id": "Label_1", "name": "Work"}]
+        }
+        assert _get_label_id(mock_service, "work") == "Label_1"
+
+    def test_returns_none_for_unknown_label(self):
+        """Returns None when label doesn't exist."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.labels.return_value.list
+        mock_list.return_value.execute.return_value = {
+            "labels": [{"id": "Label_1", "name": "Work"}]
+        }
+        assert _get_label_id(mock_service, "Nonexistent") is None
+
+
+class TestAddLabel:
+    """Tests for add_label tool."""
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_not_authenticated(self):
+        """Returns error when not authenticated."""
+        with patch("gmail_mcp.server.is_authenticated", return_value=False):
+            result = await _add_label({"email_ids": ["123"], "label": "STARRED"})
+            assert "Not authenticated" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_email_ids_missing(self):
+        """Returns error when email_ids not provided."""
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=MagicMock()),
+        ):
+            result = await _add_label({"label": "STARRED"})
+            assert "email_ids is required" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_label_missing(self):
+        """Returns error when label not provided."""
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=MagicMock()),
+        ):
+            result = await _add_label({"email_ids": ["123"]})
+            assert "label is required" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_label_not_found(self):
+        """Returns informative error when label doesn't exist."""
+        mock_service = MagicMock()
+        mock_list = mock_service.users.return_value.labels.return_value.list
+        mock_list.return_value.execute.return_value = {"labels": []}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _add_label({"email_ids": ["123"], "label": "Nonexistent"})
+            assert "not found" in result[0].text
+            assert "Nonexistent" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_adds_system_label_to_single_email(self):
+        """Adds a system label to a single email."""
+        mock_service = MagicMock()
+        mock_modify = mock_service.users.return_value.messages.return_value.modify
+        mock_modify.return_value.execute.return_value = {}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _add_label({"email_ids": ["123"], "label": "STARRED"})
+
+            assert "Added label 'STARRED' to 1 email(s)" in result[0].text
+            mock_modify.assert_called_once_with(
+                userId="me",
+                id="123",
+                body={"addLabelIds": ["STARRED"]},
+            )
+
+    @pytest.mark.asyncio
+    async def test_adds_label_to_multiple_emails(self):
+        """Adds a label to multiple emails in a single call."""
+        mock_service = MagicMock()
+        mock_modify = mock_service.users.return_value.messages.return_value.modify
+        mock_modify.return_value.execute.return_value = {}
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _add_label(
+                {"email_ids": ["123", "456", "789"], "label": "IMPORTANT"}
+            )
+
+            assert "Added label 'IMPORTANT' to 3 email(s)" in result[0].text
+            assert mock_modify.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_reports_partial_failures(self):
+        """Reports both successes and failures when some emails fail."""
+        mock_service = MagicMock()
+        mock_modify = mock_service.users.return_value.messages.return_value.modify
+        mock_modify.return_value.execute.side_effect = [
+            {},
+            Exception("Not found"),
+            {},
+        ]
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _add_label(
+                {"email_ids": ["123", "456", "789"], "label": "STARRED"}
+            )
+
+            assert "Added label 'STARRED' to 2 email(s)" in result[0].text
+            assert "Failed to label 1 email(s)" in result[0].text
+            assert "456: Not found" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_all_fail(self):
+        """Reports all failures when every email fails."""
+        mock_service = MagicMock()
+        mock_modify = mock_service.users.return_value.messages.return_value.modify
+        mock_modify.return_value.execute.side_effect = Exception("API error")
+
+        with (
+            patch("gmail_mcp.server.is_authenticated", return_value=True),
+            patch("gmail_mcp.server.get_gmail_service", return_value=mock_service),
+        ):
+            result = await _add_label({"email_ids": ["123", "456"], "label": "INBOX"})
+
+            assert "Failed to label 2 email(s)" in result[0].text
             assert "123: API error" in result[0].text
             assert "456: API error" in result[0].text

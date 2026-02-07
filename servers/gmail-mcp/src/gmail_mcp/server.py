@@ -132,6 +132,28 @@ async def list_tools() -> list[Tool]:
                 "required": ["email_ids"],
             },
         ),
+        Tool(
+            name="add_label",
+            description="Add a label to one or more emails.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "email_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Array of email IDs to label",
+                    },
+                    "label": {
+                        "type": "string",
+                        "description": (
+                            "Label name to apply (e.g., 'STARRED', 'IMPORTANT', "
+                            "or a custom label name)"
+                        ),
+                    },
+                },
+                "required": ["email_ids", "label"],
+            },
+        ),
     ]
 
 
@@ -148,6 +170,8 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return await _get_attachments(arguments)
     elif name == "archive_email":
         return await _archive_email(arguments)
+    elif name == "add_label":
+        return await _add_label(arguments)
     else:
         raise ValueError(f"Unknown tool: {name}")
 
@@ -558,6 +582,107 @@ async def _archive_email(arguments: dict[str, Any]) -> list[TextContent]:
         lines.append(f"Archived {len(successes)} email(s).")
     if failures:
         lines.append(f"Failed to archive {len(failures)} email(s):")
+        for failure in failures:
+            lines.append(f"  - {failure}")
+
+    return [TextContent(type="text", text="\n".join(lines))]
+
+
+def _get_label_id(service, label_name: str) -> str | None:
+    """Get the label ID for a given label name.
+
+    System labels (INBOX, SENT, TRASH, SPAM, STARRED, IMPORTANT, etc.)
+    have IDs matching their uppercase names.
+    Custom labels need to be looked up via the API.
+    """
+    # System labels have IDs matching their names
+    system_labels = {
+        "INBOX",
+        "SENT",
+        "DRAFTS",
+        "SPAM",
+        "TRASH",
+        "STARRED",
+        "IMPORTANT",
+        "UNREAD",
+        "CATEGORY_PERSONAL",
+        "CATEGORY_SOCIAL",
+        "CATEGORY_PROMOTIONS",
+        "CATEGORY_UPDATES",
+        "CATEGORY_FORUMS",
+    }
+
+    upper_name = label_name.upper()
+    if upper_name in system_labels:
+        return upper_name
+
+    # Look up custom label
+    results = service.users().labels().list(userId="me").execute()
+    labels = results.get("labels", [])
+    for label in labels:
+        if label["name"].lower() == label_name.lower():
+            return label["id"]
+
+    return None
+
+
+async def _add_label(arguments: dict[str, Any]) -> list[TextContent]:
+    """Handle add_label tool call."""
+    if not is_authenticated():
+        return [
+            TextContent(
+                type="text",
+                text="Error: Not authenticated. Please call the 'authenticate' tool first.",
+            )
+        ]
+
+    service = get_gmail_service()
+    if not service:
+        return [
+            TextContent(
+                type="text",
+                text="Error: Failed to connect to Gmail. Please re-authenticate.",
+            )
+        ]
+
+    email_ids = arguments.get("email_ids", [])
+    if not email_ids:
+        return [TextContent(type="text", text="Error: email_ids is required.")]
+
+    label_name = arguments.get("label", "")
+    if not label_name:
+        return [TextContent(type="text", text="Error: label is required.")]
+
+    # Look up label ID
+    label_id = _get_label_id(service, label_name)
+    if not label_id:
+        return [
+            TextContent(
+                type="text",
+                text=f"Error: Label '{label_name}' not found. Check the label name and try again.",
+            )
+        ]
+
+    successes = []
+    failures = []
+
+    for email_id in email_ids:
+        try:
+            service.users().messages().modify(
+                userId="me",
+                id=email_id,
+                body={"addLabelIds": [label_id]},
+            ).execute()
+            successes.append(email_id)
+        except Exception as e:
+            failures.append(f"{email_id}: {e}")
+
+    # Build response
+    lines = []
+    if successes:
+        lines.append(f"Added label '{label_name}' to {len(successes)} email(s).")
+    if failures:
+        lines.append(f"Failed to label {len(failures)} email(s):")
         for failure in failures:
             lines.append(f"  - {failure}")
 

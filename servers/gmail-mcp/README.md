@@ -9,6 +9,7 @@ A Model Context Protocol (MCP) server for Gmail integration with AI assistants l
 - **Read emails** - Get full email content and attachments
 - **Download attachments** - Save attachments to disk
 - **Archive emails** - Remove from inbox, keep in All Mail
+- **Label emails** - Add labels to one or more emails
 
 ## Prerequisites
 
@@ -155,6 +156,19 @@ Archive one or more emails (remove from inbox, keep in All Mail).
 - "Archive email abc123"
 - "Archive these 5 emails"
 - "Move those emails out of my inbox"
+
+### add_label
+
+Add a label to one or more emails.
+
+**Parameters:**
+- `email_ids` (required): Array of email IDs to label
+- `label` (required): Label name to apply (e.g., "STARRED", "IMPORTANT", or custom label)
+
+**Examples:**
+- "Star these emails"
+- "Mark these 3 emails as important"
+- "Add the 'Work' label to these emails"
 
 ## Security
 

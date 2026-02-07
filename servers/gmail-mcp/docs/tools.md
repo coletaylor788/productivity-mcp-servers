@@ -364,15 +364,82 @@ Failed to archive 2 email(s):
 
 ---
 
+## add_label
+
+Add a label to one or more emails.
+
+### Input Schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Array of email IDs to label"
+    },
+    "label": {
+      "type": "string",
+      "description": "Label name to apply (e.g., 'STARRED', 'IMPORTANT', or a custom label name)"
+    }
+  },
+  "required": ["email_ids", "label"]
+}
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `email_ids` | array | (required) | Array of email IDs to label |
+| `label` | string | (required) | Label name to apply |
+
+### Output
+
+**Success (single):**
+```
+Added label 'STARRED' to 1 email(s).
+```
+
+**Success (batch):**
+```
+Added label 'Work' to 5 email(s).
+```
+
+**Partial failure:**
+```
+Added label 'IMPORTANT' to 3 email(s).
+Failed to label 2 email(s):
+  - abc123: Not found
+  - def456: Permission denied
+```
+
+**Label not found:**
+```
+Error: Label 'Nonexistent' not found. Check the label name and try again.
+```
+
+### Usage Examples
+
+- "Star these emails"
+- "Mark these 3 emails as important"
+- "Add the 'Work' label to these emails"
+
+### Notes
+
+- System labels (STARRED, IMPORTANT, INBOX, etc.) are matched case-insensitively
+- Custom labels must already exist in Gmail - they are not auto-created
+- Custom labels are looked up by name (case-insensitive)
+
+---
+
 ## Future Tools
 
 These tools are planned but not yet implemented:
 
 ### send_email
 Compose and send emails (requires `gmail.send` scope - already authorized).
-
-### manage_labels
-Add/remove labels from emails.
 
 ### manage_drafts
 Create, edit, and send draft emails.

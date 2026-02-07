@@ -24,6 +24,7 @@ import pytest
 from gmail_mcp.auth import get_gmail_service, is_authenticated, run_oauth_flow
 from gmail_mcp.config import get_credentials_path
 from gmail_mcp.server import (
+    _add_label,
     _archive_email,
     _authenticate,
     _get_attachments,
@@ -421,3 +422,59 @@ class TestArchiveEmailTool:
         labels = msg.get("labelIds", [])
 
         assert "INBOX" not in labels
+
+
+class TestAddLabelTool:
+    """Integration tests for add_label tool."""
+
+    @pytest.fixture
+    def test_email_to_label(self, ensure_authenticated):
+        """Create a test email to label and clean it up after test."""
+        service = get_gmail_service()
+        subject = f"[gmail-mcp-test] {uuid.uuid4()}"
+        message_id = _create_test_email_with_attachment(service, subject)
+
+        # Wait a moment for the email to be available
+        time.sleep(2)
+
+        yield {"id": message_id, "subject": subject}
+
+        # Cleanup - remove STARRED if applied, then delete
+        try:
+            service.users().messages().modify(
+                userId="me",
+                id=message_id,
+                body={"removeLabelIds": ["STARRED"]},
+            ).execute()
+        except Exception:
+            pass
+        _delete_test_email(service, message_id)
+
+    @pytest.mark.asyncio
+    async def test_add_label_applies_label(self, test_email_to_label):
+        """Test that add_label applies a label to an email."""
+        message_id = test_email_to_label["id"]
+
+        result = await _add_label({"email_ids": [message_id], "label": "STARRED"})
+
+        assert len(result) == 1
+        assert "Added label 'STARRED' to 1 email(s)" in result[0].text
+
+        # Verify the email now has the STARRED label
+        service = get_gmail_service()
+        msg = service.users().messages().get(userId="me", id=message_id).execute()
+        labels = msg.get("labelIds", [])
+
+        assert "STARRED" in labels
+
+    @pytest.mark.asyncio
+    async def test_add_label_returns_error_for_nonexistent_label(self, test_email_to_label):
+        """Test that add_label returns error for a non-existent label."""
+        message_id = test_email_to_label["id"]
+
+        result = await _add_label(
+            {"email_ids": [message_id], "label": "nonexistent-label-xyz-12345"}
+        )
+
+        assert len(result) == 1
+        assert "not found" in result[0].text
