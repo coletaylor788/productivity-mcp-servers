@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server for Gmail integration with AI assistants l
 
 ## Features
 
-- **Secure authentication** - OAuth tokens stored in macOS Keychain (never on disk)
+- **Secure authentication** - OAuth tokens stored in macOS Keychain or via environment variable (Azure Key Vault)
 - **List emails** - View recent emails with filters
 - **Read emails** - Get full email content and attachments
 - **Download attachments** - Save attachments to disk
@@ -14,7 +14,7 @@ A Model Context Protocol (MCP) server for Gmail integration with AI assistants l
 ## Prerequisites
 
 - Python 3.10+
-- macOS (uses Keychain for secure token storage)
+- macOS (Keychain) or Linux with `GOOGLE_MCP_TOKEN` env var (Azure Key Vault)
 - A Google Cloud project with the Gmail API enabled
 
 ## Setup
@@ -172,13 +172,32 @@ Add a label to one or more emails.
 
 ## Security
 
-- **Refresh tokens** are stored in macOS Keychain, encrypted at rest
+- **Refresh tokens** are stored in macOS Keychain (encrypted at rest) or read from `GOOGLE_MCP_TOKEN` env var (for Azure deployments where Key Vault injects secrets)
 - **Access tokens** are kept in memory only (never persisted)
-- **Client credentials** (`credentials.json`) stay local in `~/.config/gmail-mcp/`
+- **Client credentials** (`credentials.json`) stay local in `~/.config/gmail-mcp/` (macOS) or bundled in the Key Vault secret (Azure)
 - The server requests **modify** Gmail access (`gmail.modify` scope) to support archiving
 - Attachment filenames are sanitized to prevent path traversal attacks
 
-You can inspect or delete stored credentials in Keychain Access.app (search for "gmail-mcp").
+On macOS, you can inspect or delete stored credentials in Keychain Access.app (search for "gmail-mcp").
+
+### Azure / Linux Deployment
+
+For Azure Container Apps with Key Vault:
+
+1. **Seed the token** (one-time, from a machine with a browser):
+   ```bash
+   python -m gmail_mcp.scripts.seed_keyvault \
+     --vault-name my-vault \
+     --credentials ~/path/to/credentials.json
+   ```
+
+2. **Configure Container App** to map the Key Vault secret to an env var:
+   ```json
+   "secrets": [{"name": "google-mcp-token", "keyVaultUrl": "https://<vault>.vault.azure.net/secrets/google-mcp-token", "identity": "system"}],
+   "env": [{"name": "GOOGLE_MCP_TOKEN", "secretRef": "google-mcp-token"}]
+   ```
+
+The server automatically uses the env var backend when `GOOGLE_MCP_TOKEN` is set.
 
 ## Development
 

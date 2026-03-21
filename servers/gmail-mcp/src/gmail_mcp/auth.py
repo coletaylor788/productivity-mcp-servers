@@ -1,14 +1,20 @@
-"""Authentication module for Gmail MCP server."""
+"""Authentication module for Gmail MCP server.
+
+Supports two storage backends, selected automatically:
+- Environment variable (GOOGLE_MCP_TOKEN): for Azure/Linux deployments
+  where secrets are injected by Key Vault
+- macOS Keychain (keyring): for local macOS development
+"""
 
 import json
+import os
 
-import keyring
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from .config import KEYCHAIN_SERVICE, get_credentials_path
+from .config import GOOGLE_TOKEN_ENV, KEYCHAIN_SERVICE, get_credentials_path
 
 # Gmail API scopes
 # - gmail.modify: read, write, and modify emails (includes archive)
@@ -19,22 +25,62 @@ SCOPES = [
 ]
 
 
-def is_authenticated() -> bool:
-    """Check if a valid token exists in Keychain.
+# --- Backend selection ---
 
-    Returns:
-        True if authenticated, False otherwise
-    """
+
+def _use_env_backend() -> bool:
+    """Check if the env var backend should be used."""
+    return os.environ.get(GOOGLE_TOKEN_ENV) is not None
+
+
+# --- Environment variable backend ---
+
+_cached_creds: Credentials | None = None
+
+
+def _env_is_authenticated() -> bool:
+    global _cached_creds
+    if _cached_creds is not None:
+        return True
+    try:
+        _env_load_credentials()
+    except Exception:
+        return False
+    return _cached_creds is not None
+
+
+def _env_get_token() -> Credentials | None:
+    global _cached_creds
+    if _cached_creds is None:
+        _env_load_credentials()
+    if _cached_creds and _cached_creds.expired and _cached_creds.refresh_token:
+        _cached_creds.refresh(Request())
+    return _cached_creds
+
+
+def _env_load_credentials() -> None:
+    """Parse credentials from env var into memory."""
+    global _cached_creds
+    token_json = os.environ.get(GOOGLE_TOKEN_ENV)
+    if not token_json:
+        return
+    token_info = json.loads(token_json)
+    _cached_creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+
+
+# --- Keychain backend ---
+
+
+def _keychain_is_authenticated() -> bool:
+    import keyring
+
     token_data = keyring.get_password(KEYCHAIN_SERVICE, "token")
     return token_data is not None
 
 
-def get_token() -> Credentials | None:
-    """Retrieve credentials from Keychain.
+def _keychain_get_token() -> Credentials | None:
+    import keyring
 
-    Returns:
-        Credentials object if found and valid, None otherwise
-    """
     token_data = keyring.get_password(KEYCHAIN_SERVICE, "token")
     if not token_data:
         return None
@@ -47,14 +93,47 @@ def get_token() -> Credentials | None:
         return None
 
 
+def _keychain_store_token(creds: Credentials) -> None:
+    import keyring
+
+    token_data = creds.to_json()
+    keyring.set_password(KEYCHAIN_SERVICE, "token", token_data)
+
+
+# --- Public API ---
+
+
+def is_authenticated() -> bool:
+    """Check if valid credentials are available.
+
+    Returns:
+        True if authenticated, False otherwise
+    """
+    if _use_env_backend():
+        return _env_is_authenticated()
+    return _keychain_is_authenticated()
+
+
+def get_token() -> Credentials | None:
+    """Retrieve Google OAuth credentials.
+
+    Returns:
+        Credentials object if found and valid, None otherwise
+    """
+    if _use_env_backend():
+        return _env_get_token()
+    return _keychain_get_token()
+
+
 def store_token(creds: Credentials) -> None:
-    """Save credentials to Keychain.
+    """Save credentials to the active backend.
 
     Args:
         creds: Google OAuth credentials to store
     """
-    token_data = creds.to_json()
-    keyring.set_password(KEYCHAIN_SERVICE, "token", token_data)
+    if _use_env_backend():
+        return  # env var is read-only; token seeded externally
+    _keychain_store_token(creds)
 
 
 def _has_required_scopes(creds: Credentials) -> bool:

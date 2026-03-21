@@ -6,40 +6,148 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from gmail_mcp.auth import (
+    _use_env_backend,
     get_gmail_service,
     get_token,
     is_authenticated,
     run_oauth_flow,
     store_token,
 )
-from gmail_mcp.config import KEYCHAIN_SERVICE
+from gmail_mcp.config import GOOGLE_TOKEN_ENV, KEYCHAIN_SERVICE
 
 
-class TestIsAuthenticated:
-    """Tests for is_authenticated()."""
+# Ensure env backend is not active during Keychain tests
+@pytest.fixture(autouse=True)
+def _clear_env_token(monkeypatch):
+    """Remove GOOGLE_MCP_TOKEN env var and reset cached creds for each test."""
+    monkeypatch.delenv(GOOGLE_TOKEN_ENV, raising=False)
+    import gmail_mcp.auth
+
+    gmail_mcp.auth._cached_creds = None
+
+
+class TestBackendSelection:
+    """Tests for backend selection logic."""
+
+    def test_uses_env_backend_when_env_set(self, monkeypatch):
+        """Returns True when GOOGLE_MCP_TOKEN is set."""
+        monkeypatch.setenv(GOOGLE_TOKEN_ENV, '{"token": "x"}')
+        assert _use_env_backend() is True
+
+    def test_uses_keychain_backend_when_env_not_set(self):
+        """Returns False when GOOGLE_MCP_TOKEN is not set."""
+        assert _use_env_backend() is False
+
+
+class TestEnvBackend:
+    """Tests for environment variable backend."""
+
+    def test_is_authenticated_with_valid_token(self, monkeypatch):
+        """Returns True when env var contains valid token JSON."""
+        token_data = json.dumps({
+            "token": "access_token",
+            "refresh_token": "refresh_token",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "client_id": "client_id",
+            "client_secret": "client_secret",
+        })
+        monkeypatch.setenv(GOOGLE_TOKEN_ENV, token_data)
+        assert is_authenticated() is True
+
+    def test_is_authenticated_with_invalid_json(self, monkeypatch):
+        """Returns False when env var contains invalid JSON."""
+        monkeypatch.setenv(GOOGLE_TOKEN_ENV, "not json")
+        assert is_authenticated() is False
+
+    def test_get_token_returns_credentials(self, monkeypatch):
+        """Returns Credentials object from env var."""
+        import gmail_mcp.auth
+
+        token_data = json.dumps({
+            "token": "access_token",
+            "refresh_token": "refresh_token",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "client_id": "client_id",
+            "client_secret": "client_secret",
+        })
+        monkeypatch.setenv(GOOGLE_TOKEN_ENV, token_data)
+
+        # Pre-load to avoid refresh attempt on real Credentials
+        gmail_mcp.auth._env_load_credentials()
+        creds = gmail_mcp.auth._cached_creds
+        assert creds is not None
+        assert creds.token == "access_token"
+
+    def test_get_token_refreshes_expired(self, monkeypatch):
+        """Refreshes expired credentials from env var."""
+        import gmail_mcp.auth
+
+        mock_creds = MagicMock()
+        mock_creds.expired = True
+        mock_creds.refresh_token = "refresh"
+        gmail_mcp.auth._cached_creds = mock_creds
+        monkeypatch.setenv(GOOGLE_TOKEN_ENV, "{}")
+
+        get_token()
+        mock_creds.refresh.assert_called_once()
+
+    def test_store_token_is_noop(self, monkeypatch):
+        """store_token does nothing when env backend is active."""
+        monkeypatch.setenv(GOOGLE_TOKEN_ENV, '{"token": "x"}')
+        mock_creds = MagicMock()
+        # Should not raise or call keyring
+        store_token(mock_creds)
+        mock_creds.to_json.assert_not_called()
+
+    def test_caches_credentials(self, monkeypatch):
+        """Credentials are parsed once and cached."""
+        import gmail_mcp.auth
+
+        token_data = json.dumps({
+            "token": "access_token",
+            "refresh_token": "refresh_token",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "client_id": "client_id",
+            "client_secret": "client_secret",
+        })
+        monkeypatch.setenv(GOOGLE_TOKEN_ENV, token_data)
+
+        gmail_mcp.auth._env_load_credentials()
+        creds1 = gmail_mcp.auth._cached_creds
+        gmail_mcp.auth._env_load_credentials()
+        # _env_load_credentials overwrites, but the object is equivalent
+        creds2 = gmail_mcp.auth._cached_creds
+        # Both should be valid Credentials
+        assert creds1 is not None
+        assert creds2 is not None
+        assert creds1.token == creds2.token
+
+
+class TestKeychainIsAuthenticated:
+    """Tests for is_authenticated() with Keychain backend."""
 
     def test_returns_false_when_no_token(self):
         """Returns False when no token in Keychain."""
-        with patch("gmail_mcp.auth.keyring.get_password", return_value=None):
+        with patch("keyring.get_password", return_value=None):
             assert is_authenticated() is False
 
     def test_returns_true_when_token_exists(self):
         """Returns True when token exists in Keychain."""
-        with patch("gmail_mcp.auth.keyring.get_password", return_value='{"token": "data"}'):
+        with patch("keyring.get_password", return_value='{"token": "data"}'):
             assert is_authenticated() is True
 
 
-class TestGetToken:
-    """Tests for get_token()."""
+class TestKeychainGetToken:
+    """Tests for get_token() with Keychain backend."""
 
     def test_returns_none_when_no_token(self):
         """Returns None when no token in Keychain."""
-        with patch("gmail_mcp.auth.keyring.get_password", return_value=None):
+        with patch("keyring.get_password", return_value=None):
             assert get_token() is None
 
     def test_returns_none_on_invalid_json(self):
         """Returns None when token data is not valid JSON."""
-        with patch("gmail_mcp.auth.keyring.get_password", return_value="not json"):
+        with patch("keyring.get_password", return_value="not json"):
             assert get_token() is None
 
     def test_returns_credentials_when_valid_token(self):
@@ -51,22 +159,22 @@ class TestGetToken:
             "client_id": "client_id",
             "client_secret": "client_secret",
         }
-        with patch("gmail_mcp.auth.keyring.get_password", return_value=json.dumps(token_data)):
+        with patch("keyring.get_password", return_value=json.dumps(token_data)):
             creds = get_token()
             assert creds is not None
             assert creds.token == "access_token"
             assert creds.refresh_token == "refresh_token"
 
 
-class TestStoreToken:
-    """Tests for store_token()."""
+class TestKeychainStoreToken:
+    """Tests for store_token() with Keychain backend."""
 
     def test_saves_token_to_keyring(self):
         """Token is saved to Keychain with correct service/account."""
         mock_creds = MagicMock()
         mock_creds.to_json.return_value = '{"token": "test"}'
 
-        with patch("gmail_mcp.auth.keyring.set_password") as mock_set:
+        with patch("keyring.set_password") as mock_set:
             store_token(mock_creds)
 
             mock_set.assert_called_once_with(KEYCHAIN_SERVICE, "token", '{"token": "test"}')

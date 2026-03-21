@@ -1,10 +1,17 @@
 # Authentication
 
-Gmail MCP uses OAuth 2.0 with macOS Keychain for secure token storage.
+Gmail MCP uses OAuth 2.0 with two storage backends:
+
+- **macOS Keychain** (default) — for local development with Claude Desktop/Code
+- **Environment variable** (`GOOGLE_MCP_TOKEN`) — for Azure/Linux deployments where Key Vault injects secrets
+
+The backend is selected automatically: if `GOOGLE_MCP_TOKEN` is set, the env var backend is used. Otherwise, Keychain.
 
 ---
 
 ## Overview
+
+### macOS (Keychain backend)
 
 ```
 ┌──────────────┐    1. OAuth flow     ┌──────────────┐
@@ -20,16 +27,33 @@ Gmail MCP uses OAuth 2.0 with macOS Keychain for secure token storage.
 └──────────────┘                      └──────────────┘
 ```
 
+### Azure / Linux (env var backend)
+
+```
+┌──────────────┐    Key Vault injects   ┌──────────────┐
+│  Azure       │───env var──────────────│  Gmail MCP   │──▶ Gmail API
+│  Key Vault   │  GOOGLE_MCP_TOKEN      │   Server     │
+└──────────────┘                        └──────────────┘
+```
+
 ---
 
 ## Storage Strategy
+
+### macOS (Keychain)
 
 | Data | Location | Why |
 |------|----------|-----|
 | OAuth client credentials | `~/.config/gmail-mcp/credentials.json` | App identity (not truly secret for desktop apps) |
 | Refresh token | macOS Keychain | Sensitive - encrypted at rest |
-| Account email | Keychain (as account name) | Stored alongside token |
 | Access token | Memory only | Short-lived, never persisted |
+
+### Azure / Linux (env var)
+
+| Data | Location | Why |
+|------|----------|-----|
+| Refresh token + client identity | `GOOGLE_MCP_TOKEN` env var | Injected by Key Vault, read once into memory |
+| Access token | Memory only | Short-lived, auto-refreshed |
 
 ---
 
@@ -48,13 +72,14 @@ We use Google's "Desktop App" OAuth flow:
 ### Scopes Requested
 
 ```python
-SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/gmail.send",
+]
 ```
 
-Currently read-only. Future features may request additional scopes:
-- `gmail.send` - Send emails
-- `gmail.compose` - Create drafts
-- `gmail.modify` - Manage labels
+- `gmail.modify` - Read, write, and modify emails (includes archive, labels)
+- `gmail.send` - Send emails (used for integration tests)
 
 ---
 
@@ -120,11 +145,44 @@ The `credentials.json` is really just "app identity" - your Google Cloud project
 
 | Threat | Mitigation |
 |--------|------------|
-| Token stolen from disk | Token not on disk - stored in encrypted Keychain |
+| Token stolen from disk | Keychain: encrypted at rest. Env var: not on disk, in memory only |
 | Token intercepted in transit | All Google API calls use HTTPS |
 | Malicious app impersonation | User verifies app in Google consent screen |
 | Malicious app reads Keychain | macOS prompts user for permission |
+| Env var leaked via subprocess | Use Azure sandbox isolation; secrets only on trusted box |
 | Scope creep | Request minimal scopes; user can revoke in Google Account |
+
+---
+
+## Azure Key Vault Setup
+
+### One-time seed (from a machine with a browser)
+
+```bash
+python -m gmail_mcp.scripts.seed_keyvault \
+  --vault-name my-vault \
+  --credentials ~/path/to/credentials.json
+```
+
+### Container App configuration
+
+```json
+"secrets": [
+  {
+    "name": "google-mcp-token",
+    "keyVaultUrl": "https://<vault>.vault.azure.net/secrets/google-mcp-token",
+    "identity": "system"
+  }
+],
+"env": [
+  {
+    "name": "GOOGLE_MCP_TOKEN",
+    "secretRef": "google-mcp-token"
+  }
+]
+```
+
+**When to re-seed:** Google password change, app access revoked, scopes changed, or token unused for 6+ months.
 
 ---
 
@@ -154,15 +212,11 @@ if service:
 ### Token Storage
 
 ```python
-# Internal - tokens stored via keyring
+# Keychain backend (macOS) - internal
 import keyring
+keyring.set_password("gmail-mcp", "token", token_json)
+token_json = keyring.get_password("gmail-mcp", "token")
 
-# Store
-keyring.set_password("gmail-mcp", email, token_json)
-
-# Retrieve
-token_json = keyring.get_password("gmail-mcp", account)
-
-# Delete
-keyring.delete_password("gmail-mcp", account)
+# Env var backend (Azure/Linux) - read-only, set externally
+# GOOGLE_MCP_TOKEN env var contains the same JSON
 ```
