@@ -223,7 +223,7 @@ The async global injection guard (Plan 011) provides a safety net for all other 
 - [ ] `doFetch()` handles HTTP errors gracefully
 - [ ] `doSearch()` handles search API errors gracefully
 
-**Integration tests (mocked LLM, real plugin wiring):**
+**Integration tests (real Copilot API, requires PAT in keychain):**
 - [ ] Plugin loads correctly in OpenClaw
 - [ ] Provider registration succeeds for both web_fetch and web_search
 - [ ] Full flow: fetched page with injection → blocked

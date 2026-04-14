@@ -456,14 +456,16 @@ Note: Uses a native keychain binding (e.g., `keytar`) to read the GitHub PAT fro
 - **TrustStore** — No LLM. Test: resolve unknown/approved/trusted, approve() tier upgrade, trust() tier upgrade, domain matching, contact overrides domain, handleApprovalDecision() logic, file persistence (write + reload), seed domains.
 - **Edge cases** — Empty content, unicode, very long content, malformed LLM responses (invalid JSON, missing fields), content with mixed categories (secrets + PII in same text).
 
-### Integration Tests (end-to-end flows, mocked LLM)
+### Integration Tests (real Copilot API, requires PAT in keychain)
 
-- **LeakGuard + real classification flow** — Create LeakGuard with mocked LLM, run three parallel classification calls, verify correct block/allow decisions across all categories.
-- **SendApproval + TrustStore flow** — Create SendApproval with TrustStore backed by temp file, run full check → verify trust resolution → simulate approval decision → verify trust tier upgrade → re-check same destination → verify new behavior.
-- **SecretRedactor regex + LLM** — Feed content with both regex-matchable secrets and LLM-only secrets, verify regex phase runs first, then LLM phase catches remaining, final output has all secrets redacted.
-- **Combined egress flow** — Simulate a plugin calling LeakGuard then SendApproval on the same content, verify correct sequencing and that shared classification results are consistent.
-- **Combined ingress flow** — Run InjectionGuard and SecretRedactor in parallel on same content, verify that injection block takes precedence over redaction, and that redacted content is returned when no injection detected.
-- **Token refresh during hook execution** — Simulate token expiry mid-flow, verify the LLM client refreshes and retries transparently.
+Integration tests hit the real LLM via Copilot API. They require a GitHub PAT stored in keychain and run separately from unit tests (`pnpm test:integration`).
+
+- **CopilotLLMClient** — Real token exchange against `api.github.com`, verify token returned, verify model call succeeds, verify token caching across calls.
+- **LeakGuard end-to-end** — Real LLM classifies content containing an API key → verify block. Real LLM classifies clean content → verify allow. Real LLM classifies "what are symptoms of diabetes?" → verify allow (not sensitive).
+- **SendApproval end-to-end** — Real LLM classification with TrustStore backed by temp file. Verify full trust lifecycle: unknown → approval → approve → re-check → allowed.
+- **InjectionGuard end-to-end** — Real LLM detects "ignore previous instructions" → block. Real LLM allows "please ignore the previous email, here's the correction" → allow.
+- **SecretRedactor end-to-end** — Content with a 2FA code and an API key → regex catches the key, LLM catches context-dependent secrets, final output fully redacted.
+- **Combined flow** — InjectionGuard + SecretRedactor in parallel on real content, verify correct behavior.
 
 ---
 
@@ -478,8 +480,10 @@ Note: Uses a native keychain binding (e.g., `keytar`) to read the GitHub PAT fro
 - [ ] Implement `ingress/secret-redactor.ts` (regex patterns + LLM fallback)
 
 ### Testing
-- [ ] All unit tests written
-- [ ] All unit tests passing
+- [x] All unit tests written (92 tests, mocked LLM)
+- [x] All unit tests passing
+- [ ] Integration tests written (real Copilot API)
+- [ ] Integration tests passing (requires PAT in keychain)
 
 ### Cleanup
 - [ ] Code linting passes

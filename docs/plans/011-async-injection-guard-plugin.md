@@ -215,7 +215,7 @@ openclaw-plugins/
 - [ ] Tapback translation: 👍 → allow-once, 👎 → deny
 - [ ] Tapback on non-approval message is ignored
 
-**Integration tests (mocked LLM, real plugin wiring):**
+**Integration tests (real Copilot API, requires PAT in keychain):**
 - [ ] Plugin loads correctly in OpenClaw
 - [ ] `after_tool_call` fires for exec, read, web_fetch tool types
 - [ ] Full flow: injection detected → flag set → next tool blocked → user approves → tool proceeds

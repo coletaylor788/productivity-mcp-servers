@@ -200,7 +200,7 @@ The egress-approval plugin creates the `TrustStore` instance, manages persistenc
 - [ ] Secrets always blocked regardless of trust tier
 - [ ] Tapback translation: 👍 → allow-once, 👎 → deny
 
-**Integration tests (mocked LLM, real plugin wiring):**
+**Integration tests (real Copilot API, requires PAT in keychain):**
 - [ ] Full flow: unknown destination → approval → allow-always → contact saved as approved
 - [ ] Full flow: approved destination + PII → approval → allow-always → contact upgraded to trusted
 - [ ] Full flow: trusted destination + PII → no approval, passes through

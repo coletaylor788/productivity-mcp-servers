@@ -274,7 +274,7 @@ Future instances (e.g., secure-calendar, secure-slack) copy this structure and o
 - [ ] Skipped tools pass through without hooks
 - [ ] Unknown tools get default hooks
 
-**Integration tests (mocked LLM, real plugin wiring):**
+**Integration tests (real Copilot API, requires PAT in keychain):**
 - [ ] Plugin loads correctly in OpenClaw
 - [ ] Tools are discovered from gmail-mcp and registered
 - [ ] Full flow: InjectionGuard blocks injected email content
