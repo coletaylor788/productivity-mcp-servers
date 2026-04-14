@@ -1,0 +1,23 @@
+{
+  "name": "mcp-hooks",
+  "version": "0.1.0",
+  "description": "Security hooks for MCP tool pipelines",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "keytar": "^7.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0",
+    "@types/node": "^22.0.0"
+  }
+}
