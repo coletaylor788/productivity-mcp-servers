@@ -39,7 +39,7 @@ export class CopilotLLMClient {
   constructor(options: CopilotLLMClientOptions = {}) {
     this.model = options.model ?? "claude-haiku-4.5";
     this.githubToken = options.githubToken;
-    this.keychainService = options.keychainService ?? "mcp-hooks";
+    this.keychainService = options.keychainService ?? "openclaw";
     this.keychainAccount = options.keychainAccount ?? "github-pat";
   }
 
@@ -53,7 +53,8 @@ export class CopilotLLMClient {
       ],
       temperature: 0,
     });
-    return response.choices[0]?.message?.content ?? "";
+    const raw = response.choices[0]?.message?.content ?? "";
+    return stripCodeFences(raw);
   }
 
   private async getClient(): Promise<import("openai").default> {
@@ -107,7 +108,7 @@ export class CopilotLLMClient {
 
       const { default: OpenAI } = await import("openai");
       this.openai = new OpenAI({
-        baseURL: `${baseUrl}/v1`,
+        baseURL: baseUrl,
         apiKey: json.token,
         defaultHeaders: COPILOT_HEADERS,
       });
@@ -167,4 +168,10 @@ export class CopilotLLMClient {
       this.refreshTimer = undefined;
     }
   }
+}
+
+function stripCodeFences(text: string): string {
+  const trimmed = text.trim();
+  const match = trimmed.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/);
+  return match ? match[1]!.trim() : trimmed;
 }

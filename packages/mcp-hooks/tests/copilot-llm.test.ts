@@ -335,7 +335,7 @@ describe("CopilotLLMClient", () => {
       // Verify OpenAI was constructed with the derived base URL
       expect(vi.mocked((await import("openai")).default)).toHaveBeenCalledWith(
         expect.objectContaining({
-          baseURL: "https://api.business.githubcopilot.com/v1",
+          baseURL: "https://api.business.githubcopilot.com",
         }),
       );
       client.destroy();
@@ -366,7 +366,7 @@ describe("CopilotLLMClient", () => {
 
       expect(vi.mocked((await import("openai")).default)).toHaveBeenCalledWith(
         expect.objectContaining({
-          baseURL: "https://api.individual.githubcopilot.com/v1",
+          baseURL: "https://api.individual.githubcopilot.com",
         }),
       );
       client.destroy();
@@ -474,7 +474,7 @@ describe("CopilotLLMClient", () => {
       await client.classify("test", "prompt");
 
       expect(mockKeytar.getPassword).toHaveBeenCalledWith(
-        "mcp-hooks",
+        "openclaw",
         "github-pat",
       );
       expect(globalThis.fetch).toHaveBeenCalledWith(

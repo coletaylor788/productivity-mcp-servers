@@ -47,7 +47,7 @@ const REGEX_PATTERNS: Array<{ pattern: RegExp; type: string }> = [
   { pattern: /(https?:\/\/[^\s"'`]*(?:reset|verify|confirm|login|signin|auth|activate|invite)[^\s"'`]*[?&](?:token|code|key|nonce)=[^\s"'`&]{8,})/gi, type: "reset_link" },
 
   // 2FA/verification codes in context
-  { pattern: /(?:code|verification|verify|OTP|2FA|MFA|passcode)[\s:]*(\d{4,8})\b/gi, type: "2fa_code" },
+  { pattern: /(?:code|verification|verify|OTP|2FA|MFA|passcode)[\s:]*(?:is\s+)?(\d{4,8})\b/gi, type: "2fa_code" },
   { pattern: /\b([A-Z]-?\d{5,6})\b/g, type: "2fa_code" }, // G-123456 format
 
   // SSN
