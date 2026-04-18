@@ -186,10 +186,25 @@ brew install --cask docker
 
 **Network architecture for remote unlock:**
 
-The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so we need a second path to reach the LAN IP. Use **UniFi Teleport** (built into the Dream Machine, WireGuard-based, no extra hardware):
-- UniFi Network app → Settings → VPN → Teleport → Invite User
-- Install **WiFiman** on iPhone/MacBook → scan QR code → connected to home LAN
-- From there, the Mac Mini's LAN IP is reachable even when its own Tailscale is offline
+The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so we need a second path to reach the LAN IP. Use **UniFi Teleport** (built into the Dream Machine, WireGuard-based, no extra hardware, free).
+
+**UniFi Teleport setup (one-time, on UDM):**
+1. Update UniFi Network app + UDM firmware to latest
+2. Open UniFi Network → Settings → VPN → **Teleport VPN**
+3. Toggle **Enable Teleport** ON
+4. Under "Invite User" → click **Generate Link** (creates a one-time WiFiman invite URL)
+5. Note: Teleport uses Ubiquiti's hosted relay, so **no port forwarding** needed and works behind CGNAT
+6. (Recommended) Set **DHCP Reservation** for the Mac Mini so its LAN IP doesn't change — UniFi Network → Client Devices → Mac Mini → Settings → Fixed IP Address (e.g. `192.168.8.230`)
+
+**Client setup:**
+- **iPhone/iPad:** Install [WiFiman](https://apps.apple.com/app/wifiman/id1385561119) from App Store → open the invite link from Step 4 (works once) → grants persistent VPN profile → enable VPN with one tap
+- **MacBook:** Install WiFiman from Mac App Store → same invite link flow
+- **Test:** Disable home WiFi (use cellular/different network) → enable Teleport → ping `192.168.8.230` → should respond
+
+**Operational notes:**
+- Teleport is a **full tunnel by default** — all traffic routes through home. Acceptable for occasional unlock; if you use it constantly, configure split tunneling in WiFiman settings
+- Invite links expire — generate new ones if you reinstall the app or add a device
+- One Teleport user can have multiple devices on the same invite
 
 **Two paths to the box:**
 | Path | Use case | Reachable when Mac Mini Tailscale is offline? |
