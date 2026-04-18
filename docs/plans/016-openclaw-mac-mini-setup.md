@@ -1,7 +1,7 @@
 # OpenClaw Mac Mini Setup Plan
 
-## Problem
-Migrate Puddles from Azure container to a Mac Mini (M4), enabling native Apple integrations (iMessage, Calendar, Reminders, Contacts) with a proper sandbox + tool gate architecture.
+## Overview
+Set up OpenClaw on a Mac Mini (M4) with native Apple integrations (iMessage, Calendar, Reminders, Contacts), proper sandbox + tool gate architecture, and hardened network security.
 
 ## Current State (Updated April 17, 2026)
 
@@ -260,6 +260,34 @@ brew install --cask docker
 ## Reference
 - Omar's Lobster Playbook: https://lobster.shahine.com
 - Apple PIM Plugin: https://github.com/omarshahine/Apple-PIM-Agent-Plugin
+
+## Inter-Agent Communication (Lobster Approval Gates)
+
+When Group Puddles needs Main Puddles to take action on your behalf, requests go through the Lobster workflow plugin — not direct agent-to-agent messaging.
+
+### How it works
+1. Group Puddles detects an actionable request from the group chat (calendar event, reminder, email, etc.)
+2. Instead of messaging Main Puddles directly, it kicks off a Lobster workflow
+3. **Step 1**: Format the request into a structured payload
+4. **Step 2**: Approval gate — you get a prompt in your DM asking to approve or deny
+5. **Step 3**: Only if you approve, the request gets delivered to Main Puddles and the action executes
+
+### Why this matters
+- Main Puddles never even processes the request unless you've approved it
+- No one in a group chat can put stuff on your calendar, set reminders, or trigger actions without your explicit tap
+- The approval is enforced by the Lobster runtime, not by AI instructions — it physically can't skip the gate
+
+### Security layers (belt + suspenders + a third belt)
+- **Layer 1**: Group agent has no calendar/exec tools at all (system-enforced tool policy)
+- **Layer 2**: Lobster approval gate blocks the request from reaching Main Puddles (runtime-enforced)
+- **Layer 3**: Exec approvals on Main Puddles gate the actual CLI execution (system-enforced)
+
+### Dependencies
+- Lobster CLI installed on Mac Mini (brew or npm)
+- Lobster plugin enabled for the group agent
+- Approval prompts forwarded to Telegram/iMessage DM
+
+---
 
 ## Future Features (post-migration)
 - Morning briefing (calendar, weather, emails, reminders)
