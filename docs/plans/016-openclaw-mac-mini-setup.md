@@ -168,12 +168,80 @@ brew install --cask docker
 
 ## Phase 6: macOS Hardening
 
-### 6.1 — Energy settings
-- System Settings → Energy → Prevent sleep when display off
-- Start up after power failure
-- System Settings → Users & Groups → Auto-login → puddles
-  - **Auto-login fires *after* FileVault unlocks**, so it's compatible with FileVault ON (see 6.2)
-- Login Items for puddles: Tailscale, BlueBubbles, OpenClaw agent
+### 6.1 — Headless reliability checklist ("shit just works")
+
+**Energy & Startup (Settings → Energy):**
+- Prevent computer/display sleep when display off
+- Start up automatically after power failure
+- Restart automatically if the computer freezes
+- Wake for network access (enables Wake-on-LAN over ethernet)
+- Verify kernel-panic auto-restart: `sudo systemsetup -getrestartfreeze` → should be On
+
+**Auto-login (Settings → Users & Groups):**
+- Auto-login → **puddles**
+- Auto-login fires *after* FileVault unlocks, so compatible with FileVault ON (see 6.2)
+- puddles must be FileVault-enabled (see 6.2)
+
+**Network (Settings → Network):**
+- WiFi → **Off entirely** (ethernet only — prevents fallback if cable yanked, reduces attack surface, required for pre-login SSH unlock)
+- Confirm DHCP reservation in UniFi (set in 6.2 Teleport setup)
+- Hostname: verify `coles-mac-mini-1` or similar via `scutil --get HostName`
+
+**puddles user session settings:**
+- Notifications → **Do Not Disturb always on** (prevents popups blocking screen sharing UI)
+- Lock Screen → "Require password after sleep" → **Never**, "Start Screen Saver when inactive" → **Never** (don't lock the auto-logged-in session)
+- Disable **Apple Intelligence / Siri** (resource use + privacy)
+- Disable **Spotlight web search/suggestions** (privacy)
+- Disable **Analytics & Improvements / Share with App Developers** (privacy)
+- Disable **AirDrop / Handoff** (don't need them, reduces surface)
+
+**Login Items for puddles:**
+- Tailscale (verify it auto-launches; Tailscale daemon is system-level but tray app is per-user)
+- BlueBubbles
+- OpenClaw agent (via launchd)
+- Any other agent services
+
+**Headless display quirk:**
+- Without an HDMI display attached, Mac Mini may boot at 640×480 and Screen Sharing inherits that low resolution
+- Either: keep an **HDMI dummy plug** attached, OR use [`displayplacer`](https://github.com/jakehilborn/displayplacer) to force a sensible resolution at login
+
+**Recovery Lock (extra theft protection on Apple Silicon):**
+- `sudo bputil -E` → enables Recovery Lock; an attacker can't boot Recovery without owner credentials
+- Pair with FileVault for layered protection
+
+### 6.1.1 — macOS update strategy (unattended where safe)
+
+**Auto-install: ON for safe categories**
+- Settings → General → Software Update → Automatic Updates (gear icon):
+  - ✅ Check for updates
+  - ✅ Download new updates when available
+  - ✅ Install Security Responses and system files (no reboot, low risk)
+  - ❌ Install macOS updates (we control reboot timing)
+  - ❌ Install application updates from the App Store (control)
+
+**Manual but unattended-after-trigger workflow:**
+
+For point releases (e.g. 26.1 → 26.2), use `softwareupdate` with `--user`/`--stdinpass` to leverage `fdesetup authrestart` — installs, reboots, FileVault auto-unlocks the one time, puddles auto-logs-in:
+
+```bash
+# Pipe password from Keychain so it never appears on screen or in history
+security find-generic-password -a cole -s "macmini-admin" -w | \
+  sudo softwareupdate --install --all --restart --user cole --stdinpass
+```
+
+Caveats:
+- Requires cole to be a FileVault-enabled secure-token holder (default for primary admin)
+- `authrestart` is **single-use** — multi-reboot updates will halt at FileVault for the second reboot
+- **Do NOT auto-apply major OS upgrades** (e.g. Tahoe → next year's release). Trigger those manually with a window for handholding
+
+**Notification of available updates:**
+- Apple's built-in update notifications go to Notification Center on the logged-in user's screen → useless for headless
+- Deferred to Phase 7 (see 7.1) — Puddles will check periodically and notify via her own channels
+
+### 6.1.2 — Health monitoring
+- Simple heartbeat: cron on puddles hits a private endpoint (e.g. `ntfy.sh/private-topic` or your own webhook) every N minutes
+- Alert if heartbeat missed for X minutes — early warning for "Mac Mini is down"
+- Can also be folded into Puddles' own self-monitoring once she's up
 
 ### 6.2 — FileVault ON + remote unlock
 **Why FileVault ON is now viable for a headless server:** macOS Tahoe 26 added "lightweight SSH" pre-user-login. After reboot, the box halts at FileVault unlock, but SSH responds with `"This system is locked. To unlock it, use a local account name and password"`. Entering an admin password completes the boot, then auto-login fires for puddles, then all services start.
@@ -263,6 +331,24 @@ EOF
 
 ### 6.6 — Backup
 - iCloud sync via Puddles' Apple ID
+
+---
+
+## Phase 7: Operational Tooling (Puddles-managed)
+
+These are deferred until Puddles is running — she manages her own host.
+
+### 7.1 — macOS update notifier
+- Periodic check (`softwareupdate -l`)
+- When updates are available, Puddles posts to your DM channel:
+  - "macOS 26.x.y available: [release notes link]. Reply 'install' to apply."
+- On approval: triggers the unattended update workflow (see 6.1.1)
+- Lobster approval gate before reboot for safety
+
+### 7.2 — Heartbeat / health monitoring
+- Puddles posts a daily summary: uptime, disk usage, agent status, last successful boot
+- Alert if subsystems (BlueBubbles, OpenClaw services) are down
+- External heartbeat (cron → ntfy.sh) as backup for "Puddles herself is down"
 
 ---
 
