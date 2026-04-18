@@ -171,10 +171,68 @@ brew install --cask docker
 ### 6.1 — Energy settings
 - System Settings → Energy → Prevent sleep when display off
 - Start up after power failure
-- System Settings → Users & Groups → Auto-login → select user
+- System Settings → Users & Groups → Auto-login → puddles
+  - **Auto-login fires *after* FileVault unlocks**, so it's compatible with FileVault ON (see 6.2)
+- Login Items for puddles: Tailscale, BlueBubbles, OpenClaw agent
 
-### 6.2 — FileVault ON
-- Encrypts at rest, theft protection
+### 6.2 — FileVault ON + remote unlock
+**Why FileVault ON is now viable for a headless server:** macOS Tahoe 26 added "lightweight SSH" pre-user-login. After reboot, the box halts at FileVault unlock, but SSH responds with `"This system is locked. To unlock it, use a local account name and password"`. Entering an admin password completes the boot, then auto-login fires for puddles, then all services start.
+
+**Setup:**
+- Enable FileVault: System Settings → Privacy & Security → FileVault → Turn On
+  - Recovery key: store in 1Password (NOT iCloud, since cole has no Apple ID)
+- Verify Remote Login (SSH) is enabled in Sharing settings — required for pre-login SSH unlock
+- Mac Mini must be on **Ethernet** (pre-login SSH doesn't work over WiFi — WiFi password lives in user keychain that isn't unlocked yet)
+
+**Network architecture for remote unlock:**
+
+The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so we need a second path to reach the LAN IP. Use **UniFi Teleport** (built into the Dream Machine, WireGuard-based, no extra hardware):
+- UniFi Network app → Settings → VPN → Teleport → Invite User
+- Install **WiFiman** on iPhone/MacBook → scan QR code → connected to home LAN
+- From there, the Mac Mini's LAN IP is reachable even when its own Tailscale is offline
+
+**Two paths to the box:**
+| Path | Use case | Reachable when Mac Mini Tailscale is offline? |
+|---|---|---|
+| Tailscale → `coles-mac-mini-1` | Day-to-day SSH, key-based with Touch ID | ❌ No |
+| UniFi Teleport → LAN IP | Remote unlock, recovery | ✅ Yes |
+
+**Power outage flow:**
+1. Power returns → Mac Mini boots → halts at FileVault unlock
+2. From phone or laptop: connect Teleport → SSH to LAN IP → "system is locked" prompt
+3. Enter admin password → Mac completes boot → auto-login as puddles → Tailscale/BlueBubbles/OpenClaw start
+4. Disk was encrypted at rest the entire time
+
+### 6.2.1 — One-tap unlock from phone or laptop
+
+**iPhone:**
+- Install **Termius** (free) + **WiFiman** (UniFi Teleport client)
+- Termius: New Host → LAN IP → username `cole` → password (stored in iOS Keychain, Face ID gated)
+- Flow: open WiFiman (one tap) → open Termius → tap host → Face ID → password auto-fed → unlock fires
+
+**MacBook:**
+- Store unlock password in Keychain (one-time, never goes through Copilot):
+  ```bash
+  security add-generic-password -a cole -s "macmini-unlock" -w
+  ```
+- Add to `~/.zshrc`:
+  ```bash
+  unlock-macmini() {
+    local pw
+    pw=$(security find-generic-password -a cole -s "macmini-unlock" -w) || return 1
+    expect <<EOF
+      set timeout 30
+      spawn ssh cole@192.168.8.230
+      expect {
+        "Password:" { send "\$pw\r"; exp_continue }
+        "*\$ " { send "exit\r" }
+        timeout { exit 1 }
+      }
+      expect eof
+EOF
+  }
+  ```
+- Run `unlock-macmini` from anywhere on the tailnet OR via Teleport-routed LAN access
 
 ### 6.3 — Exec approvals config
 - Per-agent command allowlists in `exec-approvals.json`
