@@ -305,13 +305,11 @@ The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so for power-
 - **WireGuard VPN Server on UDM** (fallback plan): Settings → VPN → VPN Server → WireGuard. Requires a port-forward (one UDP port) and either a static WAN IP or DDNS. More setup, but reliable and doesn't depend on Ubiquiti's relay.
 - **Tailscale subnet router on a second always-on device** (third option): e.g. a Raspberry Pi advertising `192.168.8.0/24` to the tailnet — gives you LAN access via Tailscale even when the Mac Mini is offline.
 
-**Power outage flow (target end state):**
+**Power outage flow (validated end state):**
 1. Power returns → Mac Mini boots → halts at FileVault unlock
-2. From phone or laptop: connect to home LAN (directly or via VPN) → Termius/SSH to `192.168.8.230` → enter puddles' password → FileVault unlocks, boot continues to loginwindow
-3. Wait ~30s for Tailscale daemon to come back online (system LaunchDaemon, no login required)
-4. Open VNC client → `vnc://192.168.8.230` → enter VNC password → click puddles at loginwindow → enter macOS password → GUI session starts → LaunchAgents fire (BlueBubbles, etc.)
-5. Disconnect both. GUI session persists until next reboot
-6. Disk was encrypted at rest the entire time
+2. **From phone (Termius)**: tap saved host → Termius auto-sends puddles' password to FV pre-boot stub → disk unlocks → Termius auto-reconnects to real sshd ~45s later → tap saved snippet `unlock-self.sh` → tap "Send Password" when the script prompts → script drives localhost VNC (Apple ARD auth + keystroke injection) to log puddles into the GUI session → snippet's "close session after running" closes Termius
+3. **From MacBook (alternative)**: run `scripts/mac-mini/unlock.sh` → enter puddles' password once → script does both steps end-to-end
+4. GUI session persists until next reboot. Disk was encrypted at rest the entire time.
 
 ### 6.2.2 — Operational tradeoffs and mitigations
 
@@ -332,17 +330,23 @@ The two-step unlock is friction. Mitigations:
 
 **3. MacBook one-command unlock script — VALIDATED**
 - Located at `scripts/mac-mini/unlock.sh` in this repo
-- Single password (puddles account) prompts; password never echoed or written to disk
-- Step 1: `expect`-driven SSH to FV pre-boot stub for disk unlock
-- Step 2: VNC connect using **Apple ARD authentication** (Diffie-Hellman scheme 30) via `vncdotool`, then RFB keystroke injection (password + enter) into loginwindow
-- ARD auth means we do NOT need "VNC viewers may control screen with password" enabled — disable that setting; it's not used
-- Validated end-to-end on 2026-04-18: full reboot → script → `console: puddles` + GUI session active
+- Single password prompt (puddles account); password never echoed or written to disk
+- Step 1: `expect`-driven SSH to FV pre-boot stub for disk unlock (with diagnostic logging that doesn't expose the password; aborts cleanly on bad password / timeout / permission denied)
+- Step 2: VNC connect to the Mini using **Apple ARD authentication** (Diffie-Hellman scheme 30) via `vncdotool`, then RFB keystroke injection (password + enter) into loginwindow after an 8-second pre-type sleep so the password field is focused
+- ARD auth means we do NOT need "VNC viewers may control screen with password" enabled — disable that setting on the Mini; it's not used
 - Requires `/usr/bin/python3 -m pip install --user vncdotool` on the runner machine
 - Why the AppleScript-driving-Screen-Sharing.app approach was abandoned: focus race conditions caused the typed password to leak into the foreground app (Terminal). Raw RFB via vncdotool has no app focus involved — keystrokes go straight to the loginwindow over the VNC channel.
 
-**4. iPhone fallback (when MacBook isn't available)**
-- Easiest manual: Termius for FV unlock + a VNC client (Jump Desktop / RealVNC) for GUI login at loginwindow. iOS clipboard does NOT cross into the VNC session, so password must be typed on touchscreen unless the VNC app supports saved-snippet keystroke injection (Jump Desktop does).
-- **Future automated path:** port the validated `scripts/mac-mini/unlock.sh` to a-Shell on iPhone (a-Shell ships Python + pip; vncdotool's Twisted dependency may need testing). Same architecture, same single-password UX, runs from phone. Not yet implemented.
+**4. iPhone one-tap (Termius) — VALIDATED**
+- Same architecture as MacBook script, but the VNC step runs **on the Mini itself** instead of on the phone — eliminates the need for a-Shell, Jump Desktop, or any Python on iOS.
+- One-time install on the Mini:
+  - As puddles: `git clone` the repo, `python3 -m pip install --user vncdotool`
+  - As cole (sudo required): `sudo install -m 0755 .../scripts/mac-mini/unlock-self.sh /usr/local/bin/unlock-self.sh`
+- Termius setup on phone:
+  - Save host `puddles@coles-mac-mini-1` with password stored in Termius keychain (Face-ID gated)
+  - Create Snippet "Unlock Mini" with body `unlock-self.sh` and "Close session after running" enabled
+- Per-reboot UX: open Termius → tap host → tap snippet → tap "Send Password" when the script prompts → done. Termius transparently handles the FV pre-boot SSH stub and reconnect to real sshd, so it looks like one continuous SSH session to the user.
+- Why this works: once FV is unlocked, the Mini's sshd runs as root and accepts normal logins regardless of GUI state. The unlock-self script connects to `localhost::5900` via Apple ARD auth and injects keystrokes into its own loginwindow. macOS doesn't care that the VNC keystroke source is the same machine.
 
 **5. Why not just disable FileVault?**
 - APFS hardware encryption (Secure Enclave key) is always on, so disk extraction from a powered-off Mac is already protected
@@ -454,6 +458,11 @@ These are deferred until Puddles is running — he manages his own host.
 16. **Lock screen vs. headless server** — counterintuitively, you DO want screen lock enabled even on a headless box. Background launchd jobs run regardless of lock state, and the lock protects the physical machine if anyone walks up
 17. **Tahoe removed the GUI "Restart automatically if the computer freezes" toggle** — and `sudo systemsetup -setrestartfreeze on` returns error -99 unless Terminal has Full Disk Access. Apple Silicon auto-restarts on kernel panic by default; this flag only matters for soft hangs and is not worth the FDA dance for most setups
 18. **`bputil -E` does not exist** — true MDM-style "Recovery Lock" is not exposed to non-MDM users. FileVault provides equivalent Recovery / wipe protection automatically (owner credential required)
+19. **macOS Screen Sharing offers Apple ARD auth (Diffie-Hellman scheme 30) FIRST in the auth list** — a generic VNC client like vncdotool will pick it and require a username (not just a VNC password). Provide both `username=` and `password=` to vncdotool's `api.connect()` for ARD. As a side benefit, ARD obviates needing the "VNC viewers may control screen with password" setting
+20. **Self-VNC works** — once FV is unlocked and sshd is up, the Mini can SSH in to itself (well, anything can SSH in) and connect to its OWN `localhost::5900` to drive its own loginwindow. macOS doesn't care that the VNC source is the same machine. This is what `unlock-self.sh` does, and it lets the iPhone do everything from Termius alone (no Jump Desktop, no Python, no a-Shell needed on the phone)
+21. **Loginwindow needs ~5–8 seconds after VNC connect before the password field is focused** — typing too quickly drops keystrokes silently. Sleep at least 8s post-connect before typing
+22. **`os._exit(0)` skips Python's stdout flush** — print messages can be swallowed by piped consumers. Use `print(..., flush=True)` if you need to confirm progress before _exit (which we do to work around vncdotool's twisted reactor not shutting down cleanly)
+23. **expect with `>/dev/null 2>&1` hides everything** — including auth failures. Use `log_user 0` + `puts` for safe milestone logging that doesn't leak the password. Add explicit `denied|incorrect|failed|Permission denied|timeout` patterns to fail fast on bad input instead of marching on against a still-locked disk
 
 ---
 
