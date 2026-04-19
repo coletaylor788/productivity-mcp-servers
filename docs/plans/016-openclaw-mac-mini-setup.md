@@ -3,7 +3,18 @@
 ## Overview
 Set up OpenClaw on a Mac Mini (M4) with native Apple integrations (iMessage, Calendar, Reminders, Contacts), proper sandbox + tool gate architecture, and hardened network security.
 
-## Current State (Updated April 18, 2026)
+## Current State (Updated April 19, 2026)
+
+**Phase 1 complete.** Mac Mini is fully provisioned as a headless server with:
+- Two-account separation (cole admin / puddles agent)
+- Secure Enclave SSH keys (Touch ID) for both accounts, on both LAN and Tailscale paths
+- VLAN-isolated networking, Tailscale always-on (system LaunchDaemon)
+- FileVault enabled, validated two-step remote unlock (MacBook script + iPhone Termius one-tap)
+- Weekly automated `brew upgrade` (system LaunchDaemon as cole)
+- iCloud Drive (Desktop & Documents Folders) signed in as puddles for data backup
+
+Setup procedure captured end-to-end in `docs/openclaw-setup/01-mac-mini-server-ready.md`. Below is the live state reference.
+
 
 ### Accounts
 - **cole** — admin account, local only (no Apple ID), used for system management and sudo operations
