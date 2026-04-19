@@ -366,8 +366,28 @@ The two-step unlock is friction. Mitigations:
 ### 6.5 — Security audit agent
 - Cron-based isolated agent reviewing daily activity
 
-### 6.6 — Backup
-- iCloud sync via puddles' Apple ID
+### 6.6 — Backup (data only; system is reinstallable)
+
+**Scope:** we accept full Mac wipes. We protect *data we can't reproduce* — Apple PIM, message history, agent state/logs/configs. We do NOT protect installed apps, brew packages, system settings (all rebuildable from the plan + scripts).
+
+**Install vs. data convention (use this for every component we install):**
+- **Install / code** lives in `~/git/<project>/` — cloned from GitHub, regeneratable
+- **Runtime data / workspace** lives in `~/Documents/<project>/` — backed up by iCloud Drive
+- Most tools support `--data-dir`, `XDG_DATA_HOME`, or an env var to redirect their workspace. When we install each component (OpenClaw, BlueBubbles, etc.) we'll point its data dir at `~/Documents/<project>/`. Fallback if no such knob: symlink `~/.<project>` → `~/Documents/<project>`.
+
+**Backup mechanism — iCloud, all under puddles' Apple ID:**
+
+| Data | Mechanism | Action |
+|---|---|---|
+| Apple Notes / Calendar / Reminders / Contacts | iCloud (built-in app sync) | None — automatic once signed in |
+| iMessage history (BlueBubbles' source data) | iCloud Messages | Toggle Messages in iCloud on |
+| App data we generate (OpenClaw state, BlueBubbles config exports, etc.) | iCloud Drive — Desktop & Documents Folders | Toggle Desktop & Documents Folders on |
+
+**One-time setup (GUI on the Mini, via VNC, as puddles):**
+1. System Settings → top → Sign in to Apple ID → puddles' Apple ID + 2FA
+2. System Settings → Apple Account → iCloud → iCloud Drive → On → Options → Desktop & Documents Folders → On
+3. Same panel → Messages in iCloud → On
+4. Verify: `ls -la ~/Documents` shows the iCloud-mobiledocuments path
 
 ---
 
@@ -443,7 +463,7 @@ These are deferred until Puddles is running — he manages his own host.
 2. **Tailscale: use Homebrew CLI, NOT App Store** — the App Store version is sandboxed and cannot host SSH
 3. **Tailscale: use `sudo brew services start` for LaunchDaemon** — `brew services start` (without sudo) creates a LaunchAgent that only runs when the user is logged in. The sudo version creates a system LaunchDaemon that starts at boot
 4. **Tailscale: disable key expiry** for always-on servers — default 180-day expiry will silently disconnect the machine
-5. **Tailscale: auto-update not supported on Homebrew** — set up a weekly `brew upgrade` cron
+5. **Tailscale: auto-update not supported on Homebrew** — set up a weekly `brew upgrade` job. Implemented as a system LaunchDaemon at `/Library/LaunchDaemons/com.cole.brew-autoupdate.plist` running as the cole user (cole owns `/opt/homebrew`). Sundays at 03:00 local. See `scripts/mac-mini/`.
 6. **Killing the manual tailscaled before starting brew service** — if you test with a manual `tailscaled &`, kill it before switching to the brew service or they'll conflict
 7. **Re-authentication needed after daemon restart** — switching from manual to brew service daemon loses the auth state. Run `sudo tailscale up --ssh` again
 8. **Secure Enclave SSH keys use ECDSA P-256, not Ed25519** — macOS Secure Enclave doesn't support Ed25519. The `ed25519-sk` approach (FIDO2) is NOT supported by Apple's built-in OpenSSH
@@ -463,6 +483,8 @@ These are deferred until Puddles is running — he manages his own host.
 21. **Loginwindow needs ~5–8 seconds after VNC connect before the password field is focused** — typing too quickly drops keystrokes silently. Sleep at least 8s post-connect before typing
 22. **`os._exit(0)` skips Python's stdout flush** — print messages can be swallowed by piped consumers. Use `print(..., flush=True)` if you need to confirm progress before _exit (which we do to work around vncdotool's twisted reactor not shutting down cleanly)
 23. **expect with `>/dev/null 2>&1` hides everything** — including auth failures. Use `log_user 0` + `puts` for safe milestone logging that doesn't leak the password. Add explicit `denied|incorrect|failed|Permission denied|timeout` patterns to fail fast on bad input instead of marching on against a still-locked disk
+24. **Homebrew is owned by whoever installed it** — `/opt/homebrew` is writable only by that user (cole, since cole is admin). Anything that runs `brew upgrade` MUST run as that user or it'll hit `Permission denied`. For automated jobs, use a system LaunchDaemon with `<key>UserName</key><string>cole</string>`, not a per-user LaunchAgent under puddles
+25. **Install vs. data convention** — install/code in `~/git/<project>/`, runtime data in `~/Documents/<project>/`. iCloud Drive (Desktop & Documents Folders) backs up `~/Documents/`, so anything we put there is safe across full Mac wipes. Apply this when configuring every component (point its `--data-dir`/env var at `~/Documents/<project>/`, or symlink `~/.<project>` → `~/Documents/<project>`)
 
 ---
 
