@@ -1,19 +1,21 @@
 # Setting up your Mac Mini
 
-This guide takes you from a brand-new (or freshly reinstalled) Mac Mini to a hardened, headless, remotely-manageable server suitable for running a personal AI agent — or really any always-on home service.
+This is the first guide in my journey building Puddles, my personal AI agent, on a Mac Mini. By the end of it you'll have a hardened, headless server you can manage from your phone or laptop — the foundation everything else gets built on top of.
 
-When you're done, you'll have:
+The work here isn't strictly OpenClaw-specific. If you stop after this guide and never install an agent, you still end up with a securely run always-on home server you can use for anything. Worth doing on its own.
 
-- A Mac Mini you can run **without a monitor, keyboard, or mouse**
-- **Two accounts** with clean separation: an admin you rarely log into, and a "service" account that runs everything
-- **Encrypted disk** (FileVault) that you can unlock remotely after a power outage from your phone or laptop in about three taps
-- **SSH access** gated by Touch ID on your other Apple devices, with no exportable private keys anywhere
-- **Tailscale** for zero-config secure access from anywhere
+A few things you'll come away with:
+
+- A Mac Mini that runs **without a monitor, keyboard, or mouse**
+- **Two accounts** with clean separation: an admin you almost never log into, and a "service" account that runs everything
+- An **encrypted disk** (FileVault) you can unlock remotely after a power outage from your phone or laptop in about three taps
+- **SSH gated by Touch ID** on your other Apple devices, with no exportable private keys anywhere
+- **Tailscale** for zero-config secure access from anywhere in the world
 - Network isolation on its own VLAN
 - **Automated weekly software updates** for installed packages
-- **iCloud-backed runtime data** so a Mac wipe never costs you anything you care about
+- **iCloud-backed runtime data** so a full Mac wipe never costs you anything you care about
 
-If you stop after this guide and never install an AI agent on top, you still end up with a perfectly serviceable home server. Everything that follows in the OpenClaw series builds on this foundation.
+Security is the throughline. A lot of the choices below go beyond the out-of-the-box Apple defaults — sometimes substantially — because the goal is defense in depth for a machine that'll eventually run autonomous agentic workflows on your behalf.
 
 > **Time:** about half a day, mostly waiting on FileVault to encrypt and software to install.
 > **Skill:** comfortable with the command line and willing to read a UniFi controller. No programming required.
@@ -48,7 +50,6 @@ If you stop after this guide and never install an AI agent on top, you still end
 
 - **Mac Mini M4** (any Apple Silicon Mac will work; this guide is written for the M4 base model)
 - Wired ethernet to your home router or switch
-- An **HDMI dummy plug** (recommended — see §6) or a real monitor for first-time setup
 
 ### Logical layout
 
@@ -62,7 +63,7 @@ If you stop after this guide and never install an AI agent on top, you still end
                     │   - owns Homebrew           │
                     │                             │
     Daily use as    │  puddles (standard user)    │
-    the agent ────►│   - has its own Apple ID    │
+    the agent ────► │   - has its own Apple ID    │
                     │   - runs all services       │
                     │   - cannot sudo             │
                     │                             │
@@ -103,19 +104,19 @@ This guide configures Tailscale + LAN. The "VPN into your UDM" piece is deferred
 
 ## 2. Security model
 
-This is a **personal home server** with **occasional remote access**, run by one technically-comfortable user. The threat model and choices reflect that. If you're protecting something more sensitive, harden further.
+This is a personal home server with occasional remote access, run by one technically-comfortable user. Every choice below reflects that threat model. If you're protecting something more sensitive, harden further.
 
-### What we defend against
+### What I'm defending against
 
 - **Casual physical theft** — encrypted disk, owner-credential-required recovery
-- **Lateral movement from other devices on your home network** — VLAN isolation, no inbound ports beyond what's needed, default-deny
-- **Remote attacker on the internet** — no inbound ports forwarded; everything inbound goes through Tailscale's authenticated tunnel
-- **Compromise of the agent itself (e.g. via prompt injection)** — admin/agent split, no Apple ID on admin, network egress limited by VLAN ACLs (later phases add per-tool exec allowlists)
+- **Lateral movement from other devices on the home network** — VLAN isolation, no inbound ports beyond what's needed, default-deny
+- **A remote attacker on the internet** — no inbound ports forwarded; everything inbound goes through Tailscale's authenticated tunnel
+- **The agent itself getting compromised** (e.g. via prompt injection) — admin/agent split, no Apple ID on the admin account, network egress limited by VLAN ACLs (later phases add per-tool exec allowlists)
 
-### What we explicitly accept
+### What I'm explicitly not trying to protect
 
-- **Loss of the entire OS install.** We back up *data we'd hate to lose*, not the system itself. A wipe + this guide rebuilds it.
-- **Two-step unlock friction after power loss.** We've chosen FileVault on, accepting that a reboot needs an unlock dance instead of a clean auto-login.
+- **The OS install.** I back up *data I'd hate to lose*, not the system itself. A wipe + this guide rebuilds it.
+- **A frictionless reboot.** FileVault is on, which means a power outage requires a quick unlock dance instead of a clean auto-login. Worth the tradeoff.
 
 ### Key design choices and their reasons
 
@@ -129,7 +130,7 @@ This is a **personal home server** with **occasional remote access**, run by one
 | Tailscale (Homebrew CLI, not App Store)           | App Store version is sandboxed, can't host SSH; CLI version runs as a system daemon                  |
 | Tailscale ACLs: agent CANNOT reach personal devices | Limits blast radius if the agent is compromised                                                    |
 | Lock screen on, even though headless              | Background services run regardless of lock state; lock just protects the physical box if anyone walks up |
-| iCloud Drive on puddles' Apple ID                 | Free, automatic backup of `~/Documents` so we can wipe and recover                                   |
+| iCloud Drive on puddles' Apple ID                 | Free, automatic backup of `~/Documents` so a wipe is recoverable                                     |
 
 ---
 
@@ -176,7 +177,7 @@ This is a **personal home server** with **occasional remote access**, run by one
 
 1. Create a new network: **Puddles-Pond**, `192.168.8.0/24`, isolated VLAN.
 2. Add a **firewall rule**: traffic from Puddles-Pond → all other VLANs = **Drop**. (Default-deny outbound from the agent network.)
-3. Add a **firewall rule**: traffic from Default VLAN → Puddles-Pond, allow ports `22` and `5900` (SSH and VNC). One rule per port — UniFi's port-list parsing has been quirky in our testing; safest to list each individually or use a port group.
+3. Add a **firewall rule**: traffic from Default VLAN → Puddles-Pond, allow ports `22` and `5900` (SSH and VNC). One rule per port — UniFi's port-list parsing has been quirky in my testing; safest to list each individually or use a port group.
 4. Plug the Mac Mini into a switch port assigned to the Puddles-Pond network.
 5. Wait for the Mini to get an IP, then create a **DHCP reservation** for it at `192.168.8.230`.
 
@@ -229,7 +230,7 @@ Pick one. The dummy plug is set-and-forget.
 
 ## 7. SSH with Secure Enclave keys (Touch ID)
 
-We want SSH keys that **physically cannot be extracted from your devices** — not by you, not by an attacker who pwns your laptop, not by anyone. macOS has had Secure Enclave-backed SSH support since Monterey but it's not signposted well.
+I want SSH keys that **physically cannot be extracted from any device** — not by me, not by an attacker who pwns my laptop, not by anyone. macOS has had Secure Enclave-backed SSH support since Monterey but it's not signposted well.
 
 > **Important:** macOS Secure Enclave does NOT support `ed25519`. It uses **ECDSA P-256**. Don't waste time on `ssh-keygen -t ed25519-sk` (FIDO2) — Apple's bundled OpenSSH doesn't support it.
 
@@ -335,7 +336,7 @@ echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> ~/.zshrc
 export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
 ```
 
-> **Important:** Homebrew is **owned by whoever installed it.** `/opt/homebrew` ends up writable by cole and ONLY cole. Anything that runs `brew upgrade` later (including the autoupdate job in §13) MUST run as cole. We'll handle that with a system LaunchDaemon configured to run as the cole user.
+> **Important:** Homebrew is **owned by whoever installed it.** `/opt/homebrew` ends up writable by cole and ONLY cole. Anything that runs `brew upgrade` later (including the autoupdate job in §13) MUST run as cole. The system LaunchDaemon in §13 handles that by running as the cole user.
 
 ---
 
@@ -367,30 +368,30 @@ After step 1, you have:
 - ✅ macOS booted
 - ✅ **System LaunchDaemons running** (Tailscale, sshd, the brew autoupdate timer)
 - ❌ **No user logged in** — the box is parked at the loginwindow
-- ❌ **Per-user LaunchAgents NOT running** (Messages.app, anything needing the Apple ID Keychain, the agent itself once we install it)
+- ❌ **Per-user LaunchAgents NOT running** (Messages.app, anything needing the Apple ID Keychain, the agent itself once it's installed)
 
 This is a real surprise the first time. Empirically: post-step-1, `who` is empty, `/dev/console` is owned by root, and `launchctl print gui/<uid>` returns "Domain does not support specified action". The Tailscale daemon is up because it's a *system* LaunchDaemon. But anything that needs puddles' GUI session is dead in the water.
 
 **Step 2 — GUI login.** A VNC client connects to the loginwindow and types puddles' password into the password field. NOW puddles' user session exists, his LaunchAgents fire, and the system is fully operational.
 
-### Why we can't just enable auto-login
+### Why auto-login isn't an option
 
 On Apple Silicon, **GUI auto-login is impossible while FileVault is on**. Both the System Settings GUI and `sysadminctl -autologin set` refuse with: *"Automatic login is disabled because FileVault is enabled"*. This isn't a bug; it's by design.
 
-### Why we don't disable FileVault
+### Why I keep FileVault on anyway
 
 Apple Silicon's APFS hardware encryption is always on, which already protects against disk extraction. So why pay the friction cost of FileVault?
 
 - Defense in depth against a sophisticated attacker who has physical possession of the powered-off Mac
 - FileVault is also what makes the Mini require an owner credential to enter Recovery / wipe / reinstall. Without FileVault, anyone with physical access can reinstall macOS over the top.
 
-We've chosen to keep FV on and automate around the friction. The next two sections do that.
+I keep FV on and automate around the friction. The next two sections do that.
 
 ### Pre-login SSH gotchas
 
 - It only accepts **password** auth. Your beautiful Secure Enclave SSH keys do NOT work for the unlock step — only for normal SSH after boot. Verified empirically.
 - It only works over **wired ethernet**. WiFi passwords live in a keychain that isn't unlocked yet.
-- Both `cole` and `puddles` passwords work for the SSH disk unlock step. For the GUI login step in §11/§12, we always use puddles so puddles' LaunchAgents fire.
+- Both `cole` and `puddles` passwords work for the SSH disk unlock step. For the GUI login step in §11/§12, always use puddles so puddles' LaunchAgents fire.
 
 ---
 
@@ -427,9 +428,9 @@ The script:
 
 The password is read once with `read -rs` (no echo), passed to subprocesses via env var (`$PW`), and never written to disk or shell history.
 
-### Why we don't drive Screen Sharing.app via AppleScript
+### Why not drive Screen Sharing.app via AppleScript?
 
-We tried. Focus race conditions caused the typed password to leak from the loginwindow into the foreground Terminal app. Raw RFB via vncdotool sends keystrokes directly over the VNC channel — there's no app focus involved, so the leak is structurally impossible.
+I tried. Focus race conditions caused the typed password to leak from the loginwindow into the foreground Terminal app. Raw RFB via vncdotool sends keystrokes directly over the VNC channel — there's no app focus involved, so the leak is structurally impossible.
 
 ---
 
@@ -515,11 +516,11 @@ The job runs at 03:00 — Apple Silicon doesn't restart for `brew upgrade`, so t
 
 ## 14. iCloud backup convention
 
-We accept full Mac wipes — but we want to never lose data we can't reproduce.
+I accept that the entire OS install can be lost — but I want to never lose data that can't be reproduced from code or APIs.
 
 ### The convention
 
-Apply this to **every component** you install going forward:
+Apply this to every component you install going forward:
 
 | Path                       | Contents              | Backed up by      |
 |----------------------------|-----------------------|-------------------|
@@ -602,7 +603,7 @@ You now have a hardened, headless, remotely-recoverable Mac Mini. From here:
 - **Stop here** if you just wanted a home server. It's already useful — you can run any service that fits on macOS.
 - **Continue to guide 02** to install OpenClaw and connect your first integrations.
 
-The next guide (when written) will assume the state you have right now: two accounts, FileVault unlocked, Tailscale up, iCloud Drive backing up `~/Documents`.
+The next guide (when written) assumes the state you have right now: two accounts, FileVault on with both users enabled, Tailscale up, and iCloud Drive backing up `~/Documents`.
 
 ---
 
