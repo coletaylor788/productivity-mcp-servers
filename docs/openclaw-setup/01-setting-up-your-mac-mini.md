@@ -1,4 +1,4 @@
-# Getting the Mac Mini Server Ready
+# Setting up your Mac Mini
 
 This guide takes you from a brand-new (or freshly reinstalled) Mac Mini to a hardened, headless, remotely-manageable server suitable for running a personal AI agent — or really any always-on home service.
 

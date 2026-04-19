@@ -13,7 +13,7 @@ Set up OpenClaw on a Mac Mini (M4) with native Apple integrations (iMessage, Cal
 - Weekly automated `brew upgrade` (system LaunchDaemon as cole)
 - iCloud Drive (Desktop & Documents Folders) signed in as puddles for data backup
 
-Setup procedure captured end-to-end in `docs/openclaw-setup/01-mac-mini-server-ready.md`. Below is the live state reference.
+Setup procedure captured end-to-end in `docs/openclaw-setup/01-setting-up-your-mac-mini.md`. Below is the live state reference.
 
 
 ### Accounts
