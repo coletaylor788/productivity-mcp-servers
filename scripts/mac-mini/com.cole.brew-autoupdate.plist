@@ -5,12 +5,18 @@
     <key>Label</key>
     <string>com.cole.brew-autoupdate</string>
 
+    <!-- Run as cole, since cole owns /opt/homebrew -->
+    <key>UserName</key>
+    <string>cole</string>
+    <key>GroupName</key>
+    <string>staff</string>
+
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/brew-autoupdate.sh</string>
     </array>
 
-    <!-- Run every Sunday at 03:00 local time -->
+    <!-- Sundays at 03:00 local -->
     <key>StartCalendarInterval</key>
     <dict>
         <key>Weekday</key>
@@ -21,13 +27,12 @@
         <integer>0</integer>
     </dict>
 
-    <!-- If the Mini was off at 03:00 Sunday, run as soon as the LaunchAgent loads -->
     <key>RunAtLoad</key>
     <false/>
 
     <key>StandardOutPath</key>
-    <string>/Users/puddles/Library/Logs/brew-autoupdate.launchd.out</string>
+    <string>/Users/cole/Library/Logs/brew-autoupdate.launchd.out</string>
     <key>StandardErrorPath</key>
-    <string>/Users/puddles/Library/Logs/brew-autoupdate.launchd.err</string>
+    <string>/Users/cole/Library/Logs/brew-autoupdate.launchd.err</string>
 </dict>
 </plist>
