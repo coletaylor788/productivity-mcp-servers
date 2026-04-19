@@ -330,45 +330,19 @@ The two-step unlock is friction. Mitigations:
 - Works perfectly for: monthly updates, manual reboots, scheduled maintenance
 - Does NOT work for power outages (can't pre-stage a key for an event you didn't anticipate)
 
-**3. MacBook one-command unlock script**
-- For unplanned reboots when MacBook is handy, automate both steps via AppleScript driving the Screen Sharing app:
-  ```bash
-  unlock-macmini() {
-    local sshpw mac_pw
-    sshpw=$(security find-generic-password -a puddles -s "macmini-fv" -w)
-    mac_pw=$(security find-generic-password -a puddles -s "macmini-login" -w)
-
-    # Step 1: SSH FileVault unlock
-    expect <<EOF >/dev/null
-      spawn ssh -o StrictHostKeyChecking=no puddles@192.168.8.230
-      expect "Password:"
-      send "$sshpw\r"
-      expect eof
-EOF
-    sleep 45  # wait for boot
-
-    # Step 2: Drive Screen Sharing.app to do GUI login at loginwindow
-    osascript <<EOF
-      tell application "Screen Sharing" to open location "vnc://puddles@192.168.8.230"
-      delay 4
-      tell application "System Events"
-        keystroke "$mac_pw"
-        keystroke return
-      end tell
-      delay 3
-      tell application "Screen Sharing" to quit
-EOF
-  }
-  ```
-- Both passwords stored in macOS Keychain (one-time `security add-generic-password` setup, never goes through Copilot)
-- One terminal command = full unlock
+**3. MacBook one-command unlock script — VALIDATED**
+- Located at `scripts/mac-mini/unlock.sh` in this repo
+- Single password (puddles account) prompts; password never echoed or written to disk
+- Step 1: `expect`-driven SSH to FV pre-boot stub for disk unlock
+- Step 2: VNC connect using **Apple ARD authentication** (Diffie-Hellman scheme 30) via `vncdotool`, then RFB keystroke injection (password + enter) into loginwindow
+- ARD auth means we do NOT need "VNC viewers may control screen with password" enabled — disable that setting; it's not used
+- Validated end-to-end on 2026-04-18: full reboot → script → `console: puddles` + GUI session active
+- Requires `/usr/bin/python3 -m pip install --user vncdotool` on the runner machine
+- Why the AppleScript-driving-Screen-Sharing.app approach was abandoned: focus race conditions caused the typed password to leak into the foreground app (Terminal). Raw RFB via vncdotool has no app focus involved — keystrokes go straight to the loginwindow over the VNC channel.
 
 **4. iPhone fallback (when MacBook isn't available)**
-- Termius for FV unlock (Face-ID-gated keychain auto-fed)
-- VNC client for GUI login at loginwindow — **macOS password must be typed on touchscreen**
-- iOS clipboard does NOT cross into the loginwindow VNC session
-- Apps that send saved snippets as VNC keyboard input (Jump Desktop) can avoid the typing — RealVNC Viewer iOS may also support this depending on version
-- Realistic: this is the "rare backup" path; primary path is MacBook scripted
+- Easiest manual: Termius for FV unlock + a VNC client (Jump Desktop / RealVNC) for GUI login at loginwindow. iOS clipboard does NOT cross into the VNC session, so password must be typed on touchscreen unless the VNC app supports saved-snippet keystroke injection (Jump Desktop does).
+- **Future automated path:** port the validated `scripts/mac-mini/unlock.sh` to a-Shell on iPhone (a-Shell ships Python + pip; vncdotool's Twisted dependency may need testing). Same architecture, same single-password UX, runs from phone. Not yet implemented.
 
 **5. Why not just disable FileVault?**
 - APFS hardware encryption (Secure Enclave key) is always on, so disk extraction from a powered-off Mac is already protected
