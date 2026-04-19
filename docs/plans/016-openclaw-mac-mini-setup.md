@@ -313,44 +313,68 @@ The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so for power-
 5. Disconnect both. GUI session persists until next reboot
 6. Disk was encrypted at rest the entire time
 
-### 6.2.1 — Two-tap unlock from phone
+### 6.2.2 — Operational tradeoffs and mitigations
 
-**iPhone setup (verified working):**
-- **Termius** (free) — saves SSH password in iOS Keychain, Face ID gated
-  - Host: `puddles@192.168.8.230`, port 22
-- **VNC client** — Jump Desktop (paid, best UX), RealVNC Viewer (free), or Screens 5 (paid)
-  - Host: `vnc://192.168.8.230`, save VNC password in Keychain, Face ID gated
-  - Note: macOS user password still has to be typed at the loginwindow inside the VNC session — some clients (Jump Desktop) support a "send text" macro for this
+The two-step unlock is friction. Mitigations:
 
-**Sequence after power outage:**
-1. Open Termius → tap host → Face ID → wait for unlock confirmation → disconnect
-2. Wait 30s
-3. Open VNC client → tap host → Face ID (VNC password auto-feeds) → click puddles → type/paste macOS password → disconnect
-4. Done — services running
+**1. UPS (uninterruptible power supply) — strongly recommended**
+- A small UPS (~$80–150, e.g. APC Back-UPS 600VA / CyberPower CP685AVR) gives 10–15 min runtime
+- Most home power blips are <30s, so the UPS holds → Mac Mini never reboots → zero unlocks needed
+- Long outages: UPS triggers graceful shutdown via USB signal (`pmset -a halfdim 1` + macOS UPS settings); on power return, two-step unlock required
+- Reduces unplanned-unlock frequency from "every short blip" to "long outages only" (~1-2x/year)
+- Bonus: clean shutdown protects the SSD from corruption
 
-**MacBook (helper script):**
-- Store unlock password in Keychain (one-time, never goes through Copilot):
-  ```bash
-  security add-generic-password -a puddles -s "macmini-unlock" -w
-  ```
-- Helper script in `~/.zshrc` for the SSH-unlock step:
+**2. Planned reboots use `fdesetup authrestart` — zero unlock**
+- For macOS updates and any user-initiated reboot, stage the FV key in NVRAM so the next boot auto-unlocks AND macOS treats it as a console login by puddles → boots straight to his desktop, GUI session and all
+- This is what `softwareupdate --restart --user puddles --stdinpass` does internally
+- Works perfectly for: monthly updates, manual reboots, scheduled maintenance
+- Does NOT work for power outages (can't pre-stage a key for an event you didn't anticipate)
+
+**3. MacBook one-command unlock script**
+- For unplanned reboots when MacBook is handy, automate both steps via AppleScript driving the Screen Sharing app:
   ```bash
   unlock-macmini() {
-    local pw
-    pw=$(security find-generic-password -a puddles -s "macmini-unlock" -w) || return 1
-    expect <<EOF
-      set timeout 30
-      spawn ssh puddles@192.168.8.230
-      expect {
-        "Password:" { send "\$pw\r"; exp_continue }
-        "*\$ " { send "exit\r" }
-        timeout { exit 1 }
-      }
+    local sshpw mac_pw
+    sshpw=$(security find-generic-password -a puddles -s "macmini-fv" -w)
+    mac_pw=$(security find-generic-password -a puddles -s "macmini-login" -w)
+
+    # Step 1: SSH FileVault unlock
+    expect <<EOF >/dev/null
+      spawn ssh -o StrictHostKeyChecking=no puddles@192.168.8.230
+      expect "Password:"
+      send "$sshpw\r"
       expect eof
+EOF
+    sleep 45  # wait for boot
+
+    # Step 2: Drive Screen Sharing.app to do GUI login at loginwindow
+    osascript <<EOF
+      tell application "Screen Sharing" to open location "vnc://puddles@192.168.8.230"
+      delay 4
+      tell application "System Events"
+        keystroke "$mac_pw"
+        keystroke return
+      end tell
+      delay 3
+      tell application "Screen Sharing" to quit
 EOF
   }
   ```
-- Then for the GUI step: open Screen Sharing app → `vnc://192.168.8.230` → log puddles in
+- Both passwords stored in macOS Keychain (one-time `security add-generic-password` setup, never goes through Copilot)
+- One terminal command = full unlock
+
+**4. iPhone fallback (when MacBook isn't available)**
+- Termius for FV unlock (Face-ID-gated keychain auto-fed)
+- VNC client for GUI login at loginwindow — **macOS password must be typed on touchscreen**
+- iOS clipboard does NOT cross into the loginwindow VNC session
+- Apps that send saved snippets as VNC keyboard input (Jump Desktop) can avoid the typing — RealVNC Viewer iOS may also support this depending on version
+- Realistic: this is the "rare backup" path; primary path is MacBook scripted
+
+**5. Why not just disable FileVault?**
+- APFS hardware encryption (Secure Enclave key) is always on, so disk extraction from a powered-off Mac is already protected
+- The only marginal protection FileVault adds is against a sophisticated attacker who has stolen the powered-off Mac AND has the chops to bypass APFS HW key extraction
+- For a stationary house server: low threat. Disabling FV would eliminate ALL unlock friction (auto-login becomes possible)
+- We've chosen to keep FV ON for defense-in-depth, accepting the operational cost. Revisit if friction proves untenable
 
 ### 6.3 — Exec approvals config
 - Per-agent command allowlists in `exec-approvals.json`
