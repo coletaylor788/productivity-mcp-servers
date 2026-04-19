@@ -3,14 +3,15 @@
 ## Overview
 Set up OpenClaw on a Mac Mini (M4) with native Apple integrations (iMessage, Calendar, Reminders, Contacts), proper sandbox + tool gate architecture, and hardened network security.
 
-## Current State (Updated April 17, 2026)
+## Current State (Updated April 18, 2026)
 
 ### Accounts
 - **cole** — admin account, local only (no Apple ID), used for system management and sudo operations
   - Apple ID was initially signed in, then removed to minimize attack surface
   - No personal data stored on this account
-- **puddles** — standard (non-admin) account with its own Apple ID, runs OpenClaw and all agent services
+- **puddles** — standard (non-admin) account with his own Apple ID, runs OpenClaw and all agent services
   - Separate Apple ID for iMessage, Calendar, Reminders, Contacts
+  - **Primary remote-unlock user**: his password unlocks FileVault and logs him in in one step (see 6.2)
 
 ### SSH Access
 - Secure Enclave SSH keys (ECDSA P-256, Touch ID per connection) configured for both accounts
@@ -19,14 +20,16 @@ Set up OpenClaw on a Mac Mini (M4) with native Apple integrations (iMessage, Cal
   - `SSH_SK_PROVIDER=/usr/lib/ssh-keychain.dylib` set in `~/.zshrc`
   - Private key is hardware-bound (never leaves Secure Enclave, cannot be extracted)
   - Same key authenticates to both cole and puddles accounts
+- Termius on iPhone (free tier) holds the unlock password in iOS Keychain, Face ID gated — used for pre-login FileVault unlock over LAN
 
 ### Networking
 - VLAN "Puddles-Pond" (192.168.8.0/24) on UniFi Dream Machine
 - DHCP reservation: 192.168.8.230 (ethernet)
 - Hostname: Coles-Mac-mini.local
-- **Local firewall ports 22/5900 are CLOSED** — all management via Tailscale only
+- **WiFi disabled entirely** — ethernet only (required for pre-login SSH unlock; reduces attack surface)
+- **Local firewall**: SSH (22) on LAN reachable via inter-VLAN allow rule (working). Screen Sharing (5900) on LAN currently blocked — UniFi rule format quirk being investigated. Tailscale path always works for both.
 - Puddles-Pond → all other VLANs: blocked (Drop)
-- WiFi set to auto-join Puddles-Pond as ethernet fallback
+- Default → Puddles-Pond: explicit allow rule for SSH/VNC ports (so MacBook on default VLAN can unlock the box on home LAN)
 
 ### Tailscale
 - Installed via Homebrew CLI (v1.96.4) — NOT App Store (GUI is sandboxed, can't host SSH)
@@ -46,7 +49,7 @@ Set up OpenClaw on a Mac Mini (M4) with native Apple integrations (iMessage, Cal
 - Tailscale 1.96.4 (via Homebrew)
 
 ## Approach
-Execute setup in 6 phases, each building on the last. All commands run as the `puddles` user via SSH unless noted otherwise.
+Execute setup in phases, each building on the last. All commands run as the `puddles` user via SSH unless noted otherwise.
 
 ---
 
@@ -171,35 +174,46 @@ brew install --cask docker
 ### 6.1 — Headless reliability checklist ("shit just works")
 
 **Energy & Startup (Settings → Energy):**
-- Prevent computer/display sleep when display off
+- Prevent automatic sleeping when display is off
 - Start up automatically after power failure
-- Restart automatically if the computer freezes
 - Wake for network access (enables Wake-on-LAN over ethernet)
-- Verify kernel-panic auto-restart: `sudo systemsetup -getrestartfreeze` → should be On
+- Display sleep: 10 min ok (irrelevant headless)
+- Kernel-panic auto-restart (no GUI toggle in Tahoe; set via terminal):
+  ```bash
+  sudo pmset -a panicrestart 15
+  sudo systemsetup -setrestartfreeze on  # belt-and-suspenders
+  ```
 
-**Auto-login (Settings → Users & Groups):**
-- Auto-login → **puddles**
-- Auto-login fires *after* FileVault unlocks, so compatible with FileVault ON (see 6.2)
-- puddles must be FileVault-enabled (see 6.2)
+**Lock Screen (Settings → Lock Screen):**
+- "Require password after screen saver begins or display is turned off" → **Immediately** (or 5s)
+- "Start Screen Saver when inactive" → 5 min
+- "Turn display off when inactive" → 5–10 min
+- "Login window shows" → **Name and password** (not user list — minor hardening)
+- **Why lock?** Background services run regardless of lock state. Locking just protects the physical box if someone walks up.
 
 **Network (Settings → Network):**
-- WiFi → **Off entirely** (ethernet only — prevents fallback if cable yanked, reduces attack surface, required for pre-login SSH unlock)
-- Confirm DHCP reservation in UniFi (set in 6.2 Teleport setup)
-- Hostname: verify `coles-mac-mini-1` or similar via `scutil --get HostName`
+- WiFi → **Off entirely**, uncheck "Ask to join networks" (ethernet only — prevents fallback if cable yanked, reduces attack surface, required for pre-login SSH unlock)
+- Confirm DHCP reservation in UniFi (`192.168.8.230`)
+- Hostname: verify `Coles-Mac-mini` via `scutil --get HostName` (set with `sudo scutil --set HostName ...` if needed)
 
-**puddles user session settings:**
-- Notifications → **Do Not Disturb always on** (prevents popups blocking screen sharing UI)
-- Lock Screen → "Require password after sleep" → **Never**, "Start Screen Saver when inactive" → **Never** (don't lock the auto-logged-in session)
-- Disable **Apple Intelligence / Siri** (resource use + privacy)
-- Disable **Spotlight web search/suggestions** (privacy)
-- Disable **Analytics & Improvements / Share with App Developers** (privacy)
-- Disable **AirDrop / Handoff** (don't need them, reduces surface)
+**Sharing (Settings → General → Sharing):**
+- ✅ Screen Sharing
+- ✅ Remote Login (SSH) — "Only these users" → cole, puddles
+- ❌ Everything else (File, Media, Printer, Remote Management, Internet)
 
-**Login Items for puddles:**
-- Tailscale (verify it auto-launches; Tailscale daemon is system-level but tray app is per-user)
+**puddles user session settings (apply by Screen Sharing in as puddles):**
+- Notifications → **Do Not Disturb always on** (no popups eating Screen Sharing focus)
+- Disable **Apple Intelligence / Siri**
+- Disable **Spotlight web search/suggestions**
+- Disable **Analytics & Improvements / Share with App Developers**
+- Disable **AirDrop / Handoff**
+
+**Login Items for puddles** (set up later as services come online):
+- Tailscale (already system LaunchDaemon — runs at boot regardless of login)
 - BlueBubbles
-- OpenClaw agent (via launchd)
+- OpenClaw agent
 - Any other agent services
+- **Pattern preference:** Prefer **system LaunchDaemons in `/Library/LaunchDaemons/`** over per-user LaunchAgents. Daemons run at boot independent of who's logged in (or whether anyone is). Only use LaunchAgents for things that genuinely need the user GUI session.
 
 **Headless display quirk:**
 - Without an HDMI display attached, Mac Mini may boot at 640×480 and Screen Sharing inherits that low resolution
@@ -236,76 +250,79 @@ Caveats:
 
 **Notification of available updates:**
 - Apple's built-in update notifications go to Notification Center on the logged-in user's screen → useless for headless
-- Deferred to Phase 7 (see 7.1) — Puddles will check periodically and notify via her own channels
+- Deferred to Phase 7 (see 7.1) — Puddles will check periodically and notify via his own channels
 
 ### 6.1.2 — Health monitoring
 - Simple heartbeat: cron on puddles hits a private endpoint (e.g. `ntfy.sh/private-topic` or your own webhook) every N minutes
 - Alert if heartbeat missed for X minutes — early warning for "Mac Mini is down"
-- Can also be folded into Puddles' own self-monitoring once she's up
+- Can also be folded into Puddles' own self-monitoring once he's up
 
-### 6.2 — FileVault ON + remote unlock
-**Why FileVault ON is now viable for a headless server:** macOS Tahoe 26 added "lightweight SSH" pre-user-login. After reboot, the box halts at FileVault unlock, but SSH responds with `"This system is locked. To unlock it, use a local account name and password"`. Entering an admin password completes the boot, then auto-login fires for puddles, then all services start.
+### 6.2 — FileVault + remote unlock (architecture)
+
+**Why FileVault is now viable for a headless server:** macOS Tahoe 26 added "lightweight SSH" pre-user-login. After reboot, the box halts at FileVault unlock, but sshd responds with `"This system is locked. To unlock it, use a local account name and password"`. Entering a FileVault-enabled user's password completes the boot.
+
+**Critical realization — FileVault unlock IS the login:**
+- On Apple Silicon with FileVault enabled, **auto-login is impossible** by design (`sysadminctl -autologin set` and the GUI both refuse: *"Automatic login is disabled because FileVault is enabled"*)
+- Whichever user's password unlocks FileVault is the user macOS logs in as
+- **Architecture choice:** unlock as **puddles** → his LaunchAgents/Login Items fire → services come up
+- cole's password ALSO unlocks (good for emergency / physical access), but logs in as cole — so use puddles' password as the standard remote-unlock path
+- Both users must be FileVault-enabled secure-token holders
+
+**Implication for service architecture:**
+- **System LaunchDaemons** (`/Library/LaunchDaemons/`) start at boot regardless of who logs in — best for always-on services (Tailscale daemon already does this)
+- **puddles' LaunchAgents** (`~/Library/LaunchAgents/`) fire when puddles logs in — best for things that need his Apple ID / Keychain (BlueBubbles, iMessage tooling)
+- This dual pattern means power outage → Termius unlock as puddles → daemons started during boot, agents start at login → fully operational
 
 **Setup:**
 - Enable FileVault: System Settings → Privacy & Security → FileVault → Turn On
-  - Recovery key: store in 1Password (NOT iCloud, since cole has no Apple ID)
-- Verify Remote Login (SSH) is enabled in Sharing settings — required for pre-login SSH unlock
-- Mac Mini must be on **Ethernet** (pre-login SSH doesn't work over WiFi — WiFi password lives in user keychain that isn't unlocked yet)
+  - Enable BOTH cole and puddles when prompted
+  - Recovery key: store in **1Password** (NOT iCloud, since cole has no Apple ID)
+- Verify Remote Login (SSH) is enabled — required for pre-login SSH unlock
+- Mac Mini must be on **Ethernet** (pre-login SSH doesn't work over WiFi — WiFi password lives in a keychain that isn't unlocked yet)
+- Pre-login SSH is **password-only** — does NOT accept SSH pubkey auth (verified empirically). Termius biometric SSH keys won't work for the unlock state, only for day-to-day SSH after boot.
 
-**Network architecture for remote unlock:**
+**Network paths to the box:**
 
-The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so we need a second path to reach the LAN IP. Use **UniFi Teleport** (built into the Dream Machine, WireGuard-based, no extra hardware, free).
+The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so for power-outage-style recovery we need a second path to reach the LAN IP.
 
-**UniFi Teleport setup (one-time, on UDM):**
-1. Update UniFi Network app + UDM firmware to latest
-2. Open UniFi Network → Settings → VPN → **Teleport VPN**
-3. Toggle **Enable Teleport** ON
-4. Under "Invite User" → click **Generate Link** (creates a one-time WiFiman invite URL)
-5. Note: Teleport uses Ubiquiti's hosted relay, so **no port forwarding** needed and works behind CGNAT
-6. (Recommended) Set **DHCP Reservation** for the Mac Mini so its LAN IP doesn't change — UniFi Network → Client Devices → Mac Mini → Settings → Fixed IP Address (e.g. `192.168.8.230`)
-
-**Client setup:**
-- **iPhone/iPad:** Install [WiFiman](https://apps.apple.com/app/wifiman/id1385561119) from App Store → open the invite link from Step 4 (works once) → grants persistent VPN profile → enable VPN with one tap
-- **MacBook:** Install WiFiman from Mac App Store → same invite link flow
-- **Test:** Disable home WiFi (use cellular/different network) → enable Teleport → ping `192.168.8.230` → should respond
-
-**Operational notes:**
-- Teleport is a **full tunnel by default** — all traffic routes through home. Acceptable for occasional unlock; if you use it constantly, configure split tunneling in WiFiman settings
-- Invite links expire — generate new ones if you reinstall the app or add a device
-- One Teleport user can have multiple devices on the same invite
-
-**Two paths to the box:**
 | Path | Use case | Reachable when Mac Mini Tailscale is offline? |
 |---|---|---|
 | Tailscale → `coles-mac-mini-1` | Day-to-day SSH, key-based with Touch ID | ❌ No |
-| UniFi Teleport → LAN IP | Remote unlock, recovery | ✅ Yes |
+| Home LAN (same network) → `192.168.8.230` | Remote unlock when home | ✅ Yes |
+| Remote VPN to UDM → LAN IP | Remote unlock when away | ✅ Yes (once VPN works) |
 
-**Power outage flow:**
+**VPN-into-home options (need ONE of these for remote unlock when away from home):**
+- **UniFi Teleport** (tried first): Built-in to UDM, WireGuard-based, uses Ubiquiti's hosted relay (no port forwarding, works behind CGNAT). **In our testing it never functioned** — phones connected to the WiFiman tunnel but no traffic reached the LAN, and devices never appeared in the UniFi client list. Status: deferred / probably broken on our UDM build.
+- **WireGuard VPN Server on UDM** (fallback plan): Settings → VPN → VPN Server → WireGuard. Requires a port-forward (one UDP port) and either a static WAN IP or DDNS. More setup, but reliable and doesn't depend on Ubiquiti's relay.
+- **Tailscale subnet router on a second always-on device** (third option): e.g. a Raspberry Pi advertising `192.168.8.0/24` to the tailnet — gives you LAN access via Tailscale even when the Mac Mini is offline.
+
+**Power outage flow (target end state):**
 1. Power returns → Mac Mini boots → halts at FileVault unlock
-2. From phone or laptop: connect Teleport → SSH to LAN IP → "system is locked" prompt
-3. Enter admin password → Mac completes boot → auto-login as puddles → Tailscale/BlueBubbles/OpenClaw start
+2. From phone or laptop: connect to home LAN (directly or via VPN) → SSH to `192.168.8.230` → "system is locked" prompt
+3. Enter **puddles'** password → Mac completes boot, logs in as puddles → his LaunchAgents start, daemons (Tailscale, etc.) already started during boot
 4. Disk was encrypted at rest the entire time
 
 ### 6.2.1 — One-tap unlock from phone or laptop
 
-**iPhone:**
-- Install **Termius** (free) + **WiFiman** (UniFi Teleport client)
-- Termius: New Host → LAN IP → username `cole` → password (stored in iOS Keychain, Face ID gated)
-- Flow: open WiFiman (one tap) → open Termius → tap host → Face ID → password auto-fed → unlock fires
+**iPhone (current working setup):**
+- Install **Termius** (free)
+- Termius: New Host → `192.168.8.230` → username `puddles` → password (stored in iOS Keychain, Face ID gated)
+- Flow when on home WiFi: open Termius → tap host → Face ID → password auto-fed → unlock fires
+- Flow when away: requires VPN-into-home (see above) before opening Termius
 
 **MacBook:**
 - Store unlock password in Keychain (one-time, never goes through Copilot):
   ```bash
   security add-generic-password -a cole -s "macmini-unlock" -w
   ```
-- Add to `~/.zshrc`:
+- Helper script in `~/.zshrc`:
   ```bash
   unlock-macmini() {
     local pw
     pw=$(security find-generic-password -a cole -s "macmini-unlock" -w) || return 1
     expect <<EOF
       set timeout 30
-      spawn ssh cole@192.168.8.230
+      spawn ssh puddles@192.168.8.230
       expect {
         "Password:" { send "\$pw\r"; exp_continue }
         "*\$ " { send "exit\r" }
@@ -315,7 +332,7 @@ The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so we need a 
 EOF
   }
   ```
-- Run `unlock-macmini` from anywhere on the tailnet OR via Teleport-routed LAN access
+- Note: keychain entry is `cole` / `macmini-unlock` for ergonomics, but the password it stores is **puddles'** unlock password (since puddles is who we want to log in as). Rename slot if confusing.
 
 ### 6.3 — Exec approvals config
 - Per-agent command allowlists in `exec-approvals.json`
@@ -330,13 +347,13 @@ EOF
 - Cron-based isolated agent reviewing daily activity
 
 ### 6.6 — Backup
-- iCloud sync via Puddles' Apple ID
+- iCloud sync via puddles' Apple ID
 
 ---
 
 ## Phase 7: Operational Tooling (Puddles-managed)
 
-These are deferred until Puddles is running — she manages her own host.
+These are deferred until Puddles is running — he manages his own host.
 
 ### 7.1 — macOS update notifier
 - Periodic check (`softwareupdate -l`)
@@ -348,7 +365,7 @@ These are deferred until Puddles is running — she manages her own host.
 ### 7.2 — Heartbeat / health monitoring
 - Puddles posts a daily summary: uptime, disk usage, agent status, last successful boot
 - Alert if subsystems (BlueBubbles, OpenClaw services) are down
-- External heartbeat (cron → ntfy.sh) as backup for "Puddles herself is down"
+- External heartbeat (cron → ntfy.sh) as backup for "Puddles himself is down"
 
 ---
 
@@ -413,6 +430,12 @@ These are deferred until Puddles is running — she manages her own host.
 9. **`sc_auth create-ctk-identity`** is the correct tool for Secure Enclave keys, not `ssh-keygen -t ed25519-sk`
 10. **Never pass passwords through AI assistant sessions** — they get logged to events.jsonl. Use Screen Sharing for any sudo/password operations
 11. **HDMI dummy plug recommended** — without it, Screen Sharing may show a blank screen on a headless Mac Mini
+12. **FileVault + auto-login are mutually exclusive on Apple Silicon** — both the GUI and `sysadminctl -autologin set` refuse with *"Automatic login is disabled because FileVault is enabled"*. Architecture: unlock-as-puddles via Termius doubles as the login. Plan service layout accordingly (LaunchDaemons for always-on, puddles' LaunchAgents for things needing his GUI session)
+13. **Pre-login SSH (Tahoe 26) is password-only** — does NOT accept pubkey auth. Termius biometric SSH keys help with day-to-day SSH but not the unlock state. Verified empirically with `ssh -v` — server jumps straight to password prompt
+14. **UniFi inter-VLAN port lists are quirky** — the LAN-In rule "Port" field accepts comma-separated lists (`22,5900`) and ranges (`22-5900`) in the UI but doesn't always parse them correctly. In our testing port 22 worked but 5900 didn't with a `22-5900` range. Safest pattern: one rule per port, OR a port group with each port listed individually
+15. **UniFi Teleport unreliable** — connected but no LAN traffic flowed in our testing. WireGuard VPN Server on UDM is the more reliable fallback
+16. **Lock screen vs. headless server** — counterintuitively, you DO want screen lock enabled even on a headless box. Background launchd jobs run regardless of lock state, and the lock protects the physical machine if anyone walks up
+17. **Tahoe removed the GUI "Restart automatically if the computer freezes" toggle** — set it via `sudo pmset -a panicrestart 15` and `sudo systemsetup -setrestartfreeze on`
 
 ---
 
