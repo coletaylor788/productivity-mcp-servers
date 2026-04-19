@@ -47,15 +47,26 @@ stty echo
 echo
 
 echo "→ Step 1: SSH FileVault unlock..."
-expect <<EOF >/dev/null 2>&1
+expect <<EOF
+log_user 0
 set timeout 30
 spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USER@$HOST true
 expect {
-  -re "(?i)password" { send "$PW\r"; exp_continue }
-  -re "(yes/no)"     { send "yes\r"; exp_continue }
-  eof
+  -re "(?i)password"           { send -- "$PW\r"; puts "  (password sent)"; exp_continue }
+  -re "(yes/no)"               { send "yes\r"; exp_continue }
+  -re "successfully unlocked"  { puts "  -> 'successfully unlocked' seen"; exp_continue }
+  -re "denied|incorrect|failed" { puts "  !! FV unlock REJECTED"; exit 1 }
+  -re "Permission denied"      { puts "  !! Permission denied"; exit 1 }
+  timeout                      { puts "  !! TIMEOUT"; exit 1 }
+  eof                          { puts "  -> connection closed" }
 }
 EOF
+RC=$?
+if [ $RC -ne 0 ]; then
+  echo "→ FV unlock FAILED (rc=$RC). Aborting."
+  unset PW
+  exit 1
+fi
 echo "→ FV unlock issued"
 
 echo "→ Waiting 45s for boot to reach loginwindow..."
@@ -72,15 +83,15 @@ client = api.connect(
     password=os.environ['PW'],
 )
 client.timeout = 30
-time.sleep(3)                       # let loginwindow render
+time.sleep(8)                       # let loginwindow render and focus pw field
 for ch in os.environ['PW']:
     client.keyPress(ch)
-    time.sleep(0.05)
-time.sleep(0.3)
+    time.sleep(0.08)
+time.sleep(0.5)
 client.keyPress('enter')
-time.sleep(2)
+time.sleep(3)
 client.disconnect()
-print("VNC keystrokes sent")
+print("VNC keystrokes sent", flush=True)
 import os as _os
 _os._exit(0)                        # work around twisted reactor hang
 PY
