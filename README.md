@@ -1,4 +1,4 @@
-# Productivity MCP Servers
+# Puddles
 
 A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers for productivity tools. These servers enable AI assistants like Claude to interact with your productivity apps.
 
@@ -35,7 +35,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "gmail-mcp": {
-      "command": "/path/to/productivity-mcp-servers/servers/gmail-mcp/.venv/bin/python",
+      "command": "/path/to/puddles/servers/gmail-mcp/.venv/bin/python",
       "args": ["-m", "gmail_mcp"]
     }
   }
@@ -52,7 +52,7 @@ Edit `~/.claude/claude.json`:
 {
   "mcpServers": {
     "gmail-mcp": {
-      "command": "/path/to/productivity-mcp-servers/servers/gmail-mcp/.venv/bin/python",
+      "command": "/path/to/puddles/servers/gmail-mcp/.venv/bin/python",
       "args": ["-m", "gmail_mcp"]
     }
   }
@@ -70,7 +70,7 @@ echo "$(pwd)/.venv/bin/python"
 ## Architecture
 
 ```
-productivity-mcp-servers/
+puddles/
 ├── servers/
 │   └── gmail-mcp/          # Gmail server (self-contained)
 │       ├── .venv/          # Server-specific virtual environment

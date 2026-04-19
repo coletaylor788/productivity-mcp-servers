@@ -1,6 +1,6 @@
-# Productivity MCP Servers - Copilot Instructions
+# Puddles - Copilot Instructions
 
-A monorepo of MCP servers for productivity tools (Gmail, and more to come).
+A monorepo for the Puddles personal-agent stack: MCP servers, OpenClaw plugins, Mac Mini host scripts, and setup docs.
 
 **Target clients:** Claude, Claude Code  
 **Runtime:** Local only
@@ -105,7 +105,7 @@ After all checklist items are complete:
 ## Project Structure
 
 ```
-productivity-mcp-servers/
+puddles/
 ├── .github/
 │   └── copilot-instructions.md  # These instructions
 ├── README.md                    # Monorepo overview

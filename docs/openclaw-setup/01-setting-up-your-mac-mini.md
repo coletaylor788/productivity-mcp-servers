@@ -425,8 +425,8 @@ This repo ships a script that does both unlock steps from your MacBook with a si
 ### One-time setup on your MacBook
 
 ```bash
-git clone <this-repo> ~/git/productivity-mcp-servers
-cd ~/git/productivity-mcp-servers
+git clone <this-repo> ~/git/puddles
+cd ~/git/puddles
 
 # Install vncdotool to the SYSTEM python3 (not Homebrew python — the script
 # pins /usr/bin/python3 because that's what's guaranteed to exist)
@@ -436,7 +436,7 @@ cd ~/git/productivity-mcp-servers
 ### Per-reboot UX
 
 ```bash
-~/git/productivity-mcp-servers/scripts/mac-mini/unlock.sh
+~/git/puddles/scripts/mac-mini/unlock.sh
 # → "Enter puddles' macOS password:"
 # → ~30 seconds later: "Done. puddles logged in."
 ```
@@ -461,12 +461,12 @@ Same architecture, different host: the Mini SSHes into **itself** to drive its o
 
 ```bash
 # As puddles (via SSH)
-git clone <this-repo> ~/git/productivity-mcp-servers
+git clone <this-repo> ~/git/puddles
 python3 -m pip install --user vncdotool
 
 # As cole (sudo required to install to /usr/local/bin)
 sudo mkdir -p /usr/local/bin
-sudo install -m 0755 ~/git/productivity-mcp-servers/scripts/mac-mini/unlock-self.sh /usr/local/bin/unlock-self.sh
+sudo install -m 0755 ~/git/puddles/scripts/mac-mini/unlock-self.sh /usr/local/bin/unlock-self.sh
 ```
 
 > **Note:** `/usr/local/bin/` doesn't exist on Apple Silicon macOS by default. The `mkdir -p` is required.
@@ -507,7 +507,7 @@ Tailscale's Homebrew install can't auto-update itself, and you don't want to be 
 ### Install (as cole, on the Mini)
 
 ```bash
-cd ~/git/productivity-mcp-servers
+cd ~/git/puddles
 sudo ./scripts/mac-mini/install-brew-autoupdate.sh
 ```
 
