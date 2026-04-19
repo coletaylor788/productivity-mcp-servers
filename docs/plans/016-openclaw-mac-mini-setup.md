@@ -258,17 +258,29 @@ Caveats:
 
 **Why FileVault is now viable for a headless server:** macOS Tahoe 26 added "lightweight SSH" pre-user-login. After reboot, the box halts at FileVault unlock, but sshd responds with `"This system is locked. To unlock it, use a local account name and password"`. Entering a FileVault-enabled user's password completes the boot.
 
-**Critical realization — FileVault unlock IS the login:**
-- On Apple Silicon with FileVault enabled, **auto-login is impossible** by design (`sysadminctl -autologin set` and the GUI both refuse: *"Automatic login is disabled because FileVault is enabled"*)
-- Whichever user's password unlocks FileVault is the user macOS logs in as
-- **Architecture choice:** unlock as **puddles** → his LaunchAgents/Login Items fire → services come up
-- cole's password ALSO unlocks (good for emergency / physical access), but logs in as cole — so use puddles' password as the standard remote-unlock path
-- Both users must be FileVault-enabled secure-token holders
+**Critical realization — pre-login SSH only unlocks the disk, NOT a GUI session:**
+- Termius/SSH unlock on Tahoe completes FileVault disk unlock and lets boot proceed, but the box parks at **loginwindow** waiting for someone — no user is actually logged in
+- Verified empirically: post-Termius-unlock, `who` is empty, `/dev/console` is owned by `root` (loginwindow), `launchctl print gui/<uid>` returns "Domain does not support specified action"
+- **System LaunchDaemons** in `/Library/LaunchDaemons/` (e.g. Tailscale) DO start at boot regardless — that's why Tailscale comes back online without anyone logging in
+- **per-user LaunchAgents** (anything depending on `Messages.app`, Apple ID Keychain, GUI frameworks — i.e. BlueBubbles) require a real GUI login to fire
+
+**The two-step unlock flow (required for full service start):**
+1. **Termius (SSH) → puddles@192.168.8.230 → enter password** — completes FileVault unlock, boot continues to loginwindow
+2. **VNC client (Jump Desktop / RealVNC / Screens) → vnc://192.168.8.230 → enter VNC password → click puddles → enter macOS password** — creates the GUI session, LaunchAgents fire
+3. Disconnect both. The GUI session persists until reboot — reconnects go straight to puddles' desktop, no re-login
+
+Both steps use puddles' password. The first is for FileVault disk unlock, the second is for actual user login. Once logged in, the session sticks for the entire uptime.
+
+**Architecture choice — FileVault unlock is NOT auto-login:**
+- On Apple Silicon with FileVault enabled, **GUI auto-login is impossible** by design (`sysadminctl -autologin set` and the GUI both refuse: *"Automatic login is disabled because FileVault is enabled"*)
+- The pre-login SSH unlock path is admin-credential-only at the SSH layer; it doesn't initiate a `loginwindow` login
+- cole's password ALSO works for SSH unlock (good for emergency / physical access). For the GUI step, log in as puddles so his LaunchAgents start
+- Both users must be FileVault-enabled secure-token holders (verified via `sudo fdesetup list`)
 
 **Implication for service architecture:**
-- **System LaunchDaemons** (`/Library/LaunchDaemons/`) start at boot regardless of who logs in — best for always-on services (Tailscale daemon already does this)
-- **puddles' LaunchAgents** (`~/Library/LaunchAgents/`) fire when puddles logs in — best for things that need his Apple ID / Keychain (BlueBubbles, iMessage tooling)
-- This dual pattern means power outage → Termius unlock as puddles → daemons started during boot, agents start at login → fully operational
+- **System LaunchDaemons** (`/Library/LaunchDaemons/`) start at boot regardless of who logs in — best for always-on services (Tailscale daemon already does this). After Termius unlock alone, daemons are up
+- **puddles' LaunchAgents** (`~/Library/LaunchAgents/`) fire when puddles GUI-logs-in — required for things needing his Apple ID / Keychain / Messages.app (BlueBubbles, iMessage tooling)
+- This dual pattern means power outage → Termius unlock → daemons up → VNC GUI login as puddles → agents up → fully operational
 
 **Setup:**
 - Enable FileVault: System Settings → Privacy & Security → FileVault → Turn On
@@ -295,28 +307,37 @@ The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so for power-
 
 **Power outage flow (target end state):**
 1. Power returns → Mac Mini boots → halts at FileVault unlock
-2. From phone or laptop: connect to home LAN (directly or via VPN) → SSH to `192.168.8.230` → "system is locked" prompt
-3. Enter **puddles'** password → Mac completes boot, logs in as puddles → his LaunchAgents start, daemons (Tailscale, etc.) already started during boot
-4. Disk was encrypted at rest the entire time
+2. From phone or laptop: connect to home LAN (directly or via VPN) → Termius/SSH to `192.168.8.230` → enter puddles' password → FileVault unlocks, boot continues to loginwindow
+3. Wait ~30s for Tailscale daemon to come back online (system LaunchDaemon, no login required)
+4. Open VNC client → `vnc://192.168.8.230` → enter VNC password → click puddles at loginwindow → enter macOS password → GUI session starts → LaunchAgents fire (BlueBubbles, etc.)
+5. Disconnect both. GUI session persists until next reboot
+6. Disk was encrypted at rest the entire time
 
-### 6.2.1 — One-tap unlock from phone or laptop
+### 6.2.1 — Two-tap unlock from phone
 
-**iPhone (current working setup):**
-- Install **Termius** (free)
-- Termius: New Host → `192.168.8.230` → username `puddles` → password (stored in iOS Keychain, Face ID gated)
-- Flow when on home WiFi: open Termius → tap host → Face ID → password auto-fed → unlock fires
-- Flow when away: requires VPN-into-home (see above) before opening Termius
+**iPhone setup (verified working):**
+- **Termius** (free) — saves SSH password in iOS Keychain, Face ID gated
+  - Host: `puddles@192.168.8.230`, port 22
+- **VNC client** — Jump Desktop (paid, best UX), RealVNC Viewer (free), or Screens 5 (paid)
+  - Host: `vnc://192.168.8.230`, save VNC password in Keychain, Face ID gated
+  - Note: macOS user password still has to be typed at the loginwindow inside the VNC session — some clients (Jump Desktop) support a "send text" macro for this
 
-**MacBook:**
+**Sequence after power outage:**
+1. Open Termius → tap host → Face ID → wait for unlock confirmation → disconnect
+2. Wait 30s
+3. Open VNC client → tap host → Face ID (VNC password auto-feeds) → click puddles → type/paste macOS password → disconnect
+4. Done — services running
+
+**MacBook (helper script):**
 - Store unlock password in Keychain (one-time, never goes through Copilot):
   ```bash
-  security add-generic-password -a cole -s "macmini-unlock" -w
+  security add-generic-password -a puddles -s "macmini-unlock" -w
   ```
-- Helper script in `~/.zshrc`:
+- Helper script in `~/.zshrc` for the SSH-unlock step:
   ```bash
   unlock-macmini() {
     local pw
-    pw=$(security find-generic-password -a cole -s "macmini-unlock" -w) || return 1
+    pw=$(security find-generic-password -a puddles -s "macmini-unlock" -w) || return 1
     expect <<EOF
       set timeout 30
       spawn ssh puddles@192.168.8.230
@@ -329,7 +350,7 @@ The Mac Mini's Tailscale daemon does NOT run pre-FileVault-unlock, so for power-
 EOF
   }
   ```
-- Note: keychain entry is `cole` / `macmini-unlock` for ergonomics, but the password it stores is **puddles'** unlock password (since puddles is who we want to log in as). Rename slot if confusing.
+- Then for the GUI step: open Screen Sharing app → `vnc://192.168.8.230` → log puddles in
 
 ### 6.3 — Exec approvals config
 - Per-agent command allowlists in `exec-approvals.json`
@@ -427,8 +448,9 @@ These are deferred until Puddles is running — he manages his own host.
 9. **`sc_auth create-ctk-identity`** is the correct tool for Secure Enclave keys, not `ssh-keygen -t ed25519-sk`
 10. **Never pass passwords through AI assistant sessions** — they get logged to events.jsonl. Use Screen Sharing for any sudo/password operations
 11. **HDMI dummy plug recommended** — without it, Screen Sharing may show a blank screen on a headless Mac Mini
-12. **FileVault + auto-login are mutually exclusive on Apple Silicon** — both the GUI and `sysadminctl -autologin set` refuse with *"Automatic login is disabled because FileVault is enabled"*. Architecture: unlock-as-puddles via Termius doubles as the login. Plan service layout accordingly (LaunchDaemons for always-on, puddles' LaunchAgents for things needing his GUI session)
-13. **Pre-login SSH (Tahoe 26) is password-only** — does NOT accept pubkey auth. Termius biometric SSH keys help with day-to-day SSH but not the unlock state. Verified empirically with `ssh -v` — server jumps straight to password prompt
+12. **FileVault + auto-login are mutually exclusive on Apple Silicon** — both the GUI and `sysadminctl -autologin set` refuse with *"Automatic login is disabled because FileVault is enabled"*. Architecture: two-step unlock — Termius (SSH for FV disk unlock) + VNC (loginwindow for GUI session). Plan service layout accordingly (LaunchDaemons for always-on, puddles' LaunchAgents for things needing his GUI session)
+13. **Pre-login SSH unlock does NOT log a user in** — it only unlocks the FileVault-encrypted disk so boot can continue to loginwindow. Verified empirically post-unlock: `who` empty, `/dev/console` owned by root, `launchctl print gui/<uid>` returns "Domain does not support specified action". A separate VNC login at loginwindow is required to start a real GUI session and fire per-user LaunchAgents
+14. **Pre-login SSH (Tahoe 26) is password-only** — does NOT accept pubkey auth. Termius biometric SSH keys help with day-to-day SSH but not the unlock state. Verified empirically with `ssh -v` — server jumps straight to password prompt
 14. **UniFi inter-VLAN port lists are quirky** — the LAN-In rule "Port" field accepts comma-separated lists (`22,5900`) and ranges (`22-5900`) in the UI but doesn't always parse them correctly. In our testing port 22 worked but 5900 didn't with a `22-5900` range. Safest pattern: one rule per port, OR a port group with each port listed individually
 15. **UniFi Teleport unreliable** — connected but no LAN traffic flowed in our testing. WireGuard VPN Server on UDM is the more reliable fallback
 16. **Lock screen vs. headless server** — counterintuitively, you DO want screen lock enabled even on a headless box. Background launchd jobs run regardless of lock state, and the lock protects the physical machine if anyone walks up
