@@ -178,11 +178,7 @@ brew install --cask docker
 - Start up automatically after power failure
 - Wake for network access (enables Wake-on-LAN over ethernet)
 - Display sleep: 10 min ok (irrelevant headless)
-- Kernel-panic auto-restart (no GUI toggle in Tahoe; set via terminal):
-  ```bash
-  sudo pmset -a panicrestart 15
-  sudo systemsetup -setrestartfreeze on  # belt-and-suspenders
-  ```
+- Kernel-panic auto-restart: on by default on Apple Silicon. The `sudo systemsetup -setrestartfreeze on` command (covers soft hangs) returns error -99 unless Terminal has Full Disk Access; skip it unless you specifically want this
 
 **Lock Screen (Settings → Lock Screen):**
 - "Require password after screen saver begins or display is turned off" → **Immediately** (or 5s)
@@ -219,9 +215,10 @@ brew install --cask docker
 - Without an HDMI display attached, Mac Mini may boot at 640×480 and Screen Sharing inherits that low resolution
 - Either: keep an **HDMI dummy plug** attached, OR use [`displayplacer`](https://github.com/jakehilborn/displayplacer) to force a sensible resolution at login
 
-**Recovery Lock (extra theft protection on Apple Silicon):**
-- `sudo bputil -E` → enables Recovery Lock; an attacker can't boot Recovery without owner credentials
-- Pair with FileVault for layered protection
+**Recovery / theft protection on Apple Silicon:**
+- True "Recovery Lock" as a discrete toggle is MDM-only on Apple Silicon
+- For non-MDM Macs, **FileVault provides the equivalent protection automatically** — entering Recovery (or installing macOS, or wiping) requires the **owner credential** of a FileVault-enabled user. So enabling FileVault (next section) covers this for free
+- (Old plans referenced `sudo bputil -E` — that flag does not exist; `bputil` exposes low-level boot policy and is not needed for our setup)
 
 ### 6.1.1 — macOS update strategy (unattended where safe)
 
@@ -435,7 +432,8 @@ These are deferred until Puddles is running — he manages his own host.
 14. **UniFi inter-VLAN port lists are quirky** — the LAN-In rule "Port" field accepts comma-separated lists (`22,5900`) and ranges (`22-5900`) in the UI but doesn't always parse them correctly. In our testing port 22 worked but 5900 didn't with a `22-5900` range. Safest pattern: one rule per port, OR a port group with each port listed individually
 15. **UniFi Teleport unreliable** — connected but no LAN traffic flowed in our testing. WireGuard VPN Server on UDM is the more reliable fallback
 16. **Lock screen vs. headless server** — counterintuitively, you DO want screen lock enabled even on a headless box. Background launchd jobs run regardless of lock state, and the lock protects the physical machine if anyone walks up
-17. **Tahoe removed the GUI "Restart automatically if the computer freezes" toggle** — set it via `sudo pmset -a panicrestart 15` and `sudo systemsetup -setrestartfreeze on`
+17. **Tahoe removed the GUI "Restart automatically if the computer freezes" toggle** — and `sudo systemsetup -setrestartfreeze on` returns error -99 unless Terminal has Full Disk Access. Apple Silicon auto-restarts on kernel panic by default; this flag only matters for soft hangs and is not worth the FDA dance for most setups
+18. **`bputil -E` does not exist** — true MDM-style "Recovery Lock" is not exposed to non-MDM users. FileVault provides equivalent Recovery / wipe protection automatically (owner credential required)
 
 ---
 
