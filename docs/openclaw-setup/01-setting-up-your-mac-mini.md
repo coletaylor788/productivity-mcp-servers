@@ -559,6 +559,9 @@ In **System Settings**:
    - ✅ **Mail** (only if using Mail.app)
    - ✅ **Safari** (optional)
 3. **"Saved to this Mac" section** at the bottom: leave everything OFF — we want all of it in iCloud.
+4. **iCloud Drive → ⓘ → "Optimize Mac Storage"** — toggle **OFF**.
+
+**Why turn off Optimize Mac Storage:** when ON, macOS evicts the actual file contents and leaves tiny `.icloud` placeholder stubs in their place. Containers (and any non-Finder process) reading those paths get the stub, not the file. Turning it off keeps every iCloud Drive file fully present on disk so the agent containers can read `~/Documents/puddles/soul.md` and friends without surprises. (You have ~1 TB free; this is a fine tradeoff.)
 
 After flipping these, give it a few minutes. `~/Documents` and `~/Desktop` get moved into the iCloud container automatically. Verify:
 
@@ -599,7 +602,7 @@ ls -la /Users/puddles/Documents
 # → path under Mobile Documents (iCloud)
 
 # From puddles via VNC, in System Settings → Apple Account → iCloud
-# → Drive ON, Desktop & Documents ON, Messages in iCloud ON
+# → Drive ON, Desktop & Documents ON, Messages in iCloud ON, Optimize Mac Storage OFF
 ```
 
 The big test: **reboot the Mini** (`sudo shutdown -r now`), then unlock it from your iPhone using §12. It should take about a minute and three taps and end with you SSH'd into a fully-up puddles session.
