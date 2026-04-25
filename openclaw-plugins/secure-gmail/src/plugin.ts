@@ -125,6 +125,14 @@ const secureGmailPlugin = {
   register(api: OpenClawPluginApi) {
     const config = (api.pluginConfig ?? {}) as Partial<SecureGmailConfig>;
 
+    api.logger.info?.(
+      `[secure-gmail] register: pluginConfig keys=${
+        Object.keys(api.pluginConfig ?? {}).join(",")
+      } gmailMcpCommand=${String(config.gmailMcpCommand)} gmailMcpCwd=${
+        String(config.gmailMcpCwd)
+      } resolvePathType=${typeof api.resolvePath}`,
+    );
+
     if (!config.gmailMcpCommand) {
       api.logger.error?.(
         "[secure-gmail] missing required config: gmailMcpCommand",
@@ -145,13 +153,27 @@ const secureGmailPlugin = {
     let bridgePromise: Promise<McpBridge> | null = null;
     const getBridge = (): Promise<McpBridge> => {
       if (!bridgePromise) {
+        const resolvedCommand = api.resolvePath(config.gmailMcpCommand!);
+        const resolvedCwd = config.gmailMcpCwd
+          ? api.resolvePath(config.gmailMcpCwd)
+          : undefined;
+        api.logger.info?.(
+          `[secure-gmail] spawning bridge: command=${
+            String(resolvedCommand)
+          } cwd=${String(resolvedCwd)} args=${
+            JSON.stringify(config.gmailMcpArgs ?? DEFAULT_ARGS)
+          }`,
+        );
         bridgePromise = connectMcpBridge({
-          command: api.resolvePath(config.gmailMcpCommand!),
+          command: resolvedCommand,
           args: config.gmailMcpArgs ?? DEFAULT_ARGS,
-          cwd: config.gmailMcpCwd
-            ? api.resolvePath(config.gmailMcpCwd)
-            : undefined,
+          cwd: resolvedCwd,
         }).catch((err) => {
+          api.logger.error?.(
+            `[secure-gmail] bridge connect failed: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
           // Reset so a later invocation can retry.
           bridgePromise = null;
           throw err;
