@@ -3,7 +3,7 @@
 ## Overview
 Set up OpenClaw on a Mac Mini (M4) with native Apple integrations (iMessage, Calendar, Reminders, Contacts), proper sandbox + tool gate architecture, and hardened network security.
 
-## Current State (Updated April 19, 2026)
+## Current State (Updated April 19, 2026 — evening)
 
 **Phase 1 complete.** Mac Mini is fully provisioned as a headless server with:
 - Two-account separation (cole admin / puddles agent)
@@ -12,6 +12,7 @@ Set up OpenClaw on a Mac Mini (M4) with native Apple integrations (iMessage, Cal
 - FileVault enabled, validated two-step remote unlock (MacBook script + iPhone Termius one-tap)
 - Weekly automated `brew upgrade` (system LaunchDaemon as cole)
 - iCloud Drive (Desktop & Documents Folders) signed in as puddles for data backup
+  - **Optimize Mac Storage: OFF** — keeps full file contents on disk so containers reading bind-mounted iCloud paths get real files, not `.icloud` placeholder stubs
 
 Setup procedure captured end-to-end in `docs/openclaw-setup/01-setting-up-your-mac-mini.md`. Below is the live state reference.
 
@@ -95,39 +96,64 @@ export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
 
 ## Phase 2: OpenClaw
 
-### 2.1 — Install OpenClaw
-```bash
-npm install -g openclaw
-```
+**Status: ✅ fully set up as of April 21, 2026 evening.** Just needs the in-UI bootstrap ritual to complete.
 
-### 2.2 — Run onboarding
-```bash
-openclaw onboard --install-daemon
-```
-- Sets up gateway auth, default agent, API key, daemon (auto-start on boot)
+### Final state
+- SIP disabled (Recovery → `csrutil disable`) — risk accepted, see Security Architecture
+- Library validation disabled (`DisableLibraryValidation = 1`)
+- **OpenClaw 2026.4.21** installed globally as **cole** (`npm install -g openclaw@latest`); puddles uses the binary at `/opt/homebrew/bin/openclaw` — no per-user npm prefix needed. Updates must be run as cole (puddles can't write to `/opt/homebrew/lib`).
+- Tailscale **operator = puddles** (`sudo tailscale set --operator=puddles`) so puddles can manage `tailscale serve` without sudo
+- Onboarded with **GitHub Copilot** as model provider (device-flow OAuth, token at `~/.openclaw/agents/main/agent/auth-profiles.json`)
+- Default model: **`github-copilot/claude-opus-4.6`** (1M context Opus on Copilot)
+- Soft compaction budget: **600,000 tokens** (`agents.defaults.contextTokens = 600000`, ~60% of model ceiling)
+- Reasoning effort: **high** (`agents.defaults.thinkingDefault = high`) — initially set to `adaptive` but Copilot's Claude proxy doesn't expose adaptive (UI dropdown for Claude Opus 4.6 only shows Off/Minimal/Low/Medium/High; "Default" resolves to low). Set to `high` so Opus reasons hard by default; dial down per-message in the composer when you want speed.
+- Gateway running as puddles' LaunchAgent on `127.0.0.1:18789` (`gateway.mode=local`)
+- **Tailscale Serve** active: `https://coles-mac-mini-1.tailcef8bc.ts.net/` → proxies to `127.0.0.1:18789`. Tailnet-only HTTPS (real cert). NOT funnelled.
+- `gateway.controlUi.allowedOrigins = ["https://coles-mac-mini-1.tailcef8bc.ts.net"]` so the browser origin is permitted
+- `plugins.entries.device-pair.config.publicUrl = "https://coles-mac-mini-1.tailcef8bc.ts.net"` so QR/setup-codes advertise the tailnet URL
+- Browser + CLI both **paired** (via `openclaw devices approve`). Used the gateway auth token from `~/.openclaw/openclaw.json` (`gateway.auth.token`).
+- Smoke-tested: agent reply via Opus 4.6 ✅
+- BOOTSTRAP.md (`~/.openclaw/workspace/BOOTSTRAP.md`) **pending** — first-wake interview happens in browser UI; agent will populate IDENTITY.md / USER.md / SOUL.md, then delete BOOTSTRAP.md
 
-### 2.3 — Configure Telegram channel
+### 2.x — Gotchas captured this round (for guide #02)
+1. **Wizard is fragile when interrupted.** It writes config in stages (auth → gateway.mode → daemon → per-agent models). Killing it mid-flow leaves partial state. Recovery: `openclaw config set gateway.mode local && openclaw daemon install && openclaw daemon start`.
+2. **Driving the wizard via async/SSH is bad** — the spinner output (`◒ ◐ ◓ ◑`) floods buffers and blanks the TUI. Either run it in a real terminal (Termius / VNC GUI) or use `--non-interactive` flags where supported.
+3. **`--non-interactive` does NOT support GitHub Copilot:** `openclaw onboard --non-interactive --auth-choice github-copilot ...` → "GitHub Copilot provider plugin does not implement non-interactive setup." Must onboard interactively for Copilot.
+4. **`gpt-5.4` (the current default in shipped models.json) is mapped to provider `codex`**, not github-copilot. After Copilot-only onboard, change the default with: `openclaw config set agents.defaults.model "github-copilot/<model>"` then `openclaw daemon restart`.
+5. **CLI ↔ gateway pairing required after first browser pair.** `openclaw devices approve <requestId> --token <gateway.auth.token>` for both. The CLI shows up as pending request with `device=agent`; the browser shows up with a long hex device id.
+6. **`openclaw infer model providers`** is the way to inspect what's wired up (per-provider count/defaults/configured/selected). `openclaw infer model list` to see all models with provider+context-window. Use `openclaw infer model inspect --model <provider/model>` to confirm context window.
+7. **The `(200k ctx)` in `openclaw status` is NOT the model ceiling** — it's `sessions.defaults.contextTokens` (soft compaction budget). The model's true context window comes from `models.providers.<id>.models[].contextWindow` and is shown by `infer model inspect`.
+8. **Tailscale Serve must be enabled at tailnet level first** (one-time, free) at `login.tailscale.com/f/serve?node=...`. Enable HTTPS/Serve only — NOT Funnel.
+9. **`tailscale serve` config errors are descriptive**: `Origin not allowed` → set `gateway.controlUi.allowedOrigins`; `pairing required` → approve via `openclaw devices approve`.
+10. **`openclaw config set` for arrays needs `--json`**: e.g. `openclaw config set gateway.controlUi.allowedOrigins --json '["https://..."]'`. Plain string fails validation.
+11. **OpenClaw updates: run as the install owner (cole).** `ssh cole@... 'npm install -g openclaw@latest'`. Then `ssh puddles@... 'openclaw daemon restart'`. UI-triggered update fails because daemon process (puddles) can't write to cole's brew prefix.
+
+### 2.3 — Configure Telegram channel (deferred — not blocking BlueBubbles)
 - Migrate config from Azure instance
 
-### 2.4 — Tailscale Serve (expose dashboard over tailnet)
-```bash
-sudo tailscale serve --bg 18789
-```
-- Keep gateway bound to 127.0.0.1
+### 2.4 — Pair CLI to gateway via daemon (DONE)
+- See "Final state" above. Both browser + CLI paired.
+
+### 2.5 — Loose ends fixed before BlueBubbles (DONE)
+- ✅ `device-pair` plugin formally enabled: `openclaw config set plugins.entries.device-pair.enabled true` (silences config warning)
+- ✅ `gateway.trustedProxies = ["127.0.0.1/32", "::1/128"]` so Tailscale Serve's loopback hop is trusted
+- ✅ `openclaw security audit` → **0 critical · 0 warn**
+
+### 2.6 — UI thinking-effort label cosmetic bug (TODO: confirm + report)
+- Symptom: composer dropdown for `Claude Opus 4.6 · github-copilot` shows **"Default (low)"** even with `agents.list[main].thinkingDefault = "high"` and `agents.defaults.thinkingDefault = "high"` set.
+- Root cause: in `dist/control-ui/assets/index-Bsj0vinf.js` the `ja(provider, model, catalog)` function hardcodes the default-label as `adaptive` for `provider=anthropic` (regex-matched Claude) or `provider=amazon-bedrock` Claude, else `low` for any other reasoning model. It does NOT consult agent config for the label.
+- The runtime resolver (`dist/model-selection-DpNW4nwC.js`: `agentEntry?.thinkingDefault ?? resolved ?? agentCfg?.thinkingDefault ?? "off"`) should still apply our `high` default.
+- **TODO:** confirm via inspecting an actual request payload (e.g. `openclaw logs`, or send a complex prompt and verify reasoning depth). If not actually applied, file as bug + workaround = manually pick "High" per session.
+- **TODO:** open OpenClaw issue: UI label should fall back to `agentEntry.thinkingDefault` for non-anthropic-direct providers (especially github-copilot Claude).
 
 ---
 
 ## Phase 3: iMessage + BlueBubbles
 
-### 3.1 — Disable SIP (requires physical/recovery access)
-- Shut down Mac completely
-- Hold power button → Recovery → Utilities → Terminal → `csrutil disable`
-- Restart
+**Status: starting now (April 21, 2026 evening). SIP + libval already done in Phase 2.**
 
-### 3.2 — Disable library validation
-```bash
-sudo defaults write /Library/Preferences/com.apple.security.libraryvalidation.plist DisableLibraryValidation -bool true
-```
+### 3.1 — Disable SIP (DONE in Phase 2)
+### 3.2 — Disable library validation (DONE in Phase 2)
 
 ### 3.3 — Install BlueBubbles
 ```bash
@@ -151,6 +177,9 @@ openclaw channels add --channel bluebubbles \
 openclaw config set channels.bluebubbles.dmPolicy allowlist
 openclaw config set 'channels.bluebubbles.allowFrom' '["+1COLE_PHONE"]'
 ```
+
+### 3.6 — Onboarding new people
+Wraps Puddles for use with people other than Cole. Moved to **Phase 8: Multiplayer** below — out of scope for the single-user MVP.
 
 ---
 
@@ -177,6 +206,74 @@ brew install --cask docker
 ```
 - Enable "Start on login"
 - Used for sandboxed agents (restricted agents run in Docker containers)
+
+### 5.2 — Container ↔ host filesystem architecture (decisions)
+
+**iCloud lives on the macOS host, not inside containers.** Linux containers reach in via bind mounts (for files) or host-side bridges (for Apple APIs).
+
+**Mount layout (planned for guide #02 / docker-compose):**
+
+| Host path | Container path | Mode | Notes |
+|---|---|---|---|
+| `~/Documents/puddles/` | `/workspace/` | rw | Agent's working dir; `soul.md`, projects/, inbox/, journal/ live here. iCloud-synced via host's `bird` daemon. |
+| `~/Library/Mobile Documents/com~apple~CloudDocs/` | `/icloud/` | rw, optional | If agent needs broader iCloud Drive access beyond `~/Documents/puddles/`. |
+| (Calendar / Reminders / Contacts / Notes) | — | — | NOT mounted. Reached via Apple PIM bridge plugin (Phase 4). |
+
+**Browser container** gets a much narrower mount surface:
+- `/downloads/` ← `~/Documents/puddles/inbox/browser-downloads/`
+- `/uploads/` ← staging dir agent writes to
+- NO `/workspace/` mount; NO soul.md access. Browser container is the most-untrusted thing in the stack.
+
+**Sync semantics:**
+- Container writes `/workspace/file.md` → bind-mount → APFS → host's `bird` daemon uploads to iCloud → visible on phone/MacBook in seconds
+- Container reads `/workspace/file.md` → file is fully present on disk (because Optimize Mac Storage is OFF in §1.x — see Current State)
+
+**Deferred (low-priority gotchas, document if they bite us):**
+- File ownership / UID mapping (Docker Desktop on Mac handles transparently via virtio-fs in most cases)
+- `.DS_Store` files in agent file walks
+- Spotlight indexing of high-churn cache dirs (`mdutil -i off ~/Documents/puddles/cache/` if needed)
+
+### 5.3 — Per-agent absolute tool allowlists ✅ (2026-04-24)
+
+Switched from a single `tools.sandbox.tools.alsoAllow` punch-hole to absolute per-agent `agents.list[].tools.allow` lists. Anything not in the list is denied — no deny-list maintenance.
+
+**Four-agent split (all on `claude-opus-4.6`):**
+
+| agent | sandbox | allowlist | role |
+|---|---|---|---|
+| **main** | docker (`mode=all`) | exec, process, read, write, edit, apply_patch, image, sessions_*, subagents, **web_search** | Coordinator. No web_fetch/browser — must spawn `reader`/`browser-agent`. |
+| **reader** | docker (`mode=all`, browser disabled) | read, write, **web_fetch**, sessions_send, sessions_yield, session_status | Single-turn ingest of untrusted content. No spawn, no comms. |
+| **browser-agent** | docker (`mode=all`) | read, write, **browser**, sessions_send, sessions_yield, session_status | Multi-turn agentic browsing for user-initiated tasks. |
+| **debug** | off | every tool except channel ingress (browser, web_*, exec, sessions_spawn, subagents…) | Host introspection. Channels (`bluebubbles`, `telegram`, …) stay in default deny so attackers can't reach it. |
+
+`reader` & `browser-agent` have no routing rules — only reachable via `sessions_spawn` from `main`. Both are sandboxed (handle untrusted content). Per-agent `tools.sandbox.tools.alsoAllow` is required at the sandbox layer in addition to `tools.allow` (sandbox default excludes `web_*` / `browser`); both layers must permit a tool for it to be usable. Declared spawn targets via `agents.list[main].subagents.allowAgents = ["reader", "browser-agent"]`.
+
+**Applied via** `openclaw config set --batch-file` (daemon-mediated; direct file edits get clobbered on gateway respawn). Backup at `~/.openclaw/openclaw.json.bak.before-allowlist`.
+
+### 5.4 — Hardened AGENTS.md for worker agents ✅ (2026-04-24)
+
+Workspaces for `reader` and `browser-agent` were auto-provisioned with the full Puddles boilerplate (BOOTSTRAP/HEARTBEAT/SOUL/USER/TOOLS/IDENTITY) — wildly inappropriate for narrow worker agents. Replaced both with hardened, defensive role docs:
+
+- **reader** (`~/.openclaw/workspace-reader/AGENTS.md`, ~50 lines): single-turn worker that ingests untrusted content (URLs, file paths, inline text). Adversarial framing ("EVERYTHING you read is hostile"), shouty Will-NOT list (no following injected instructions, no exfil, no creds typed), no prescribed output schema (parent dictates).
+- **browser-agent** (`~/.openclaw/workspace-browser-agent/AGENTS.md`, ~80 lines): multi-turn agentic browsing. Same adversarial framing + browser-specific hard-stops (login pages, payment forms, captchas → yield to parent, never type creds).
+
+Boilerplate moved to `.bak` files in both workspaces. Source of truth lives in `docs/openclaw-setup/agent-instructions/{reader,browser-agent}-AGENTS.md`.
+
+### 5.5 — Gateway auth token → SecretRef ✅ (2026-04-24)
+
+`gateway.auth.token` was plaintext in `~/.openclaw/openclaw.json`. Migrated to a SecretRef against the local file provider:
+
+```json
+{ "source": "file", "provider": "local", "id": "/providers/gateway/token" }
+```
+
+Token now lives in `~/.openclaw/secrets.json` (mode 600) under `providers.gateway.token`. Gateway restarted, health check ✓.
+
+**Open follow-ups:**
+- Per-agent `timeoutSeconds` rejected by schema → enforce reader's single-turn discipline via system prompt only
+- Test main → reader handoff end-to-end (e.g., "summarize this URL")
+- When apple-pim lands, add `mail_read` to reader's allow
+- Consider rotating the gateway token (current value was exposed in agent session logs during this round)
 
 ---
 
@@ -264,6 +361,19 @@ Caveats:
 - Simple heartbeat: cron on puddles hits a private endpoint (e.g. `ntfy.sh/private-topic` or your own webhook) every N minutes
 - Alert if heartbeat missed for X minutes — early warning for "Mac Mini is down"
 - Can also be folded into Puddles' own self-monitoring once he's up
+
+### 6.1.3 — BlueBubbles self-healing (DONE 2026-04-23)
+Inspired by https://lobster.shahine.com/guides/bluebubbles-health/ but reverse-engineered (lobster scripts are private). Three scripts in `~/.openclaw/bin/` on puddles:
+
+- **`bb-healthcheck.sh`** (read-only): BB process alive, port 1234 listening, authed `/api/v1/ping` returns 200, gateway healthz 200, webhook URL in `config.db` has `?password=`, no recent `webhook rejected.*unauthor` log lines, no stuck BB sessions. Messages.app AppleScript bridge is checked but treated as informational only — BB Private API uses an injected helper bundle, not AppleScript, so an unresponsive bridge does NOT mean BB is broken.
+- **`stuck-session-watchdog.sh`** (read-only): scans last 5 `embedded run start.*messageChannel=bluebubbles` log entries, flags any without matching `embedded run end/done/finish` older than 180s (matches `agents.defaults.timeoutSeconds`).
+- **`bb-selfheal.sh`** (mutates state): runs healthcheck, applies fixes — restart BlueBubbles if process dead or port not listening, sqlite UPDATE webhook URL if drifted, kill gateway pid (KeepAlive respawns) if healthz down or watchdog tripped — then re-runs healthcheck.
+
+**Schedule:** `/Library/LaunchDaemons/ai.openclaw.bb-selfheal.plist`, runs as `puddles`, `StartInterval=900` (15 min), `RunAtLoad=true`, logs to `~/.openclaw/logs/bb-health/selfheal.log`.
+
+**Tested:** happy path (no-op when healthy ✓), webhook drift repair (fake config.db with wrong URL → script sqlite-updates to correct URL ✓), all three scripts pass `bash -n`.
+
+**Note:** macOS lacks `timeout`; use `perl -e 'alarm shift; exec @ARGV' 5 <cmd>` and run inside `bash -c '...' 2>/dev/null` to suppress SIGALRM job-status noise.
 
 ### 6.2 — FileVault + remote unlock (architecture)
 
@@ -528,6 +638,33 @@ When Group Puddles needs Main Puddles to take action on your behalf, requests go
 - Lobster CLI installed on Mac Mini (brew or npm)
 - Lobster plugin enabled for the group agent
 - Approval prompts forwarded to Telegram/iMessage DM
+
+---
+
+## Phase 8: Multiplayer (post-MVP — beyond just Cole)
+
+The single-user MVP assumes only Cole talks to Puddles. Onboarding additional people (family, friends) requires a few extra pieces.
+
+### 8.1 — Scripted contact onboarding
+**Goal:** one command to onboard a new person — adds them to puddles' Contacts.app (so they see Puddles' shared name + photo) AND adds their handle(s) to `channels.bluebubbles.allowFrom` (so they can actually message the agent). Currently both steps are manual + separate.
+
+Open questions:
+- AppleScript / Contacts.framework Swift CLI to add contact entries to puddles' local Contacts (no first-class CLI exists; AppleScript via Contacts.app works but needs Automation TCC grant)
+- Sync vs one-shot? (See Apple's lack of native iCloud Contacts sharing between Apple IDs.) Likely one-shot per-person via CLI, since cole↔puddles iCloud Contacts can't sync natively.
+- Possible future: secondary iCloud account on Mac Mini for cole's contacts (Internet Accounts → cole's Apple ID, Contacts only) for live sync. Defers the per-person script to a single account-level setup.
+
+Sketch:
+```bash
+puddles-onboard "+15551234567" "Friend Name" friend@icloud.com
+# → adds Contacts.app entry via osascript
+# → adds both handles to channels.bluebubbles.allowFrom
+```
+
+### 8.2 — Per-person memory / context isolation
+Open question: does each onboarded person get their own thread / soul slice, or all share one global Puddles context?
+
+### 8.3 — Per-person tool gates
+Some tools (calendar write, money moves, smart home) should never be available to non-Cole users.
 
 ---
 
