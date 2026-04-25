@@ -63,10 +63,15 @@ function createAuditLogger(
 
 /**
  * Static manifest of gmail-mcp tools we expose to agents. Kept in sync with
- * `servers/gmail-mcp/src/gmail_mcp/server.py` by hand. Only read-only tools
- * are exposed: `authenticate`, `archive_email`, and `add_label` are
- * deliberately omitted (auth is a user-facing OAuth flow; mutations should
- * not be agent-driven without an explicit plan).
+ * `servers/gmail-mcp/src/gmail_mcp/server.py` by hand. `authenticate` is
+ * deliberately omitted — it is a user-facing OAuth flow that should never
+ * be agent-driven.
+ *
+ * Mutating tools (`archive_email`, `add_label`) are exposed but currently
+ * have no human-in-the-loop / approval gate. Ingress hooks only run on the
+ * tool *response*, so destructive params are not vetted before execution.
+ * Add a SendApproval-style egress hook before exposing any tool that
+ * could permanently destroy user data (e.g., delete_email).
  *
  * Why static? OpenClaw's plugin loader snapshots `api.registerTool(...)`
  * calls synchronously at the end of `register()`. Spawning the gmail-mcp
@@ -155,6 +160,43 @@ const EXPOSED_TOOLS: McpTool[] = [
         },
       },
       required: ["email_id"],
+    },
+  },
+  {
+    name: "archive_email",
+    description:
+      "Archive one or more emails (remove from inbox, keep in All Mail).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        email_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Array of email IDs to archive",
+        },
+      },
+      required: ["email_ids"],
+    },
+  },
+  {
+    name: "add_label",
+    description: "Add a label to one or more emails.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        email_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Array of email IDs to label",
+        },
+        label: {
+          type: "string",
+          description:
+            "Label name to apply (e.g., 'STARRED', 'IMPORTANT', " +
+            "or a custom label name)",
+        },
+      },
+      required: ["email_ids", "label"],
     },
   },
 ];
