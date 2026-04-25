@@ -7,7 +7,7 @@
   "main": "dist/plugin.js",
   "types": "dist/plugin.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --emitDeclarationOnly && esbuild src/plugin.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/plugin.js --external:openclaw --external:keytar && node scripts/write-dist-manifest.mjs",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:all": "vitest run --config vitest.all.config.ts",
@@ -21,8 +21,12 @@
   "peerDependencies": {
     "openclaw": "*"
   },
+  "openclaw": {
+    "extensions": ["./dist/plugin.js"]
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "esbuild": "^0.24.0",
     "keytar": "^7.9.0",
     "typescript": "^5.0.0",
     "vitest": "^3.0.0"
