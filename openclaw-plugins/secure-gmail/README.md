@@ -32,6 +32,26 @@ architecture rationale.
 
 ## Install in OpenClaw
 
+### Prerequisites — secrets and auth
+
+This plugin shells out to `gmail-mcp` and uses `mcp-hooks`, both of which need
+credentials in the macOS Keychain. Set those up **before** installing the
+plugin or it will fail to start / fall back to fail-open behavior:
+
+| What | Keychain entry | How to set up |
+|---|---|---|
+| Gmail OAuth refresh token | service `gmail-mcp`, account `token` | Follow [`servers/gmail-mcp/README.md`](../../servers/gmail-mcp/README.md#setup) — Google Cloud OAuth credentials → `~/.config/gmail-mcp/credentials.json` → run the `authenticate` tool / `run_oauth_flow()` once to mint and store the refresh token |
+| GitHub Copilot PAT (used by InjectionGuard / SecretRedactor) | service `openclaw`, account `github-pat` | Follow [`packages/mcp-hooks/README.md`](../../packages/mcp-hooks/README.md#credential-setup) — generate a PAT with `read:user`, store via `security add-generic-password` |
+
+You can verify both with:
+
+```bash
+security find-generic-password -s gmail-mcp -a token   >/dev/null && echo "gmail-mcp token: OK"
+security find-generic-password -s openclaw  -a github-pat >/dev/null && echo "copilot PAT: OK"
+```
+
+### Build, install, enable
+
 ```bash
 # from the repo root, build the plugin's dist/ first
 pnpm install
@@ -56,8 +76,8 @@ plugin knows where to find gmail-mcp.
 | `model` | | `claude-haiku-4.5` | Copilot model used by hook LLM checks |
 | `skipTools` | | `["authenticate", "archive_email", "add_label"]` | Tools registered without ingress hooks |
 
-The Copilot PAT used by the hooks must be in the macOS Keychain — see
-[`packages/mcp-hooks/README.md`](../../packages/mcp-hooks/README.md#credential-setup).
+The Copilot PAT used by the hooks must be in the macOS Keychain — see the
+[Prerequisites](#prerequisites--secrets-and-auth) section above.
 
 ### OpenClaw config example
 
