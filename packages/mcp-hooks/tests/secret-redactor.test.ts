@@ -29,6 +29,8 @@ describe("SecretRedactor", () => {
       expect(result.action).toBe("modify");
       expect(result.content).toContain("[REDACTED:api_key]");
       expect(result.content).not.toContain("sk-proj-");
+      expect(result.details?.findingTypes).toContain("api_key");
+      expect(result.details?.findingCount).toBeGreaterThanOrEqual(1);
     });
 
     it("should redact sk- style keys", async () => {

@@ -40,6 +40,7 @@ Do NOT flag as injection:
 Respond with JSON only: {"detected": true/false, "evidence": "brief description of what was found"}`;
 
 export class InjectionGuard {
+  readonly name = "InjectionGuard";
   private llm: CopilotLLMClient;
 
   constructor(options: { llm: CopilotLLMClient }) {
@@ -52,9 +53,12 @@ export class InjectionGuard {
       const parsed = JSON.parse(raw);
 
       if (parsed.detected) {
+        const evidence =
+          typeof parsed.evidence === "string" ? parsed.evidence : "unspecified";
         return {
           action: "block",
-          reason: `Prompt injection detected: ${parsed.evidence}`,
+          reason: `Prompt injection detected: ${evidence}`,
+          details: { evidence },
         };
       }
 

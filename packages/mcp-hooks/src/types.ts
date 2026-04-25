@@ -1,9 +1,20 @@
 export type HookAction = "allow" | "block" | "modify";
 
+export interface HookFindings {
+  /** Categorical labels of findings (e.g. ["api_key", "session_token"]). */
+  findingTypes?: string[];
+  /** Count of distinct findings. */
+  findingCount?: number;
+  /** Short, non-sensitive description of why the hook fired. */
+  evidence?: string;
+}
+
 export interface HookResult {
   action: HookAction;
   content?: string;
   reason?: string;
+  /** Optional metadata about why the hook returned this verdict. Safe for audit logs. */
+  details?: HookFindings;
 }
 
 export type TrustLevel = "unknown" | "approved" | "trusted";
@@ -34,5 +45,7 @@ export interface EgressHook {
 }
 
 export interface IngressHook {
+  /** Stable identifier for audit logs (e.g. "InjectionGuard"). */
+  readonly name: string;
   check(toolName: string, content: string): Promise<HookResult>;
 }

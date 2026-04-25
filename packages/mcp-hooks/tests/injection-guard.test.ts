@@ -34,6 +34,13 @@ describe("InjectionGuard", () => {
     expect(result.action).toBe("block");
     expect(result.reason).toContain("Prompt injection detected");
     expect(result.reason).toContain("Direct instruction override attempt");
+    expect(result.details?.evidence).toBe(
+      "Direct instruction override attempt",
+    );
+  });
+
+  it("exposes a stable name for audit logging", () => {
+    expect(guard.name).toBe("InjectionGuard");
   });
 
   it("should allow clean content", async () => {

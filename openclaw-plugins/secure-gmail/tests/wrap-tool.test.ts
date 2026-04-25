@@ -21,8 +21,8 @@ function makeCaller(text = "hello"): McpCaller & { callTool: ReturnType<typeof v
   };
 }
 
-function hook(result: HookResult): IngressHook {
-  return { check: vi.fn().mockResolvedValue(result) };
+function hook(result: HookResult, name = "TestHook"): IngressHook {
+  return { name, check: vi.fn().mockResolvedValue(result) };
 }
 
 describe("wrapMcpTool", () => {
@@ -131,6 +131,100 @@ describe("wrapMcpTool", () => {
     const noSchema = { name: "x", description: "" } as McpTool;
     const wrapped = wrapMcpTool(noSchema, makeCaller());
     expect(wrapped.parameters).toEqual({ type: "object", properties: {} });
+  });
+
+  describe("audit logger", () => {
+    it("emits one entry per hook with action and content lengths", async () => {
+      const audit = vi.fn();
+      const wrapped = wrapMcpTool(tool, makeCaller("hello world"), {
+        ingress: [
+          hook({ action: "allow" }, "InjectionGuard"),
+          hook({ action: "allow" }, "SecretRedactor"),
+        ],
+        audit,
+      });
+      await wrapped.execute("c", {});
+      expect(audit).toHaveBeenCalledTimes(2);
+      expect(audit.mock.calls[0][0]).toMatchObject({
+        toolName: tool.name,
+        hookName: "InjectionGuard",
+        action: "allow",
+        contentLen: 11,
+      });
+      expect(audit.mock.calls[1][0]).toMatchObject({
+        hookName: "SecretRedactor",
+        action: "allow",
+      });
+    });
+
+    it("includes findingTypes/findingCount when redactor reports findings", async () => {
+      const audit = vi.fn();
+      const wrapped = wrapMcpTool(tool, makeCaller("body"), {
+        ingress: [
+          hook(
+            {
+              action: "modify",
+              content: "[REDACTED:api_key]",
+              details: { findingTypes: ["api_key"], findingCount: 1 },
+            },
+            "SecretRedactor",
+          ),
+        ],
+        audit,
+      });
+      await wrapped.execute("c", {});
+      const entry = audit.mock.calls[0][0];
+      expect(entry).toMatchObject({
+        action: "modify",
+        findingTypes: ["api_key"],
+        findingCount: 1,
+        contentLen: 4,
+        modifiedLen: 18,
+      });
+    });
+
+    it("includes reason and evidence when guard blocks", async () => {
+      const audit = vi.fn();
+      const wrapped = wrapMcpTool(tool, makeCaller("malicious"), {
+        ingress: [
+          hook(
+            {
+              action: "block",
+              reason: "Prompt injection detected: imperative override",
+              details: { evidence: "imperative override" },
+            },
+            "InjectionGuard",
+          ),
+        ],
+        audit,
+      });
+      await wrapped.execute("c", {});
+      const entry = audit.mock.calls[0][0];
+      expect(entry.action).toBe("block");
+      expect(entry.reason).toContain("imperative override");
+      expect(entry.evidence).toBe("imperative override");
+    });
+
+    it("never propagates exceptions from the audit callback", async () => {
+      const audit = vi.fn().mockImplementation(() => {
+        throw new Error("disk full");
+      });
+      const wrapped = wrapMcpTool(tool, makeCaller("body"), {
+        ingress: [hook({ action: "allow" })],
+        audit,
+      });
+      await expect(wrapped.execute("c", {})).resolves.toBeDefined();
+    });
+
+    it("does not invoke the audit logger when no ingress hooks are configured", async () => {
+      const audit = vi.fn();
+      const wrapped = wrapMcpTool(tool, makeCaller("body"), {
+        ingress: [],
+        audit,
+      });
+      await wrapped.execute("c", {});
+      expect(audit).not.toHaveBeenCalled();
+    });
   });
 });
 

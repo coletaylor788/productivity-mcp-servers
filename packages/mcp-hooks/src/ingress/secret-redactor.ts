@@ -58,6 +58,7 @@ const REGEX_PATTERNS: Array<{ pattern: RegExp; type: string }> = [
 ];
 
 export class SecretRedactor {
+  readonly name = "SecretRedactor";
   private llm: CopilotLLMClient;
 
   constructor(options: { llm: CopilotLLMClient }) {
@@ -67,7 +68,8 @@ export class SecretRedactor {
   async check(toolName: string, content: string): Promise<HookResult> {
     // Phase 1: Regex
     let redacted = content;
-    let foundAny = false;
+    const findingTypes: string[] = [];
+    let findingCount = 0;
 
     for (const { pattern, type } of REGEX_PATTERNS) {
       // Reset regex state for each use
@@ -76,7 +78,8 @@ export class SecretRedactor {
       for (const match of matches) {
         const secret = match[1] ?? match[0];
         redacted = redacted.replaceAll(secret, `[REDACTED:${type}]`);
-        foundAny = true;
+        findingTypes.push(type);
+        findingCount += 1;
       }
     }
 
@@ -96,7 +99,8 @@ export class SecretRedactor {
               finding.secret,
               `[REDACTED:${finding.type}]`,
             );
-            foundAny = true;
+            findingTypes.push(finding.type);
+            findingCount += 1;
           }
         }
       }
@@ -104,8 +108,12 @@ export class SecretRedactor {
       // LLM failure: return regex-only results
     }
 
-    if (foundAny) {
-      return { action: "modify", content: redacted };
+    if (findingCount > 0) {
+      return {
+        action: "modify",
+        content: redacted,
+        details: { findingTypes, findingCount },
+      };
     }
 
     return { action: "allow" };

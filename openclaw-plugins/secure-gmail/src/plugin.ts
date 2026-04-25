@@ -1,4 +1,7 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { homedir } from "node:os";
 import {
   CopilotLLMClient,
   InjectionGuard,
@@ -6,7 +9,7 @@ import {
   type IngressHook,
 } from "mcp-hooks";
 import { connectMcpBridge, McpBridge } from "./mcp-bridge.js";
-import { wrapMcpTool } from "./wrap-tool.js";
+import { wrapMcpTool, type AuditEntry, type AuditLogger } from "./wrap-tool.js";
 import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js";
 
 interface SecureGmailConfig {
@@ -14,9 +17,49 @@ interface SecureGmailConfig {
   gmailMcpArgs?: string[];
   gmailMcpCwd?: string;
   model?: string;
+  /** Override path for the audit log file. */
+  auditLogPath?: string;
 }
 
 const DEFAULT_ARGS = ["-m", "gmail_mcp"];
+
+const DEFAULT_AUDIT_LOG_PATH = `${homedir()}/.openclaw/logs/secure-gmail-audit.jsonl`;
+
+function createAuditLogger(
+  api: OpenClawPluginApi,
+  filePath: string,
+): AuditLogger {
+  try {
+    mkdirSync(dirname(filePath), { recursive: true });
+  } catch (err) {
+    api.logger.warn?.(
+      `[secure-gmail] could not create audit log directory ${dirname(filePath)}: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
+  return (entry: AuditEntry) => {
+    // Inline summary in gateway.log so audits are visible in the main stream.
+    const findings =
+      entry.findingTypes && entry.findingTypes.length > 0
+        ? ` types=${entry.findingTypes.join(",")}`
+        : "";
+    api.logger.info?.(
+      `[secure-gmail][audit] tool=${entry.toolName} hook=${entry.hookName} action=${entry.action} contentLen=${entry.contentLen}${findings}${
+        entry.reason ? ` reason="${entry.reason}"` : ""
+      }`,
+    );
+    try {
+      appendFileSync(filePath, `${JSON.stringify(entry)}\n`, { mode: 0o600 });
+    } catch (err) {
+      api.logger.warn?.(
+        `[secure-gmail] failed to append audit entry: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  };
+}
 
 /**
  * Static manifest of gmail-mcp tools we expose to agents. Kept in sync with
@@ -175,14 +218,17 @@ const secureGmailPlugin = {
         (await getBridge()).callTool(name, args),
     };
 
+    const auditLogPath = config.auditLogPath ?? DEFAULT_AUDIT_LOG_PATH;
+    const audit = createAuditLogger(api, auditLogPath);
+
     api.logger.info?.(
-      `[secure-gmail] registering ${EXPOSED_TOOLS.length} gmail tools: ${
+      `[secure-gmail] registering ${EXPOSED_TOOLS.length} gmail tools (audit log: ${auditLogPath}): ${
         EXPOSED_TOOLS.map((t) => t.name).join(", ")
       }`,
     );
 
     for (const tool of EXPOSED_TOOLS) {
-      api.registerTool(wrapMcpTool(tool, lazyCaller, { ingress }));
+      api.registerTool(wrapMcpTool(tool, lazyCaller, { ingress, audit }));
     }
 
     api.on("session_end", async () => {
