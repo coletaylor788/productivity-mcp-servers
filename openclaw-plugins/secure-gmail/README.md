@@ -134,5 +134,6 @@ secure-gmail/
     ├── mcp-bridge.test.ts              # unit
     ├── wrap-tool.test.ts               # unit
     ├── integration.mcp-bridge.test.ts  # spawns real gmail-mcp
-    └── integration.hooks.test.ts       # hits real Copilot API
+    ├── integration.hooks.test.ts       # hits real Copilot API
+    └── integration.e2e.test.ts         # full pipeline against real Gmail
 ```
