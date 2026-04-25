@@ -153,16 +153,18 @@ const secureGmailPlugin = {
     let bridgePromise: Promise<McpBridge> | null = null;
     const getBridge = (): Promise<McpBridge> => {
       if (!bridgePromise) {
-        const resolvedCommand = api.resolvePath(config.gmailMcpCommand!);
-        const resolvedCwd = config.gmailMcpCwd
-          ? api.resolvePath(config.gmailMcpCwd)
-          : undefined;
+        const rawCommand = config.gmailMcpCommand;
+        const rawCwd = config.gmailMcpCwd;
+        const resolvedCommand = api.resolvePath(rawCommand!);
+        const resolvedCwd = rawCwd ? api.resolvePath(rawCwd) : undefined;
         api.logger.info?.(
-          `[secure-gmail] spawning bridge: command=${
-            String(resolvedCommand)
-          } cwd=${String(resolvedCwd)} args=${
-            JSON.stringify(config.gmailMcpArgs ?? DEFAULT_ARGS)
-          }`,
+          `[secure-gmail] spawning bridge: rawCommand=${
+            JSON.stringify(rawCommand)
+          } resolvedCommand=${JSON.stringify(resolvedCommand)} rawCwd=${
+            JSON.stringify(rawCwd)
+          } resolvedCwd=${JSON.stringify(resolvedCwd)} apiResolvePathType=${
+            typeof api.resolvePath
+          } configKeys=${Object.keys(config).join(",")}`,
         );
         bridgePromise = connectMcpBridge({
           command: resolvedCommand,
