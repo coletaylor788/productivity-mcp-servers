@@ -41,13 +41,7 @@ export class SendApproval {
     content: string,
     params?: Record<string, unknown>,
   ): Promise<SendApprovalResult> {
-    const destination = params
-      ? this.trustStore.resolve(toolName, params)
-        ? undefined
-        : undefined
-      : undefined;
-
-    // Extract destinations from params
+    // Extract destinations from params and resolve their combined trust level
     const destinations = this.extractDestinations(toolName, params ?? {});
     const trustLevel = destinations.length > 0
       ? this.trustStore.resolveAll(destinations)

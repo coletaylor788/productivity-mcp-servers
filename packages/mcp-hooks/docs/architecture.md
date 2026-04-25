@@ -306,8 +306,7 @@ trust resolution entirely to the store.
 
 - **Keychain bootstrap:** Store the GitHub PAT once with
   `security add-generic-password -s "openclaw" -a "github-pat" -w "<pat>"`.
-  The README's `-s "mcp-hooks"` example is incorrect — the code defaults to
-  service `openclaw` to share storage with OpenClaw itself.
+  Storage is shared with OpenClaw itself.
 - **Trust store inspection:** `cat ~/.openclaw/trust/<pluginId>.json` to
   audit current trust state. Edit by hand if you want to revoke.
 - **Cost:** A single LeakGuard or SendApproval check is ~3 Haiku calls;

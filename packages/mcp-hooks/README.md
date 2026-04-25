@@ -92,10 +92,10 @@ Tokens cached in-memory with proactive refresh (5 min before expiry).
 
 ### Credential Setup
 
-Store your GitHub PAT in macOS Keychain:
+Store your GitHub PAT in macOS Keychain (service `openclaw`, account `github-pat` —
+shared with OpenClaw itself):
 ```bash
-# Using security CLI
-security add-generic-password -s "mcp-hooks" -a "github-pat" -w "ghp_your_token_here"
+security add-generic-password -s "openclaw" -a "github-pat" -w "ghp_your_token_here"
 ```
 
 Or pass directly:
