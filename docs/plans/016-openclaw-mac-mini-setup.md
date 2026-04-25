@@ -273,7 +273,68 @@ Token now lives in `~/.openclaw/secrets.json` (mode 600) under `providers.gatewa
 - Per-agent `timeoutSeconds` rejected by schema → enforce reader's single-turn discipline via system prompt only
 - Test main → reader handoff end-to-end (e.g., "summarize this URL")
 - When apple-pim lands, add `mail_read` to reader's allow
-- Consider rotating the gateway token (current value was exposed in agent session logs during this round)
+
+### 5.6 — Gateway token rotation playbook ✅ (2026-04-24)
+
+Rotated the gateway token (previous value had been exposed in agent session logs). Captured the full process here so the next rotation is mechanical.
+
+**Discovery during rotation:** the original §5.5 migration only wrapped `gateway.auth.token` (server-side) as a SecretRef. `gateway.remote.token` (the local CLI client token, used even when `gateway.mode = local` since the CLI talks to the gateway over WS) was unset, so post-rotation the CLI couldn't authenticate (`unauthorized: gateway token mismatch (set gateway.remote.token to match gateway.auth.token)`). Both must be SecretRefs pointing at the **same** secret entry — otherwise rotations require updating two places and clients drift.
+
+After this fix, both keys reference `providers.gateway.token`:
+
+```json
+"gateway": {
+  "auth":   { "token": { "source": "file", "provider": "local", "id": "/providers/gateway/token" } },
+  "remote": { "token": { "source": "file", "provider": "local", "id": "/providers/gateway/token" } }
+}
+```
+
+**Rotation steps (one secret, no config edits needed):**
+
+1. SSH to mini (`ssh puddles@coles-mac-mini`).
+2. Atomically replace `providers.gateway.token` in `~/.openclaw/secrets.json` with a new 32-byte hex value (back up first to `secrets.json.bak.<timestamp>`, write to a temp file, `chmod 600`, `os.replace`).
+3. `openclaw secrets reload` — re-resolves SecretRefs and atomically swaps the runtime snapshot. **No process restart needed.** The long-running gateway picks up the new token in place.
+4. Verify: `openclaw gateway call health` (CLI uses the new token end-to-end via `gateway.remote.token`).
+
+The `secrets reload` warning count is unrelated — `openclaw secrets audit` lists pre-existing plaintext findings (currently 3 × `github-copilot` tokens in `~/.openclaw/agents/{main,browser-agent,reader}/agent/auth-profiles.json`). Tracked as a separate follow-up below.
+
+**Operational notes:**
+- `~/.openclaw/secrets.json` contains plaintext credentials — do not `cat` it during rotations or troubleshooting; only update by atomic write or `chmod`/`ls -la` to verify perms.
+- `openclaw config get` redacts known sensitive keys (e.g., `gateway.*.token`) regardless of whether the underlying value is plaintext or a SecretRef. Don't infer SecretRef vs plaintext from the redacted display — inspect the JSON shape directly.
+- Gateway runs as a system LaunchDaemon (`/Library/LaunchDaemons/ai.openclaw.gateway.plist`, label `ai.openclaw.gateway`, runs as `puddles`). **`openclaw gateway status` misleadingly reports `Service: LaunchAgent (not loaded)` because it only inspects the user-LaunchAgent slot — ignore that line.** Source-of-truth is `launchctl print system/ai.openclaw.gateway` (no sudo needed for this subcommand) or `pgrep -fla openclaw-gateway`.
+
+**SSH access from laptop (separate gotcha discovered):**
+- The laptop's only SSH key is a FIDO2 security-key-resident key (`~/.ssh/id_ecdsa_sk_rk`). macOS system OpenSSH (`/usr/bin/ssh`) does not enable security-key support unless `SSH_SK_PROVIDER` is set. With macOS's built-in middleware: `export SSH_SK_PROVIDER=/usr/lib/ssh-keychain.dylib` (already set in `~/.zshrc` for interactive shells, but **not inherited by non-interactive subprocess shells** — set it explicitly when scripting SSH).
+- For repeated commands without re-tapping the key on every connection, use SSH ControlMaster:
+  ```bash
+  mkdir -p ~/.ssh/cm
+  ssh -o ControlMaster=yes -o ControlPath=~/.ssh/cm/%r@%h:%p -o ControlPersist=2h -fN puddles@coles-mac-mini
+  # subsequent calls reuse the master:
+  ssh -o ControlPath=~/.ssh/cm/%r@%h:%p puddles@coles-mac-mini '<cmd>'
+  ```
+
+**Open follow-ups (post-rotation):**
+- Consider adding `SSH_SK_PROVIDER` to `~/.zshenv` (loaded by non-interactive shells) so scripted SSH from the laptop "just works" without per-call exports.
+
+### 5.7 — github-copilot auth tokens → SecretRef ✅ (2026-04-24)
+
+Audit (`openclaw secrets audit`) flagged 3 plaintext `ghu_*` tokens in agent auth-profiles:
+- `~/.openclaw/agents/main/agent/auth-profiles.json`
+- `~/.openclaw/agents/browser-agent/agent/auth-profiles.json`
+- `~/.openclaw/agents/reader/agent/auth-profiles.json`
+
+All three were verified identical (same SHA-256), so consolidated into a single secrets entry rather than per-agent copies.
+
+**Result:**
+- `~/.openclaw/secrets.json` gained `providers.github-copilot.token` (the canonical token, mode 600).
+- Each `auth-profiles.json` `profiles["github-copilot:github"].token` replaced with:
+  ```json
+  { "source": "file", "provider": "local", "id": "/providers/github-copilot/token" }
+  ```
+- Backups of all 4 modified files written alongside as `*.bak.<timestamp>`.
+- Post-migration: `openclaw secrets audit` → **clean. plaintext=0, unresolved=0, shadowed=0, legacy=0.**
+
+**Lingering benign warning:** `secrets reload` reports `1 warning(s)`. The detail is `[SECRETS_REF_IGNORED_INACTIVE_SURFACE] gateway.remote.token: gateway.auth.token is configured.` — when `gateway.mode = local`, the gateway server resolves its own auth from `gateway.auth.token` and considers the `remote.token` "inactive on the auth surface". The CLI client still reads `remote.token` to authenticate over WS, so the SecretRef must remain set. Misleading wording from openclaw; flow is correct end-to-end and verified by `openclaw gateway call health`.
 
 ---
 
