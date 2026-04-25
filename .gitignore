@@ -50,3 +50,9 @@ Thumbs.db
 .ruff_cache/
 
 .obsidian/
+
+# Node / TypeScript
+node_modules/
+**/node_modules/
+**/dist/
+.pnpm-store/

@@ -1,6 +1,6 @@
 # Plan 013: OpenClaw Plugins Scaffold
 
-**Status:** Draft  
+**Status:** Complete (2026-04-24)  
 **Created:** 2026-04-12  
 **Depends on:** Plan 009 (MCP Security Hooks Library)
 
@@ -99,12 +99,12 @@ The `openclaw-plugins/README.md` should cover:
 ## Checklist
 
 ### Implementation
-- [ ] Create `openclaw-plugins/` directory
-- [ ] Create root workspace config (pnpm-workspace.yaml or package.json workspaces)
-- [ ] Create root `tsconfig.base.json` for shared TypeScript config
-- [ ] Verify workspace linking works (`mcp-hooks` importable from plugins)
+- [x] Create `openclaw-plugins/` directory
+- [x] Create root workspace config (`pnpm-workspace.yaml` + root `package.json`)
+- [x] Create root `tsconfig.base.json` for shared TypeScript config
+- [x] Verify workspace linking works (`mcp-hooks` builds + tests pass under pnpm)
 
 ### Documentation
-- [ ] Write `openclaw-plugins/README.md`
-- [ ] Update root `README.md` with new folder in architecture diagram
-- [ ] Plan marked as complete with date
+- [x] Write `openclaw-plugins/README.md`
+- [x] Update root `README.md` with new folder in architecture diagram
+- [x] Plan marked as complete with date

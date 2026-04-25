@@ -71,23 +71,33 @@ echo "$(pwd)/.venv/bin/python"
 
 ```
 puddles/
+├── packages/
+│   └── mcp-hooks/          # TypeScript security hooks library (egress + ingress)
+├── openclaw-plugins/       # OpenClaw plugins consuming mcp-hooks
 ├── servers/
-│   └── gmail-mcp/          # Gmail server (self-contained)
+│   └── gmail-mcp/          # Gmail MCP server (Python, self-contained)
 │       ├── .venv/          # Server-specific virtual environment
 │       ├── pyproject.toml  # Server dependencies
 │       ├── src/            # Server source code
 │       ├── tests/          # Server tests
 │       └── docs/           # Server documentation
+├── scripts/
+│   └── mac-mini/           # Host scripts for the Mac Mini server
 ├── docs/
-│   └── plans/              # Cross-cutting implementation plans
+│   ├── plans/              # Cross-cutting implementation plans
+│   └── openclaw-setup/     # Mac Mini setup guides
 └── .github/
     └── copilot-instructions.md  # Development guidelines
 ```
 
-Each server:
-- Has its own `pyproject.toml` and virtual environment
-- Is fully self-contained and independently installable
-- Has its own README with setup and usage instructions
+**Two ecosystems coexist:**
+
+- **Python servers** (`servers/`) — each MCP server is fully self-contained
+  with its own `pyproject.toml` and virtualenv. Install per-server.
+- **TypeScript packages + plugins** (`packages/`, `openclaw-plugins/`) —
+  managed as a [pnpm workspace](https://pnpm.io/workspaces). Run
+  `pnpm install` at the repo root to bootstrap; plugins reference
+  `packages/mcp-hooks` via `"workspace:*"`.
 
 ## Adding a New Server
 
@@ -95,6 +105,12 @@ Each server:
 2. Add `pyproject.toml`, `src/`, `tests/`, and `README.md`
 3. Create a virtual environment: `python -m venv .venv`
 4. Add the server to the table above
+
+## Adding a New OpenClaw Plugin
+
+See [`openclaw-plugins/README.md`](./openclaw-plugins/README.md) for plugin
+conventions. New plugins are picked up automatically by `pnpm install` via
+the `openclaw-plugins/*` workspace glob.
 
 ## Development
 

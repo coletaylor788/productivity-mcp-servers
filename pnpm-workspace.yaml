@@ -1,0 +1,9 @@
+packages:
+  - "packages/*"
+  - "openclaw-plugins/*"
+
+# Native modules with build scripts that need to be allowed to run.
+# pnpm 10+ blocks postinstall scripts by default for security.
+onlyBuiltDependencies:
+  - keytar
+  - esbuild
