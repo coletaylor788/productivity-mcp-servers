@@ -8,5 +8,10 @@
     "test": "pnpm -r --filter \"./packages/**\" --filter \"./openclaw-plugins/**\" test",
     "lint": "pnpm -r --filter \"./packages/**\" --filter \"./openclaw-plugins/**\" lint"
   },
-  "packageManager": "pnpm@10.31.0"
+  "packageManager": "pnpm@10.31.0",
+  "pnpm": {
+    "overrides": {
+      "uuid@<14.0.0": ">=14.0.0"
+    }
+  }
 }
