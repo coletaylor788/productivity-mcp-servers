@@ -30,6 +30,22 @@ between the MCP call and the result the agent sees on its next turn.
 See [Plan 010](../../docs/plans/010-secure-gmail-plugin.md) for the full
 architecture rationale.
 
+## Install in OpenClaw
+
+```bash
+# from the repo root, build the plugin's dist/ first
+pnpm install
+pnpm --filter secure-gmail build
+
+# then link + enable in OpenClaw
+openclaw plugins install -l ./openclaw-plugins/secure-gmail
+openclaw plugins enable secure-gmail
+openclaw plugins doctor   # surfaces load errors if any
+```
+
+After enabling, add the config block below to your OpenClaw config so the
+plugin knows where to find gmail-mcp.
+
 ## Configuration
 
 | Key | Required | Default | Purpose |
@@ -84,6 +100,7 @@ The integration tests cover:
 |---|---|---|
 | `tests/integration.mcp-bridge.test.ts` | Spawns the real gmail-mcp subprocess, completes the MCP handshake, calls `listTools` | `cd servers/gmail-mcp && .venv/bin/pip install -e .` |
 | `tests/integration.hooks.test.ts` | Runs `InjectionGuard` + `SecretRedactor` against canned email fixtures using the real GitHub Copilot API | GitHub PAT in macOS Keychain (service: `openclaw`, account: `github-pat`) — see [packages/mcp-hooks/README.md](../../packages/mcp-hooks/README.md#credential-setup) |
+| `tests/integration.e2e.test.ts` | End-to-end: wrapped `list_emails` against the real gmail-mcp + real Copilot hooks + your real Gmail inbox | All of the above **plus** gmail-mcp authenticated (refresh token in keychain, service: `gmail-mcp`, account: `token`) |
 
 Tests skip automatically when their prerequisites are missing.
 
