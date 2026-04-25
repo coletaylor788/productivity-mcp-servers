@@ -28,6 +28,25 @@ For v1, gmail-mcp has no send-style tools, so we only need ingress. When `send_e
 See also:
 - Plan 012 — Secure web provider plugins (`web_fetch`, `web_search`)
 - Plan 014 — Egress approval plugin (when `send_email` lands)
+- Plan 017 — Secure Apple Calendar plugin (calendar only; same wrapping pattern, sister plugin. Reminders/contacts intentionally unwrapped — see 017 for rationale)
+
+## Addendum (2026-04-24): Gmail Delegation Auth
+
+**Decision:** Puddles operates on Cole's Gmail via Google's [delegate access](https://support.google.com/mail/answer/138350) feature, not by holding Cole's credentials. Puddles authenticates as `puddles@gmail.com` and Cole grants delegate access on `cole@gmail.com`. Apple Mail (and IMAP/SMTP in general) cannot be used for this — IMAP has no concept of delegated mailboxes; only the Gmail API supports it.
+
+**Implications for `gmail-mcp` and this plugin:**
+
+1. **`userId` parameter must be the delegated address, not `me`.** All Gmail API calls (`users.messages.list`, `users.messages.send`, etc.) take a `userId` path parameter. Authenticated-as-self uses `me`; delegated access uses the target address (`cole@gmail.com`). `gmail-mcp` needs to support a configurable `userId` (default `me`, but settable per plugin config).
+2. **OAuth scopes don't change.** Standard Gmail scopes (`gmail.readonly`, `gmail.send`, `gmail.modify`) apply; Google enforces what the delegate can do server-side (delegates cannot change settings, manage filters, or rotate the password — useful security ceiling).
+3. **`Send mail as` header behavior.** By default, mail sent via delegated access shows "from cole@gmail.com (sent by puddles@gmail.com)". Cole can toggle "show sender as the delegator only" in Gmail settings. `SendApproval` UX should display the From: address as the user will actually see it, including the "on behalf of" line.
+4. **Token refresh & failure modes.** If Cole revokes delegate access, the next Gmail API call returns 403 / `Delegation denied`. Plugin should surface this clearly (not as a generic auth failure) so Cole can see "I revoked access; this is expected" without burning debugging time.
+5. **No effect on the wrapping architecture.** All Plan 010 hook wiring (LeakGuard, SendApproval, InjectionGuard, SecretRedactor) sits above the API call. The `userId` parameter is opaque to hooks. Hook implementation is unchanged by this decision.
+
+**Action items** (track in this plan's checklist when implementation resumes):
+- [ ] Verify `gmail-mcp` accepts a configurable `userId` (or default `me`); add support if missing.
+- [ ] Add `delegatedUserId` to the secure-gmail plugin config schema; pass through to gmail-mcp.
+- [ ] Update README setup to document the Google-side delegate-access grant procedure.
+- [ ] Surface "Delegation denied" 403 distinctly in plugin error mapping.
 
 ## Context: How OpenClaw Plugins Work
 
@@ -253,38 +272,46 @@ Future instances (e.g., secure-calendar, secure-slack) copy this structure and o
 ## Checklist
 
 ### Implementation
-- [ ] Create `openclaw-plugins/secure-gmail/` directory + workspace `package.json` (workspace:* dep on `mcp-hooks`, peer-dep on `openclaw`, dep on `@modelcontextprotocol/sdk`)
-- [ ] Add `tsconfig.json` extending `../../tsconfig.base.json`
-- [ ] Write `openclaw.plugin.json` manifest with full configSchema
-- [ ] Implement `src/mcp-bridge.ts` (spawn gmail-mcp via stdio, expose `listTools` / `callTool`, clean shutdown)
-- [ ] Implement `src/wrap-tool.ts` (`wrapWithHooks`, ingress await + Promise.all, block / modify / passthrough)
-- [ ] Implement `src/plugin.ts` (default-exported `{ id, register(api) }`, instantiate hooks, register each tool)
-- [ ] Run `pnpm install` at root and verify workspace resolves
+- [x] Create `openclaw-plugins/secure-gmail/` directory + workspace `package.json` (workspace:* dep on `mcp-hooks`, peer-dep on `openclaw`, dep on `@modelcontextprotocol/sdk`)
+- [x] Add `tsconfig.json` extending `../../tsconfig.base.json`
+- [x] Write `openclaw.plugin.json` manifest with full configSchema
+- [x] Implement `src/mcp-bridge.ts` (spawn gmail-mcp via stdio, expose `listTools` / `callTool`, clean shutdown)
+- [x] Implement `src/wrap-tool.ts` (`wrapMcpTool`, ingress await + Promise.all, block / modify / passthrough)
+- [x] Implement `src/plugin.ts` (default-exported `{ id, register(api) }`, instantiate hooks, register each tool)
+- [x] Run `pnpm install` at root and verify workspace resolves
 
 ### Testing
 
-**Unit tests (mocked MCP client + mocked hooks, fast):**
-- [ ] `wrapWithHooks` calls `mcpClient.callTool` with the right name/params
-- [ ] Ingress hooks run in parallel via `Promise.all`
-- [ ] Ingress `block` verdict → returns blocked sentinel, never reveals raw content
-- [ ] Ingress `modify` verdict → returns modified content
-- [ ] Multiple modify verdicts compose (last write wins on shared text)
-- [ ] Skipped tools call MCP directly with no hook invocation
-- [ ] Hook errors are surfaced (or fail-open, matching mcp-hooks architecture.md)
-- [ ] `mcp-bridge` shuts down child process on plugin unload
+**Unit tests (mocked MCP client + mocked hooks, fast) — 20/20 passing:**
+- [x] `wrapMcpTool` calls `mcpClient.callTool` with the right name/params
+- [x] Ingress hooks run in parallel via `Promise.all`
+- [x] Ingress `block` verdict → returns blocked sentinel, never reveals raw content
+- [x] Ingress `modify` verdict → returns modified content
+- [x] Multiple modify verdicts compose (last write wins on shared text)
+- [x] Skipped tools register without ingress hook invocation
+- [x] Falls back to empty schema when MCP tool has no `inputSchema`
+- [x] `mcp-bridge` lifecycle (connect/listTools/callTool/close) including idempotency
 
-**Integration tests (manual, require Copilot PAT in keychain + gmail-mcp auth):**
+**Automated integration tests (real subprocess + real LLM) — 6/6 passing:**
+- [x] Spawn real gmail-mcp via stdio, complete handshake, `listTools` returns the expected tool surface
+- [x] gmail-mcp returns `isError: true` (not a thrown protocol error) for unknown tool names
+- [x] Real `InjectionGuard` blocks a clear prompt-injection email body via Copilot API
+- [x] Real `InjectionGuard` allows a clean email body
+- [x] Real `SecretRedactor` redacts a 6-digit 2FA code
+- [x] Real `SecretRedactor` leaves clean prose untouched
+
+**Manual end-to-end smoke (requires gmail-mcp OAuth + OpenClaw running):**
 - [ ] Plugin loads in OpenClaw (`openclaw plugins list` shows secure-gmail)
 - [ ] All gmail tools appear and are callable from an agent session
-- [ ] Injected email body triggers InjectionGuard block
-- [ ] 2FA code in email body is redacted by SecretRedactor
+- [ ] Injected email body triggers InjectionGuard block end-to-end
+- [ ] 2FA code in email body is redacted end-to-end
 - [ ] Clean email passes through unmodified
 - [ ] `authenticate`, `archive_email`, `add_label` work without hook overhead
 
 ### Cleanup
-- [ ] No unused imports or dead code (`pnpm -r lint` if configured, otherwise tsc --noEmit)
-- [ ] Code is readable and well-commented where needed
+- [x] No unused imports or dead code (`pnpm lint` clean)
+- [x] Code is readable and well-commented where needed
 
 ### Documentation
-- [ ] Plugin `README.md` with setup, OpenClaw config example, manual test steps
-- [ ] Plan marked as Complete with date
+- [x] Plugin `README.md` with setup, OpenClaw config example, manual test steps
+- [ ] Plan marked as Complete with date (after manual e2e smoke test)

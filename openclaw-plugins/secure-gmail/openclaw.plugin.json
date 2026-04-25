@@ -1,0 +1,38 @@
+{
+  "id": "secure-gmail",
+  "name": "Secure Gmail",
+  "version": "0.1.0",
+  "description": "Wraps the Gmail MCP server's tools with mcp-hooks ingress security (prompt-injection guard + secret redactor).",
+  "configSchema": {
+    "type": "object",
+    "required": ["gmailMcpCommand"],
+    "additionalProperties": false,
+    "properties": {
+      "gmailMcpCommand": {
+        "type": "string",
+        "description": "Path to the gmail-mcp Python interpreter (e.g. ~/git/puddles/servers/gmail-mcp/.venv/bin/python)."
+      },
+      "gmailMcpArgs": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Args passed to gmailMcpCommand to launch the MCP server.",
+        "default": ["-m", "gmail_mcp"]
+      },
+      "gmailMcpCwd": {
+        "type": "string",
+        "description": "Working directory for the gmail-mcp subprocess (optional)."
+      },
+      "model": {
+        "type": "string",
+        "description": "Copilot model used by hook LLM checks.",
+        "default": "claude-haiku-4.5"
+      },
+      "skipTools": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Tool names to register without ingress hooks.",
+        "default": ["authenticate", "archive_email", "add_label"]
+      }
+    }
+  }
+}
