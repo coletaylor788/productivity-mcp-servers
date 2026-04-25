@@ -1,7 +1,8 @@
 # Plan 009: MCP Security Hooks Library
 
-**Status:** Draft  
-**Created:** 2026-04-12
+**Status:** In Progress (implementation complete, docs pending)  
+**Created:** 2026-04-12  
+**Updated:** 2026-04-24
 
 ## Summary
 
@@ -324,7 +325,7 @@ const trustStore = new TrustStore({
 });
 trustStore.seedDomains(config.trustedDomains ?? []);
 
-const guard = new ContentGuard({ llm, trustStore });
+const guard = new SendApproval({ llm, trustStore });
 ```
 
 **Domain matching:** If destination is `cole@mycompany.com` and `mycompany.com` is in domains, the domain trust level applies. Contact-level trust overrides domain-level.
@@ -472,24 +473,31 @@ Integration tests hit the real LLM via Copilot API. They require a GitHub PAT st
 ## Checklist
 
 ### Implementation
-- [ ] Scaffold package structure (`packages/mcp-hooks/`, package.json, tsconfig, src layout)
-- [ ] Implement `types.ts` (HookResult, interfaces)
-- [ ] Implement `copilot-llm.ts` (CopilotLLMClient with token exchange + in-memory caching)
-- [ ] Implement `egress/content-guard.ts` (system prompt + trusted flag)
-- [ ] Implement `ingress/injection-guard.ts` (system prompt + classification)
-- [ ] Implement `ingress/secret-redactor.ts` (regex patterns + LLM fallback)
+- [x] Scaffold package structure (`packages/mcp-hooks/`, package.json, tsconfig, src layout)
+- [x] Implement `types.ts` (HookResult, interfaces)
+- [x] Implement `copilot-llm.ts` (CopilotLLMClient with token exchange + in-memory caching)
+- [x] Implement `egress/leak-guard.ts` (LLM classification, blocks secrets/sensitive/PII on non-send tools)
+- [x] Implement `egress/send-approval.ts` + `trust-store.ts` (destination-aware trust + approval flow)
+- [x] Implement `ingress/injection-guard.ts` (system prompt + classification)
+- [x] Implement `ingress/secret-redactor.ts` (regex patterns + LLM fallback)
 
 ### Testing
 - [x] All unit tests written (92 tests, mocked LLM)
 - [x] All unit tests passing
-- [ ] Integration tests written (real Copilot API)
-- [ ] Integration tests passing (requires PAT in keychain)
+- [x] Integration tests written (real Copilot API — `tests/integration.test.ts`)
+- [x] Integration tests passing (requires PAT in keychain; verified in commit 66cb14f)
 
 ### Cleanup
-- [ ] Code linting passes
-- [ ] No unused imports or dead code
+- [x] Code linting passes (`npm run lint`)
+- [x] No unused imports or dead code
 
 ### Documentation
-- [ ] README.md written
+- [x] README.md written
 - [ ] docs/architecture.md written
 - [ ] Plan marked as complete with date
+
+> **Scope note (2026-04-24):** Plan originally specified a single `ContentGuard` egress hook. During
+> implementation it was split into two complementary hooks — `LeakGuard` (non-send tools, always blocks)
+> and `SendApproval` (send-type tools, destination-aware trust + approval) — to cleanly separate the
+> "never leak" case from the "deliberate communication" case. Plan body and diagrams reflect the new
+> shape; this checklist has been updated to match.
