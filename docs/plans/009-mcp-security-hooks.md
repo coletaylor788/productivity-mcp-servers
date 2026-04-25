@@ -1,6 +1,6 @@
 # Plan 009: MCP Security Hooks Library
 
-**Status:** In Progress (implementation complete, docs pending)  
+**Status:** Complete (2026-04-24)  
 **Created:** 2026-04-12  
 **Updated:** 2026-04-24
 
@@ -493,8 +493,8 @@ Integration tests hit the real LLM via Copilot API. They require a GitHub PAT st
 
 ### Documentation
 - [x] README.md written
-- [ ] docs/architecture.md written
-- [ ] Plan marked as complete with date
+- [x] docs/architecture.md written
+- [x] Plan marked as complete with date
 
 > **Scope note (2026-04-24):** Plan originally specified a single `ContentGuard` egress hook. During
 > implementation it was split into two complementary hooks — `LeakGuard` (non-send tools, always blocks)
