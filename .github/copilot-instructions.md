@@ -1,5 +1,7 @@
 # Puddles - Copilot Instructions
 
+> ⚠️ **DO NOT USE THE `ask_user` TOOL.** When you need clarification or a decision, just ask in plain words in your response. No tool call.
+
 A monorepo for the Puddles personal-agent stack: MCP servers, OpenClaw plugins, Mac Mini host scripts, and setup docs.
 
 **Target clients:** Claude, Claude Code  
