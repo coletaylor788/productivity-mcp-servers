@@ -1,8 +1,8 @@
 # Plan 010: Secure MCP Tool Plugins
 
-**Status:** Draft  
+**Status:** In Progress  
 **Created:** 2026-04-12  
-**Depends on:** Plan 009 (MCP Security Hooks Library), Plan 013 (OpenClaw Plugins Scaffold)
+**Depends on:** Plan 009 (MCP Security Hooks Library) ✅, Plan 013 (OpenClaw Plugins Scaffold) ✅
 
 ## Summary
 
@@ -10,82 +10,82 @@ Build an OpenClaw plugin that wraps Gmail MCP server tools with security hooks f
 
 Gmail (`openclaw-plugins/secure-gmail/`) is the first instance. The pattern is reusable for any future MCP server.
 
+## Why wrap `execute()` (not OpenClaw lifecycle hooks)
+
+Verified against OpenClaw 1.x plugin SDK source (`/opt/homebrew/lib/node_modules/openclaw/dist/`):
+
+| OpenClaw hook | Async support | Can block / modify result | Verdict for our use case |
+|---|---|---|---|
+| `before_tool_call` | ✅ awaits handler | block + modify params | ✅ Suitable for egress (LeakGuard / SendApproval) — needs awaiting LLM |
+| `after_tool_call` | ✅ async, **fire-and-forget** | observation only | ❌ Cannot modify result |
+| `tool_result_persist` | ❌ **sync only** (Promises rejected) | modify message before transcript write | ❌ Cannot await ingress LLM check |
+| `before_message_write` | ❌ **sync only** | block + modify message | ❌ Same problem |
+
+Ingress hooks (`InjectionGuard`, `SecretRedactor`) require awaiting LLM calls, so they cannot live in `tool_result_persist` / `before_message_write`. The only place to run async work in the result path is **inside the registered tool's `execute()` itself**, which OpenClaw fully awaits. This matches the plan's original wrapping approach.
+
+For v1, gmail-mcp has no send-style tools, so we only need ingress. When `send_email` lands, egress can be added either in the same `execute()` wrapper or via `api.on("before_tool_call")` (both work; we'll pick whichever composes best at that time).
+
 See also:
 - Plan 012 — Secure web provider plugins (`web_fetch`, `web_search`)
-- Plan 011 — Container network intercept for sandboxed tool traffic
+- Plan 014 — Egress approval plugin (when `send_email` lands)
 
 ## Context: How OpenClaw Plugins Work
 
 OpenClaw plugins live in a directory with:
-- `openclaw.plugin.json` — required manifest (id, name, config schema)
-- `plugin.ts` — `register(api)` function that calls `api.registerTool()`, `api.registerWebFetchProvider()`, `api.on()`, etc.
+- `openclaw.plugin.json` — required manifest (id, configSchema, etc.)
+- A module exporting either `{ id, register(api) }` or a `(api) => void` function
+- Inside `register()`, plugins call `api.registerTool()`, `api.on(hookName, handler)`, etc.
 
 Plugins are loaded by pointing OpenClaw config at plugin directories:
 ```json
 {
   "plugins": {
     "load": {
-      "paths": [
-        "~/git/productivity-mcp-servers/openclaw-plugins/secure-gmail",
-        "~/git/productivity-mcp-servers/openclaw-plugins/secure-web"
-      ]
+      "paths": ["~/git/puddles/openclaw-plugins/secure-gmail"]
     }
   }
 }
 ```
 
-## Plugin Structure
+## Plugin Structure (v1)
 
 ```
-openclaw-plugins/
-├── secure-gmail/                   # MCP tool wrapper plugin (Surface 1)
-│   ├── openclaw.plugin.json
-│   ├── plugin.ts                   # register(): MCP client + api.registerTool()
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── tests/
-│       └── plugin.test.ts
-├── secure-web/                     # Web provider replacement plugin (Surfaces 2 + 3)
-│   ├── openclaw.plugin.json
-│   ├── plugin.ts                   # register(): registerWebFetchProvider + registerWebSearchProvider
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── tests/
-│       └── plugin.test.ts
-└── shared/                         # Shared utilities (if needed)
-    ├── hooks.ts                    # Common hook initialization helpers
-    └── package.json
+openclaw-plugins/secure-gmail/
+├── openclaw.plugin.json     # manifest: id + configSchema
+├── package.json             # workspace:* dep on mcp-hooks, peer-dep on openclaw
+├── tsconfig.json            # extends ../../tsconfig.base.json
+├── src/
+│   ├── plugin.ts            # default export: { id, register(api) }
+│   ├── mcp-bridge.ts        # spawn gmail-mcp via stdio, list/call tools
+│   └── wrap-tool.ts         # wrap MCP tool with hooks, return AnyAgentTool
+├── tests/
+│   ├── wrap-tool.test.ts    # unit tests with mocked MCP client + hooks
+│   └── mcp-bridge.test.ts
+└── README.md
 ```
 
-All plugins depend on `packages/mcp-hooks/` from Plan 009 for the security hook implementations (ContentGuard, InjectionGuard, SecretRedactor, CopilotLLMClient, runEgressHooks, runIngressHooks).
+Depends on `packages/mcp-hooks/` for `LeakGuard`, `SendApproval`, `InjectionGuard`, `SecretRedactor`, `CopilotLLMClient`, `TrustStore`.
 
 ---
 
-## Surface 1: MCP Tool Plugins (secure-gmail)
-
-### Overview
-
-An OpenClaw plugin that connects to an MCP server (e.g., gmail-mcp) via stdio, discovers its tools, and registers each one with `api.registerTool()`. Each tool's `execute()` is wrapped: egress hooks run before the MCP call, ingress hooks run after.
-
-Gmail is the first instance, but the pattern is generic for any MCP server. Future MCP tool plugins (e.g., secure-calendar, secure-slack) would follow the same structure.
-
-### Architecture
+## Architecture
 
 ```
 OpenClaw
   │
   ├── loads secure-gmail plugin
   │     │
-  │     ├── connects to gmail-mcp via MCP client (stdio)
-  │     ├── discovers gmail tools (list_emails, get_email, send_email, etc.)
-  │     ├── registers each tool with api.registerTool()
+  │     ├── spawns gmail-mcp via stdio (@modelcontextprotocol/sdk client)
+  │     ├── lists gmail tools (list_emails, get_email, get_attachments, ...)
+  │     ├── for each tool: api.registerTool(wrapWithHooks(tool, mcpClient, hooks))
   │     │
-  │     └── each tool.execute() wraps the MCP call:
-  │           1. ContentGuard (egress) — check outgoing params
-  │           2. mcpClient.callTool() — actual gmail-mcp call
-  │           3. InjectionGuard + SecretRedactor (ingress, parallel) — check result
+  │     └── each registered tool's execute() does:
+  │           1. (v2) Egress hooks — check outgoing params, await, may block
+  │           2. await mcpClient.callTool(name, params)
+  │           3. Ingress hooks (InjectionGuard + SecretRedactor in parallel) — await
+  │           4. Return blocked / redacted / passthrough text
   │
-  └── agent uses tools normally (security is transparent)
+  └── agent uses tools normally; security is transparent
 ```
 
 ### Plugin Manifest (`openclaw.plugin.json`)
@@ -95,114 +95,113 @@ OpenClaw
   "id": "secure-gmail",
   "name": "Secure Gmail",
   "version": "0.1.0",
-  "description": "Gmail MCP tools with egress/ingress security hooks",
+  "description": "Gmail MCP tools with ingress security hooks (injection guard + secret redactor)",
   "configSchema": {
     "type": "object",
+    "required": ["gmailMcpCommand"],
     "properties": {
       "gmailMcpCommand": {
         "type": "string",
-        "description": "Path to gmail-mcp Python executable"
+        "description": "Path to the gmail-mcp Python interpreter (e.g. .venv/bin/python)"
       },
-      "trusted": {
-        "type": "boolean",
-        "description": "Whether Gmail is a trusted destination (allows PII in egress)",
-        "default": true
+      "gmailMcpArgs": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Args passed to gmailMcpCommand to launch the MCP server",
+        "default": ["-m", "gmail_mcp"]
+      },
+      "gmailMcpCwd": {
+        "type": "string",
+        "description": "Working directory for the gmail-mcp subprocess (optional)"
       },
       "model": {
         "type": "string",
-        "description": "LLM model for hook analysis",
+        "description": "Copilot model used by hook LLM checks",
         "default": "claude-haiku-4.5"
+      },
+      "skipTools": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Tool names to register without ingress hooks (default: authenticate, archive_email, add_label)",
+        "default": ["authenticate", "archive_email", "add_label"]
       }
     }
   }
 }
 ```
 
-### Tool Wrapping Pattern
+### Tool Wrapping Pattern (v1, ingress-only)
 
 ```typescript
-// plugin.ts
-import { LeakGuard, SendApproval, InjectionGuard, SecretRedactor, CopilotLLMClient, TrustStore } from "mcp-hooks";
+// src/plugin.ts
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import { InjectionGuard, SecretRedactor, CopilotLLMClient } from "mcp-hooks";
+import { connectGmailMcp } from "./mcp-bridge.js";
+import { wrapWithHooks } from "./wrap-tool.js";
 
 export default {
   id: "secure-gmail",
 
-  async register(api) {
-    const config = api.pluginConfig;
-    
-    const llm = new CopilotLLMClient({ model: config.model });
-    const trustStore = new TrustStore({
-      pluginId: "secure-gmail",
-      extractDestination: (toolName, params) => params.to as string,
-    });
-    trustStore.seedDomains(config.trustedDomains ?? []);
-
-    // Hook instances
-    const leakGuard = new LeakGuard({ llm });
-    const sendApproval = new SendApproval({ llm, trustStore });
-    const injectionGuard = new InjectionGuard({ llm });
-    const secretRedactor = new SecretRedactor({ llm });
-
-    // Per-tool hook mapping
-    const hookMap = {
-      ingress: ["get_email", "list_emails", "get_attachments"],  // InjectionGuard + SecretRedactor
-      skip: ["authenticate", "archive_email", "add_label"],
-      // egress hooks added when send_email is implemented
+  async register(api: OpenClawPluginApi) {
+    const config = api.pluginConfig as {
+      gmailMcpCommand: string;
+      gmailMcpArgs?: string[];
+      gmailMcpCwd?: string;
+      model?: string;
+      skipTools?: string[];
     };
 
-    // Connect to gmail-mcp server via stdio
-    const mcpClient = await connectMcpServer(config.gmailMcpCommand);
-    
-    // Discover and register all gmail tools
-    const tools = await mcpClient.listTools();
-    for (const tool of tools) {
-      if (hookMap.skip.includes(tool.name)) {
-        api.registerTool(tool); // register as-is, no wrapping
-        continue;
-      }
-      const egress = [
-        ...(hookMap.egress.leakGuard.includes(tool.name) ? [leakGuard] : []),
-        ...(hookMap.egress.sendApproval.includes(tool.name) ? [sendApproval] : []),
-      ];
-      const ingress = [
-        ...(hookMap.ingress.injectionGuard.includes(tool.name) ? [injectionGuard] : []),
-        ...(hookMap.ingress.secretRedactor.includes(tool.name) ? [secretRedactor] : []),
-      ];
-      api.registerTool(wrapWithHooks(tool, mcpClient, { egress, ingress }));
-    }
-  }
-};
+    const llm = new CopilotLLMClient({ model: config.model ?? "claude-haiku-4.5" });
+    const injectionGuard = new InjectionGuard({ llm });
+    const secretRedactor = new SecretRedactor({ llm });
+    const skip = new Set(config.skipTools ?? ["authenticate", "archive_email", "add_label"]);
 
-// Wraps an MCP tool with egress/ingress hooks
-function wrapWithHooks(tool, mcpClient, hooks) {
+    const mcpClient = await connectGmailMcp({
+      command: config.gmailMcpCommand,
+      args: config.gmailMcpArgs ?? ["-m", "gmail_mcp"],
+      cwd: config.gmailMcpCwd,
+    });
+
+    const { tools } = await mcpClient.listTools();
+    for (const tool of tools) {
+      if (skip.has(tool.name)) {
+        api.registerTool(wrapWithHooks(tool, mcpClient, { ingress: [] }));
+      } else {
+        api.registerTool(wrapWithHooks(tool, mcpClient, {
+          ingress: [injectionGuard, secretRedactor],
+        }));
+      }
+    }
+  },
+};
+```
+
+```typescript
+// src/wrap-tool.ts
+export function wrapWithHooks(tool, mcpClient, hooks) {
   return {
     name: tool.name,
-    description: tool.description,
+    description: tool.description ?? "",
     parameters: tool.inputSchema,
-    async execute(params) {
-      // EGRESS: run each hook, stop on first block
-      for (const hook of hooks.egress ?? []) {
-        const result = await hook.check(tool.name, params);
-        if (result.action === "block") return { error: `Blocked: ${result.reason}` };
+    async execute(params: Record<string, unknown>) {
+      const raw = await mcpClient.callTool({ name: tool.name, arguments: params });
+      const text = extractText(raw);
+
+      if (!hooks.ingress?.length) return text;
+
+      const verdicts = await Promise.all(
+        hooks.ingress.map(h => h.check(tool.name, text)),
+      );
+      const blocked = verdicts.find(v => v.action === "block");
+      if (blocked) return `[secure-gmail] blocked: ${blocked.reason}`;
+
+      // Apply each modify in order; redactors compose
+      let current = text;
+      for (const v of verdicts) {
+        if (v.action === "modify" && typeof v.content === "string") current = v.content;
       }
-
-      // TOOL: call gmail-mcp
-      const result = await mcpClient.callTool(tool.name, params);
-      const resultText = extractText(result);
-
-      // INGRESS: run in parallel
-      if (hooks.ingress?.length) {
-        const results = await Promise.all(
-          hooks.ingress.map(h => h.check(tool.name, resultText))
-        );
-        const blocked = results.find(r => r.action === "block");
-        if (blocked) return { error: `Blocked: ${blocked.reason}` };
-        const modified = results.find(r => r.action === "modify");
-        if (modified) return modified.content;
-      }
-
-      return resultText;
-    }
+      return current;
+    },
   };
 }
 ```
@@ -211,20 +210,20 @@ function wrapWithHooks(tool, mcpClient, hooks) {
 
 | Direction | Tools | Hooks |
 |-----------|-------|-------|
-| **Ingress** | `get_email`, `list_emails`, `get_attachments` | InjectionGuard + SecretRedactor |
-| *(skip)* | `authenticate`, `archive_email`, `add_label` | — |
-| *(future: egress)* | `send_email` (when built) | LeakGuard + SendApproval |
+| **Ingress (v1)** | `list_emails`, `get_email`, `get_attachments` | InjectionGuard + SecretRedactor |
+| *(skip, v1)* | `authenticate`, `archive_email`, `add_label` | — |
+| *(future v2 egress)* | `send_email` (when built) | LeakGuard + SendApproval |
 
 ### Reusable Pattern for Future MCP Tool Plugins
 
 The secure-gmail plugin establishes a generic pattern for wrapping any MCP server:
-1. Accept MCP server command path in plugin config
+1. Accept MCP server command/args in plugin config
 2. Connect via stdio using `@modelcontextprotocol/sdk`
 3. Discover tools with `listTools()`
-4. Register each with `api.registerTool()`, wrapping `execute()` with hooks
-5. Plugin config controls: trusted flag, model override, per-tool hook overrides
+4. Register each via `api.registerTool()`, wrapping `execute()` with hooks
+5. Plugin config controls model and per-tool skip list
 
-Future instances (e.g., secure-calendar, secure-slack) copy this structure and only change the config schema and per-tool hook configuration.
+Future instances (e.g., secure-calendar, secure-slack) copy this structure and only change the manifest's `id`/defaults.
 
 ---
 
@@ -234,14 +233,13 @@ Future instances (e.g., secure-calendar, secure-slack) copy this structure and o
 {
   "plugins": {
     "load": {
-      "paths": ["~/git/productivity-mcp-servers/openclaw-plugins/secure-gmail"]
+      "paths": ["~/git/puddles/openclaw-plugins/secure-gmail"]
     },
     "entries": {
       "secure-gmail": {
         "config": {
-          "gmailMcpCommand": "~/git/productivity-mcp-servers/servers/gmail-mcp/.venv/bin/python",
+          "gmailMcpCommand": "~/git/puddles/servers/gmail-mcp/.venv/bin/python",
           "gmailMcpArgs": ["-m", "gmail_mcp"],
-          "trusted": true,
           "model": "claude-haiku-4.5"
         }
       }
@@ -255,38 +253,38 @@ Future instances (e.g., secure-calendar, secure-slack) copy this structure and o
 ## Checklist
 
 ### Implementation
-- [ ] Create `openclaw-plugins/secure-gmail/` directory structure
-- [ ] Write `openclaw.plugin.json` manifest
-- [ ] Write `plugin.ts` with MCP client connection + tool discovery + registration
-- [ ] Wire mcp-hooks egress + ingress into each tool's `execute()`
-- [ ] Handle per-tool hook configuration (or apply all hooks uniformly for v1)
-- [ ] Write `package.json` with dependencies on `mcp-hooks` and `@modelcontextprotocol/sdk`
+- [ ] Create `openclaw-plugins/secure-gmail/` directory + workspace `package.json` (workspace:* dep on `mcp-hooks`, peer-dep on `openclaw`, dep on `@modelcontextprotocol/sdk`)
+- [ ] Add `tsconfig.json` extending `../../tsconfig.base.json`
+- [ ] Write `openclaw.plugin.json` manifest with full configSchema
+- [ ] Implement `src/mcp-bridge.ts` (spawn gmail-mcp via stdio, expose `listTools` / `callTool`, clean shutdown)
+- [ ] Implement `src/wrap-tool.ts` (`wrapWithHooks`, ingress await + Promise.all, block / modify / passthrough)
+- [ ] Implement `src/plugin.ts` (default-exported `{ id, register(api) }`, instantiate hooks, register each tool)
+- [ ] Run `pnpm install` at root and verify workspace resolves
 
 ### Testing
 
-**Unit tests (mocked dependencies, fast):**
-- [ ] `wrapWithHooks()` correctly applies egress hooks before MCP call
-- [ ] `wrapWithHooks()` correctly applies ingress hooks after MCP call
-- [ ] Egress block prevents MCP call from executing
-- [ ] Ingress block returns error instead of tool result
-- [ ] Ingress modify returns redacted content
-- [ ] Hook map correctly routes hooks to tools
-- [ ] Skipped tools pass through without hooks
-- [ ] Unknown tools get default hooks
+**Unit tests (mocked MCP client + mocked hooks, fast):**
+- [ ] `wrapWithHooks` calls `mcpClient.callTool` with the right name/params
+- [ ] Ingress hooks run in parallel via `Promise.all`
+- [ ] Ingress `block` verdict → returns blocked sentinel, never reveals raw content
+- [ ] Ingress `modify` verdict → returns modified content
+- [ ] Multiple modify verdicts compose (last write wins on shared text)
+- [ ] Skipped tools call MCP directly with no hook invocation
+- [ ] Hook errors are surfaced (or fail-open, matching mcp-hooks architecture.md)
+- [ ] `mcp-bridge` shuts down child process on plugin unload
 
-**Integration tests (real Copilot API, requires PAT in keychain):**
-- [ ] Plugin loads correctly in OpenClaw
-- [ ] Tools are discovered from gmail-mcp and registered
-- [ ] Full flow: InjectionGuard blocks injected email content
-- [ ] Full flow: SecretRedactor redacts 2FA code in email body
-- [ ] Full flow: clean email content passes through unmodified
-- [ ] No regressions in normal tool behavior (authenticate, archive, add_label)
+**Integration tests (manual, require Copilot PAT in keychain + gmail-mcp auth):**
+- [ ] Plugin loads in OpenClaw (`openclaw plugins list` shows secure-gmail)
+- [ ] All gmail tools appear and are callable from an agent session
+- [ ] Injected email body triggers InjectionGuard block
+- [ ] 2FA code in email body is redacted by SecretRedactor
+- [ ] Clean email passes through unmodified
+- [ ] `authenticate`, `archive_email`, `add_label` work without hook overhead
 
 ### Cleanup
-- [ ] No unused imports or dead code
+- [ ] No unused imports or dead code (`pnpm -r lint` if configured, otherwise tsc --noEmit)
 - [ ] Code is readable and well-commented where needed
 
 ### Documentation
-- [ ] README.md with setup instructions
-- [ ] OpenClaw config example in README
-- [ ] Plan marked as complete with date
+- [ ] Plugin `README.md` with setup, OpenClaw config example, manual test steps
+- [ ] Plan marked as Complete with date
