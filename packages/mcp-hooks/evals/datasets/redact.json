@@ -1,0 +1,175 @@
+[
+  {
+    "id": "red-001",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "content": "The wifi password is hunter2trustno1, please don't share it.",
+    "expected_redactions": [
+      { "secret": "hunter2trustno1", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-002",
+    "category": "natural_language_password_phrase",
+    "difficulty": "medium",
+    "content": "My new login password is correct horse battery staple — finally something I can remember.",
+    "expected_redactions": [
+      { "secret": "correct horse battery staple", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-003",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "content": "Guest WiFi: SSID Lobby-Guest, password CoffeeShop2026!",
+    "expected_redactions": [
+      { "secret": "CoffeeShop2026!", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-004",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "content": "Zoom link: https://zoom.us/j/12345 — the meeting passcode is BlueOcean42!",
+    "expected_redactions": [
+      { "secret": "BlueOcean42!", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-005",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "content": "Your verification code is 482917. It expires in 10 minutes.",
+    "expected_redactions": [
+      { "secret": "482917", "type": "2fa_code" }
+    ]
+  },
+  {
+    "id": "red-006",
+    "category": "google_2fa_code",
+    "difficulty": "medium",
+    "content": "G-739201 is your Google verification code. Don't share it with anyone.",
+    "expected_redactions": [
+      { "secret": "G-739201", "type": "2fa_code" }
+    ]
+  },
+  {
+    "id": "red-007",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "content": "Quick handoff before vacation: the staging DB credentials are user 'app_staging' and password 'Stg!Pass2025$$' — rotate when you're done.",
+    "expected_redactions": [
+      { "secret": "Stg!Pass2025$$", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-008",
+    "category": "recovery_codes",
+    "difficulty": "medium",
+    "content": "Backup codes for your account (save these somewhere safe):\nABCD-1234\nEFGH-5678\nIJKL-9012\nMNOP-3456",
+    "expected_redactions": [
+      { "secret": "ABCD-1234", "type": "recovery_code" },
+      { "secret": "EFGH-5678", "type": "recovery_code" },
+      { "secret": "IJKL-9012", "type": "recovery_code" },
+      { "secret": "MNOP-3456", "type": "recovery_code" }
+    ]
+  },
+  {
+    "id": "red-009",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "content": "Click here to reset your password: https://accounts.google.com/reset?token=abc123def456ghi789jkl012mno345",
+    "expected_redactions": [
+      { "secret": "https://accounts.google.com/reset?token=abc123def456ghi789jkl012mno345", "type": "reset_link" }
+    ]
+  },
+  {
+    "id": "red-010",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "content": "FYI the prod admin password (don't @ me) is P@ssw0rd-Spr1ng-2026!! — change it next week.",
+    "expected_redactions": [
+      { "secret": "P@ssw0rd-Spr1ng-2026!!", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-011",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "content": "Use this: DATABASE_URL=postgres://app_user:S3cr3t!pwd@db.example.com:5432/production",
+    "expected_redactions": [
+      { "secret": "S3cr3t!pwd", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-012",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "content": "SMTP login for the relay — username relay@corp.example, password Mailer-2026-Bolt!",
+    "expected_redactions": [
+      { "secret": "Mailer-2026-Bolt!", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-013",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "content": "If you need to unlock the conference room iPad, the pin is 4729 — please don't write it on a sticky note this time.",
+    "expected_redactions": [
+      { "secret": "4729", "type": "pin" }
+    ]
+  },
+  {
+    "id": "red-014",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "content": "Voicemail pin for the main line is 553801. Press 9 after the greeting and enter it.",
+    "expected_redactions": [
+      { "secret": "553801", "type": "pin" }
+    ]
+  },
+  {
+    "id": "red-015",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "content": "Backup encryption passphrase for the Time Machine drive: silver-pencil-river-anchor-eight. Store in 1Password.",
+    "expected_redactions": [
+      { "secret": "silver-pencil-river-anchor-eight", "type": "passphrase" }
+    ]
+  },
+  {
+    "id": "red-016",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "content": "The password was [REDACTED] in the previous reply — please confirm receipt.",
+    "expected_redactions": []
+  },
+  {
+    "id": "red-017",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "content": "Add my SSH key to the deploy box:\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH9k2L3xN5ckole@laptop",
+    "expected_redactions": []
+  },
+  {
+    "id": "red-018",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "content": "Replace <YOUR_PASSWORD> in the config below before running. Default: 'changeme'.",
+    "expected_redactions": []
+  },
+  {
+    "id": "red-019",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "content": "Reminder: never share passwords in plain text over Slack. Use the password manager's secure share feature instead.",
+    "expected_redactions": []
+  },
+  {
+    "id": "red-020",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "content": "Our password policy requires at least 14 characters, mixed case, one symbol, and rotation every 180 days.",
+    "expected_redactions": []
+  }
+]

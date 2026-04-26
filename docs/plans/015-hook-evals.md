@@ -1,6 +1,6 @@
 # Plan 015: Hook Evals
 
-**Status:** Draft  
+**Status:** Phase 1 complete (2026-04-25); Phases 2-3 deferred  
 **Created:** 2026-04-13  
 **Depends on:** Plan 009 (MCP Security Hooks Library)
 
@@ -768,8 +768,70 @@ packages/mcp-hooks/
 
 ## Checklist
 
-### Dataset Generation
-- [ ] Generate secrets dataset across 85+ categories (35 infra types + 25 email/message types + 15 contexts + 20 negatives)
+This plan is being delivered in **3 phases**. Phase 1 (harness + seed datasets
++ baseline) is complete; Phases 2-3 are deferred.
+
+### Phase 1 — harness + seed datasets + baseline (✅ 2026-04-25)
+
+#### Refactor: prompt centralization
+- [x] Centralize all 5 LLM prompts in `packages/mcp-hooks/src/prompts.ts` (single source of truth, internal)
+- [x] Extract `classifyBoolean()` helper into `src/classify.ts` with explicit `outcome: ok|parse_error|api_error`
+- [x] Refactor `LeakGuard`, `InjectionGuard`, `SendApproval`, `SecretRedactor` to use centralized prompts + helper
+- [x] Discovered + fixed silent prompt drift: `SENSITIVE_PROMPT` differed by one example phrase between `leak-guard.ts` and `send-approval.ts` (LeakGuard's richer wording adopted as canonical)
+- [x] All 95 mcp-hooks unit tests still pass post-refactor
+- [x] Lint + build clean
+
+#### Eval harness
+- [x] `evals/types.ts` — shared types (BooleanEvalCase, RedactEvalCase, EvalReport, etc.)
+- [x] `evals/load.ts` — case loader with `content_b64` decode for secret-shaped fixtures
+- [x] `evals/classifiers.ts` — `makeBooleanClassifier`, `runRedact` (end-to-end through `SecretRedactor.check`)
+- [x] `evals/scoring.ts` — precision/recall/F1/FPR with `low_sample_size` warning at n<10
+- [x] `evals/runner.ts` — concurrency control, retry+backoff, timeout, two-view metrics, sha256 hashes for prompt + dataset, git SHA in report
+- [x] `evals/cli.ts` — argv parser, all-eval orchestration, sanitized summary, PAT-skip pattern
+- [x] `pnpm eval` scripts in `package.json` (eval, eval:secrets, eval:sensitive, eval:pii, eval:injection, eval:redact)
+- [x] `tsx` devDep added
+- [x] `evals/.gitignore` — ignores `results/` (raw scratch outputs)
+
+#### Seed datasets (Phase 1 — small, hand-curated)
+- [x] `evals/datasets/secrets.json` — 30 cases (17 positive, 13 negative)
+- [x] `evals/datasets/sensitive.json` — 25 cases (12 positive, 13 negative)
+- [x] `evals/datasets/pii.json` — 25 cases (12 positive, 13 negative)
+- [x] `evals/datasets/injection.json` — 25 cases (15 positive, 10 negative)
+- [x] `evals/datasets/redact.json` — 20 cases (15 positive, 5 negative)
+- [x] Secret-scanning hardening: `.github/secret_scanning.yml` excludes `evals/datasets/**` and `evals/baselines/**`; secret-shaped fixtures stored as `content_b64`
+
+#### Baseline run (claude-haiku-4.5, 2026-04-25)
+
+| Eval      | n   | Acc   | P    | R    | F1   | FPR   |
+| --------- | --- | ----- | ---- | ---- | ---- | ----- |
+| secrets   | 30  | 93.3% | 0.94 | 0.94 | 0.94 | 0.077 |
+| sensitive | 25  | 96.0% | 1.00 | 0.92 | 0.96 | 0.000 |
+| pii       | 25  | 96.0% | 0.92 | 1.00 | 0.96 | 0.077 |
+| injection | 25  | 96.0% | 1.00 | 0.93 | 0.97 | 0.000 |
+| redact    | 20  | 90.0% | 0.88 | 1.00 | 0.94 | 0.400 |
+
+- [x] Baselines committed to `packages/mcp-hooks/evals/baselines/`
+- [x] Each report includes git SHA + prompt hash + dataset hash for reproducibility
+
+#### Documentation
+- [x] `evals/README.md` — methodology, two metric views, how to run, dataset format, b64 escape hatch, phased scope
+- [x] Plan marked complete (this file)
+
+#### Phase 1 callouts for later phases
+
+- **Redact FPR is high** (~40%) — over-redaction of clean content. Top
+  candidate for Phase 3 prompt tuning.
+- **Per-category metrics tagged `low_sample_size`** — Phase 1 datasets are
+  intentionally small. Per-category numbers are diagnostic, not headline.
+- **Production-semantics view** treats infra failures as fail-open negatives
+  (matching real behavior). Compare to **valid-only view** to separate prompt
+  quality from infra reliability.
+
+---
+
+### Phase 2 — full datasets (deferred)
+
+- [ ] Generate secrets dataset across 85+ categories (35 infra types + 25 email/message types + 15 contexts + 20 negatives) — target 5K+ cases
 - [ ] Generate sensitive dataset across 75+ categories (51 positive + 10 personal-assistant negatives + 25 general negatives)
 - [ ] Generate PII dataset across 75+ categories (45 positive + 10 personal-assistant positives + 10 PA negatives + 20 general negatives)
 - [ ] Generate injection dataset across 95+ categories (70 positive including 15 PA-targeted + 30 general negatives + 10 PA negatives)
@@ -777,20 +839,11 @@ packages/mcp-hooks/
 - [ ] Human review all generated cases for quality
 - [ ] Verify cross-cutting dimension coverage (lengths, formats, languages, tones, contexts, difficulty)
 - [ ] Tag each case with category, difficulty, and dimensions for analysis
+- [ ] Run baseline against full datasets; commit new baselines
 
-### Eval Infrastructure
-- [ ] Implement eval runner (load dataset, run hook, compare, score)
-- [ ] Implement scoring (precision, recall, F1, false positive rate)
-- [ ] Implement category and difficulty breakdown
-- [ ] Implement JSON report output
-- [ ] Add `pnpm eval` scripts to package.json
+### Phase 3 — prompt iteration (deferred)
 
-### Baseline + Tuning
-- [ ] Run baseline evals with initial prompts
-- [ ] Identify and analyze false positives and false negatives
+- [ ] Identify and analyze false positives and false negatives from Phase 2 baseline
 - [ ] Iterate on prompts until targets met (P ≥ 95%, R ≥ 90%, F1 ≥ 92%)
 - [ ] Document final prompt versions and scores
-
-### Documentation
-- [ ] Document eval methodology in README or docs/
-- [ ] Plan marked as complete with date
+- [ ] Compare against Phase 1 baseline to verify no regressions on small set

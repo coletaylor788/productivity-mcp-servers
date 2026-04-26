@@ -12,7 +12,13 @@
     "test:all": "vitest run",
     "test:watch": "vitest --exclude tests/integration.test.ts",
     "lint": "tsc --noEmit",
-    "setup-auth": "npx tsx scripts/setup-auth.ts"
+    "setup-auth": "npx tsx scripts/setup-auth.ts",
+    "eval": "tsx evals/cli.ts",
+    "eval:secrets": "tsx evals/cli.ts --eval=secrets",
+    "eval:sensitive": "tsx evals/cli.ts --eval=sensitive",
+    "eval:pii": "tsx evals/cli.ts --eval=pii",
+    "eval:injection": "tsx evals/cli.ts --eval=injection",
+    "eval:redact": "tsx evals/cli.ts --eval=redact"
   },
   "dependencies": {
     "openai": "^4.0.0",
@@ -21,6 +27,7 @@
   "devDependencies": {
     "typescript": "^5.0.0",
     "vitest": "^3.0.0",
+    "tsx": "^4.0.0",
     "@types/node": "^22.0.0"
   }
 }
