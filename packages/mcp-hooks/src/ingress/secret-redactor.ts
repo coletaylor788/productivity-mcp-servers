@@ -1,19 +1,6 @@
 import type { CopilotLLMClient } from "../copilot-llm.js";
 import type { HookResult } from "../types.js";
-
-const REDACT_PROMPT = `You are a security classifier. The following content has already been partially redacted by regex. Identify any remaining secrets that the regex missed.
-
-Look for:
-- Secrets in unusual formats not caught by standard regex patterns
-- Context-dependent secrets (strings that are only secrets in certain contexts)
-- Passwords or credentials in natural language ("the password is hunter2")
-- Obfuscated or encoded secrets
-- Any other credential, token, code, or key that could grant access
-
-For each secret found, return the EXACT string as it appears in the content, and its type.
-
-Respond with JSON only: {"findings": [{"secret": "exact string from content", "type": "category"}]}
-If no additional secrets found: {"findings": []}`;
+import { REDACT_PROMPT } from "../prompts.js";
 
 // Regex patterns for common secret formats
 const REGEX_PATTERNS: Array<{ pattern: RegExp; type: string }> = [
