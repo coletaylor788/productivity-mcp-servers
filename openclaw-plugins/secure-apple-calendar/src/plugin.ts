@@ -17,11 +17,15 @@ import {
   wrapMcpTool,
   type AuditEntry,
   type AuditLogger,
+  type McpCaller,
 } from "./wrap-tool.js";
 import {
   calendarExtractDestinations,
   extractAttendeeEmails,
+  READ_ACTIONS,
   selectHooksForCalendar,
+  WRITE_ACTIONS,
+  type CalendarAction,
   type CalendarHooks,
 } from "./action-map.js";
 
@@ -212,6 +216,74 @@ function createAuditLogger(api: OpenClawPluginApi, filePath: string): AuditLogge
   };
 }
 
+/**
+ * Build a narrowed clone of `CALENDAR_TOOL` for one OpenClaw-facing
+ * registration. The advertised `action` enum is restricted to `actions`,
+ * the tool name and description are overridden, and the rest of the
+ * schema is reused unchanged.
+ *
+ * The agent only sees the actions it can perform — but we still enforce
+ * the gate at runtime in `restrictActionsCaller` (defence in depth).
+ */
+function narrowCalendarTool(
+  name: string,
+  description: string,
+  actions: ReadonlySet<CalendarAction>,
+): McpTool {
+  const schema = CALENDAR_TOOL.inputSchema as McpTool["inputSchema"] & {
+    properties: Record<string, unknown>;
+  };
+  const actionList = Array.from(actions);
+  return {
+    name,
+    description,
+    inputSchema: {
+      ...schema,
+      type: "object",
+      properties: {
+        ...schema.properties,
+        action: {
+          type: "string",
+          enum: actionList,
+          description: `Operation to perform (${actionList.join(", ")}).`,
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Wrap the lazy MCP caller so:
+ *   1. We reject calls whose `action` is outside `allowed` (defence in depth
+ *      on top of the schema enum), without spawning a bridge call.
+ *   2. We rewrite the bridge call from the OpenClaw-facing name (e.g.
+ *      `calendar_read`) back to the underlying MCP tool name `calendar`.
+ */
+function restrictActionsCaller(
+  inner: McpCaller,
+  openclawToolName: string,
+  allowed: ReadonlySet<CalendarAction>,
+  api: Pick<OpenClawPluginApi, "logger">,
+): McpCaller {
+  return {
+    async callTool(_name: string, args: Record<string, unknown>) {
+      const action = String(args?.action ?? "");
+      if (!allowed.has(action as CalendarAction)) {
+        const allowedList = Array.from(allowed).join(", ");
+        const msg =
+          `[secure-apple-calendar] ${openclawToolName} does not allow ` +
+          `action="${action}". Allowed: ${allowedList}.`;
+        api.logger?.warn?.(msg);
+        return {
+          content: [{ type: "text", text: msg }],
+          isError: true,
+        };
+      }
+      return inner.callTool("calendar", args);
+    },
+  };
+}
+
 const secureAppleCalendarPlugin = {
   id: "secure-apple-calendar",
   name: "Secure Apple Calendar",
@@ -310,21 +382,56 @@ const secureAppleCalendarPlugin = {
     const auditLogPath = config.auditLogPath ?? DEFAULT_AUDIT_LOG_PATH;
     const audit = createAuditLogger(api, auditLogPath);
 
+    const CALENDAR_READ_TOOL = narrowCalendarTool(
+      "calendar_read",
+      "Read macOS Calendar events and metadata (works with iCloud, Google, " +
+        "Outlook, and any calendar account added to macOS Calendar.app). " +
+        "Read-only: list calendars, query events by date range, get by ID, " +
+        "search by text, schema (show input schema). Cannot mutate.",
+      READ_ACTIONS,
+    );
+    const CALENDAR_WRITE_TOOL = narrowCalendarTool(
+      "calendar_write",
+      "Create, update, or delete macOS Calendar events. Mutating only — use " +
+        "`calendar_read` to query. Events with attendees go through " +
+        "SendApproval; events without attendees go through LeakGuard.",
+      WRITE_ACTIONS,
+    );
+
     api.logger.info?.(
-      `[secure-apple-calendar] registering 1 tool (audit log: ${auditLogPath}, trusted domains: ${
+      `[secure-apple-calendar] registering 2 tools (audit log: ${auditLogPath}, trusted domains: ${
         trustedDomains.length > 0 ? trustedDomains.join(",") : "<none>"
-      }): calendar`,
+      }): calendar_read, calendar_write`,
     );
 
     api.registerTool(
-      wrapMcpTool(CALENDAR_TOOL, lazyCaller, {
-        selectHooks: (args) =>
-          selectHooksForCalendar(args, calendarHooks, {
-            trustedAttendeeDomains: trustedDomains,
-          }),
-        audit,
-        source: "secure-apple-calendar",
-      }),
+      wrapMcpTool(
+        CALENDAR_READ_TOOL,
+        restrictActionsCaller(lazyCaller, "calendar_read", READ_ACTIONS, api),
+        {
+          selectHooks: (args) =>
+            selectHooksForCalendar(args, calendarHooks, {
+              trustedAttendeeDomains: trustedDomains,
+            }),
+          audit,
+          source: "secure-apple-calendar",
+        },
+      ),
+    );
+
+    api.registerTool(
+      wrapMcpTool(
+        CALENDAR_WRITE_TOOL,
+        restrictActionsCaller(lazyCaller, "calendar_write", WRITE_ACTIONS, api),
+        {
+          selectHooks: (args) =>
+            selectHooksForCalendar(args, calendarHooks, {
+              trustedAttendeeDomains: trustedDomains,
+            }),
+          audit,
+          source: "secure-apple-calendar",
+        },
+      ),
     );
 
     api.on("session_end", async () => {

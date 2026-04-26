@@ -4,20 +4,29 @@ OpenClaw plugin that wraps the [apple-pim](https://github.com/omarshahine/Apple-
 MCP server's `calendar` tool with security hooks from
 [`mcp-hooks`](../../packages/mcp-hooks/).
 
-It registers a single OpenClaw `AnyAgentTool` named `calendar` whose
-`execute()`:
+It registers **two** OpenClaw `AnyAgentTool`s, both backed by apple-pim's
+single `calendar` MCP tool:
 
-1. Inspects the `action` arg (`list`, `events`, `get`, `search`, `create`,
-   `update`, `delete`, `batch_create`, `schema`) to decide which hooks apply.
-2. Runs **egress** hooks first on mutation actions:
+| OpenClaw tool | Allowed actions | Typical agent |
+|---|---|---|
+| `calendar_read` | `list`, `events`, `get`, `search`, `schema` | sandboxed reader |
+| `calendar_write` | `create`, `update`, `delete`, `batch_create` | main / write-capable agent |
+
+Each tool's `execute()`:
+
+1. **Action gate** — rejects out-of-set actions before anything else (defence
+   in depth on top of the schema enum); the bridge is never spawned for a
+   rejected call.
+2. Inspects the `action` arg to decide which hooks apply (see table below).
+3. Runs **egress** hooks first on mutation actions (`calendar_write`):
    - `SendApproval` if the event has attendees, gated by an
      attendee-domain TrustStore. External (untrusted) domains require
      approval; trusted domains pass.
    - `LeakGuard` otherwise (no attendees → no recipient to evaluate).
-3. Calls the underlying MCP tool only if egress allowed (or no egress hook
-   was selected).
-4. Pipes the text result through **ingress** hooks (`InjectionGuard` +
-   `SecretRedactor`) on read actions before returning it to the agent.
+4. Calls the underlying MCP tool only if egress allowed.
+5. Pipes the text result through **ingress** hooks (`InjectionGuard` +
+   `SecretRedactor`) on read actions (`calendar_read`) before returning it
+   to the agent.
 
 If any hook returns `block`, the agent receives a sentinel message instead
 of the raw content / instead of a successful mutation. If all hooks return
@@ -171,6 +180,27 @@ Prerequisites above.
     }
   }
 }
+```
+
+### Per-agent allowlist split
+
+Recommended: give the sandboxed reader agent only `calendar_read`, and
+give the main agent only `calendar_write` (or both, if main also browses
+the calendar). The OpenClaw allowlist is the source of truth — the
+plugin enforces the action gate at runtime, but the allowlist is what an
+operator audits.
+
+Example `agents.list[0]` (main) `tools.allow` additions:
+
+```json
+"calendar_write"
+```
+
+Example `agents.list[2]` (reader) `tools.allow` + `sandbox.tools.alsoAllow`
+additions:
+
+```json
+"calendar_read"
 ```
 
 ## Development

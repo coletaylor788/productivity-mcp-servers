@@ -20,7 +20,7 @@ export interface ActionMapOptions {
 }
 
 /** Action handled by apple-pim's `calendar` MCP tool. */
-type CalendarAction =
+export type CalendarAction =
   | "list"
   | "events"
   | "get"
@@ -30,6 +30,31 @@ type CalendarAction =
   | "delete"
   | "batch_create"
   | "schema";
+
+/**
+ * Read-only calendar actions. Surfaced as the `calendar_read` OpenClaw tool
+ * so a sandboxed reader agent can query without being able to mutate.
+ * `delete` is intentionally NOT here: it mutates state.
+ * `schema` is here because it returns the input schema (discovery only).
+ */
+export const READ_ACTIONS = new Set<CalendarAction>([
+  "list",
+  "events",
+  "get",
+  "search",
+  "schema",
+]);
+
+/**
+ * Mutating calendar actions. Surfaced as the `calendar_write` OpenClaw tool.
+ * Egress hooks (SendApproval / LeakGuard) gate every call here.
+ */
+export const WRITE_ACTIONS = new Set<CalendarAction>([
+  "create",
+  "update",
+  "delete",
+  "batch_create",
+]);
 
 /**
  * Decide which hooks should run for one calendar tool call.
