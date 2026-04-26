@@ -244,4 +244,42 @@ describe("SendApproval", () => {
       expect(result.classification!.has_personal).toBe(true);
     });
   });
+
+  describe("custom extractDestinations override", () => {
+    it("uses the custom extractor instead of the built-in one", async () => {
+      const calendarTrust = new TrustStore({
+        pluginId: "test-cal",
+        extractDestination: () => null,
+        storageDir: tempDir,
+      });
+      calendarTrust.trust("alice@example.com");
+      llm.classify.mockImplementation(makeClassifyResponse(false, false, false));
+
+      const calApproval = new SendApproval({
+        llm,
+        trustStore: calendarTrust,
+        extractDestinations: (_tool, params) => {
+          const attendees = params.attendees as Array<{ email: string }> | undefined;
+          return attendees?.map((a) => a.email) ?? [];
+        },
+      });
+
+      const result = await calApproval.check("calendar", "Sync meeting", {
+        attendees: [{ email: "alice@example.com" }],
+      });
+
+      expect(result.action).toBe("allow");
+      expect(result.trustLevel).toBe("trusted");
+      expect(result.destination).toBe("alice@example.com");
+    });
+
+    it("falls back to the built-in extractor when not provided", async () => {
+      llm.classify.mockImplementation(makeClassifyResponse(false, false, false));
+      const result = await sendApproval.check("send_email", "Hi", {
+        to: "anyone@example.com",
+      });
+      // Built-in extractor saw `to`, looked up trust, saw "unknown" → blocks
+      expect(result.destination).toBe("anyone@example.com");
+    });
+  });
 });

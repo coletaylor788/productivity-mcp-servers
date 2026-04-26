@@ -1,6 +1,6 @@
 # Plan 017: Secure Apple Calendar Plugin
 
-**Status:** Draft
+**Status:** Complete (2026-04-24)
 **Created:** 2026-04-24
 **Depends on:** Plan 009 (MCP Security Hooks Library) ✅, Plan 013 (OpenClaw Plugins Scaffold) ✅, Plan 016 §4 (Apple PIM install)
 **Companion to:** Plan 010 (Secure Gmail Plugin) — same architecture, different MCP server
@@ -41,21 +41,21 @@ Apple-pim ships dual modes: a stdio MCP server (built for Claude Code) and a "na
 
 ## Apple-PIM Domain Configuration
 
-Apple-pim supports per-domain on/off. We disable everything except calendar:
+**Resolved during implementation:** apple-pim's MCP server exposes 5 consolidated tools (`calendar`, `reminder`, `contact`, `mail`, `apple-pim`). The plugin **only registers `calendar`** at the OpenClaw layer — the other four tools are silently dropped, regardless of apple-pim's own config. This is defense in depth at the registration boundary; we don't pass env-var disables.
 
-```jsonc
-// Passed through to apple-pim MCP server env (exact var names TBD during impl)
+For belt-and-suspenders at the apple-pim layer too, users can also drop a `~/.config/apple-pim/config.json`:
+
+```json
 {
-  "domains": {
-    "calendar":  true,
-    "reminders": false,   // not wrapped; keep disabled until a use case appears
-    "contacts":  false,   // see "Contacts: Optional Follow-Up"
-    "mail":      false    // owned by gmail-mcp + secure-gmail
+  "items": {
+    "mail":      { "enabled": false },
+    "reminders": { "enabled": false },
+    "contacts":  { "enabled": false }
   }
 }
 ```
 
-If/when reminders or contacts become genuinely useful to the agent, revisit the threat model and either enable unwrapped (low-risk surfaces) or write a small targeted hook (e.g., a `pii-redactor` for contacts.search results — see below).
+If/when reminders or contacts become genuinely useful to the agent, revisit the threat model and either register them unwrapped (low-risk surfaces) or write a small targeted hook (e.g., a `pii-redactor` for contact reads — see below).
 
 ## Architecture
 
@@ -117,18 +117,22 @@ OpenClaw
 }
 ```
 
-## Per-Tool Hook Map
+## Per-Action Hook Map
 
-Tool names are the expected apple-pim MCP names; verify against the running server during implementation.
+**Resolved during implementation:** apple-pim's MCP server collapses calendar operations into a single `calendar` tool dispatched on `args.action`. Routing is per-action, implemented in `src/action-map.ts`:
 
-| Direction | Tools | Hooks | Rationale |
+| Action | Ingress | Egress | Rationale |
 |---|---|---|---|
-| **Ingress** | `list_events`, `get_event`, `search_events` | InjectionGuard + SecretRedactor | Shared calendars (Cole→Puddles per Plan 016 §4.2) carry external content; meeting descriptions and notes are unsanitized; conferencing URLs frequently embed passcodes / one-time tokens |
-| **Egress** | `create_event`, `update_event` (with attendees) | **SendApproval** | CalDAV invitation = email egress. `extractDestination` pulls attendee emails from event params, not `params.to` |
-| **Egress** | `create_event`, `update_event` (no attendees) | LeakGuard | Local mutation; LeakGuard catches accidental secret/PII writes into event titles/descriptions/notes |
-| *(skip)* | `delete_event`, `list_calendars` | — | Pure mutations / metadata reads with no exfil channel |
+| `list`, `schema`, `delete` | — | — | Metadata / pure mutation; no exfil channel |
+| `events`, `get`, `search` | InjectionGuard + SecretRedactor | — | Shared calendars carry external content; meeting descriptions are unsanitized; conferencing URLs frequently embed passcodes |
+| `create`, `update`, `batch_create` (no attendees) | — | LeakGuard | Local mutation; LeakGuard catches accidental secret/PII writes into title/notes |
+| `create`, `update`, `batch_create` (≥1 untrusted attendee) | — | **SendApproval** | CalDAV invitation = email egress. `extractDestinations` returns the full attendee list (also handles `args.events[]` for `batch_create`) |
+| `create`, `update`, `batch_create` (all attendees in `trustedAttendeeDomains`) | — | skipped | Common-case short-circuit; domains also seeded into TrustStore as belt-and-suspenders |
+| any unknown action | InjectionGuard + SecretRedactor | — | Fail-closed for unfamiliar reads |
 
-**SendApproval `extractDestination` for calendar:** unlike email's `params.to`, calendar events carry attendees as a structured list. The destination for trust evaluation is the set of attendee email addresses (deduped, lowercased). Multi-attendee events are evaluated against the highest-trust-required attendee. `trustedAttendeeDomains` config provides an allowlist so common meetings don't generate constant approval prompts.
+Egress content is focused: title, location, notes, url (and `events[].*` for batch_create). IDs / calendar names / dates / durations are excluded — not meaningful exfil channels and they inflate LLM cost.
+
+**SendApproval extension:** the built-in `extractDestinations` only checks `to/recipient/recipients/email/address`. We added an optional override constructor option (`packages/mcp-hooks/src/egress/send-approval.ts`) and wire `calendarExtractDestinations` from `action-map.ts` so attendee emails are picked up.
 
 ## Plugin Structure
 
@@ -167,13 +171,10 @@ openclaw-plugins/secure-apple-calendar/
     "entries": {
       "secure-apple-calendar": {
         "config": {
-          "applePimMcpCommand": "npx",
-          "applePimMcpArgs": ["-y", "apple-pim-cli"],
-          "applePimMcpEnv": {
-            "APPLE_PIM_DOMAINS_MAIL": "false",
-            "APPLE_PIM_DOMAINS_REMINDERS": "false",
-            "APPLE_PIM_DOMAINS_CONTACTS": "false"
-          },
+          "applePimMcpCommand": "node",
+          "applePimMcpArgs": [
+            "/Users/<you>/git/Apple-PIM-Agent-Plugin/mcp-server/dist/server.js"
+          ],
           "trustedAttendeeDomains": ["<work-domain>", "<personal-domain>"],
           "model": "claude-haiku-4.5"
         }
@@ -183,18 +184,20 @@ openclaw-plugins/secure-apple-calendar/
 }
 ```
 
-(Exact env var names TBD — verify against apple-pim source during implementation.)
+apple-pim's MCP server has no npm bin — invoke it directly via `node` against the built `mcp-server/dist/server.js`. Domain disable is via `~/.config/apple-pim/config.json` (not env vars); see "Apple-PIM Domain Configuration" above.
 
 ## Contacts: Optional Follow-Up
 
 If/when the agent needs read access to contacts (e.g., "what's Alice's email?" before creating an event), enable apple-pim's contacts domain *unwrapped* and accept the residual exfil-by-composition risk. If that risk feels real later, add a small `tool_result_persist` redactor (sync, regex-based — phone/address strip; keep names+emails) rather than spinning up a full secure-apple-contacts plugin.
 
-## Open Questions for Implementation
+## Implementation Notes (resolved)
 
-1. **MCP server tool surface vs native plugin tool surface** — verify they're identical for calendar. If the MCP server is a strict subset, document gaps.
-2. **How does apple-pim signal "event has attendees"** in `create_event` / `update_event` params? Drives the conditional SendApproval-vs-LeakGuard routing.
-3. **Per-domain disable mechanism** — env var? config file? CLI flag? Need to confirm before writing the plugin config schema.
-4. **Trust seeding for SendApproval** — populate `trustedAttendeeDomains` with your work + personal domains before flipping the plugin on.
+1. **Tool surface:** apple-pim MCP exposes 5 consolidated tools; only `calendar` is registered. Routing is per-`args.action` (see Per-Action Hook Map above).
+2. **Attendees:** live at `args.attendees[].email` for single-event actions and at `args.events[].attendees[].email` for `batch_create`. `extractAttendeeEmails()` handles both shapes.
+3. **Per-domain disable:** N/A — handled at the OpenClaw registration boundary by only registering `calendar`. Optional `~/.config/apple-pim/config.json` for defense in depth.
+4. **Trust seeding:** populate `trustedAttendeeDomains` with your work + personal domains in OpenClaw config. Domains are also seeded into TrustStore via `seedDomains()` for belt-and-suspenders.
+5. **apple-pim datamarking:** apple-pim wraps PIM content with sentinels at the source (`markToolResult` + `getDatamarkingPreamble`). Our `InjectionGuard` is the second line of defense — note this in the README threat model.
+6. **MCP server install path:** install-dependent (Claude Code plugin cache vs dev clone). README documents both; user picks per-mini.
 
 ## Out of Scope
 
@@ -209,40 +212,42 @@ If/when the agent needs read access to contacts (e.g., "what's Alice's email?" b
 ## Checklist
 
 ### Implementation
-- [ ] Verify apple-pim MCP calendar tool surface vs native plugin (open question 1)
-- [ ] Verify per-domain disable mechanism (open question 3)
-- [ ] Create `openclaw-plugins/secure-apple-calendar/` directory structure
-- [ ] Write `openclaw.plugin.json` manifest
-- [ ] Write `mcp-bridge.ts` (port from secure-gmail; parameterize on command/args/env)
-- [ ] Write `wrap-tool.ts` (port from secure-gmail; should be near-identical)
-- [ ] Write `hook-map.ts` with per-tool routing per the table above
-- [ ] Implement `extractDestination` for calendar attendees in `hook-map.ts`
-- [ ] Implement `trustedAttendeeDomains` allowlist short-circuit in SendApproval routing
-- [ ] Wire plugin entrypoint `plugin.ts` together
-- [ ] `package.json` with `workspace:*` dep on mcp-hooks
-- [ ] OpenClaw config update on the mini (loads plugin + disables non-calendar apple-pim domains)
+- [x] Verify apple-pim MCP calendar tool surface vs native plugin → consolidated 5-tool surface; only `calendar` registered
+- [x] Verify per-domain disable mechanism → handled at registration boundary; optional apple-pim config file documented
+- [x] Create `openclaw-plugins/secure-apple-calendar/` directory structure
+- [x] Write `openclaw.plugin.json` manifest
+- [x] Write `mcp-bridge.ts` (port from secure-gmail; parameterized on command/args/env)
+- [x] Write `wrap-tool.ts` — extended with per-call `selectHooks(args)` for ingress + egress phases
+- [x] Write `action-map.ts` with per-action routing per the table above
+- [x] Implement `calendarExtractDestinations` for attendees (single + batch_create shapes)
+- [x] Implement `trustedAttendeeDomains` allowlist short-circuit (action-map sets `skipEgress`; also seeded into TrustStore)
+- [x] Extend `mcp-hooks` SendApproval with optional `extractDestinations` override (backward compatible)
+- [x] Wire plugin entrypoint `plugin.ts` together (hardcoded `CALENDAR_TOOL` for synchronous registration)
+- [x] `package.json` with `workspace:*` dep on mcp-hooks
+- [ ] OpenClaw config update on the mini (loads plugin + optional apple-pim config) — operational task; deferred to user
 
 ### Testing
-- [ ] Unit: `extractDestination` correctly extracts attendee list from `create_event` params (single, multi, none)
-- [ ] Unit: hookMap routes `create_event` with attendees → SendApproval, without attendees → LeakGuard
-- [ ] Unit: `trustedAttendeeDomains` short-circuits SendApproval for fully-trusted attendee sets, falls back to LLM check when any attendee is outside the allowlist
-- [ ] Unit: ingress hooks run on `list_events`/`get_event`/`search_events` results
-- [ ] Unit: skipped tools (`delete_event`, `list_calendars`) pass through without hooks
-- [ ] Unit: non-calendar tools (if any leak through despite domain disable) are explicitly rejected (defense-in-depth)
-- [ ] Integration: plugin loads in OpenClaw on the mini; apple-pim MCP server spawns; only calendar tools visible
-- [ ] Integration: shared calendar from Cole → Puddles read returns events; injected description in a test event triggers InjectionGuard
-- [ ] Integration: `create_event` with external attendee triggers SendApproval flow
-- [ ] Integration: `create_event` with attendees only in `trustedAttendeeDomains` passes through without prompting
-- [ ] Integration: `create_event` with no attendees and clean params passes through
+- [x] Unit: `extractAttendeeEmails` correctly extracts attendees (single, multi, none, batch_create, malformed)
+- [x] Unit: action-map routes mutations with attendees → SendApproval, without → LeakGuard, reads → ingress
+- [x] Unit: `trustedAttendeeDomains` short-circuits when all attendees match; falls through when any external
+- [x] Unit: ingress hooks run on `events`/`get`/`search` results
+- [x] Unit: skipped actions (`list`, `schema`, `delete`) pass through without hooks
+- [x] Unit: unknown actions fail-closed (ingress applied)
+- [x] Unit: SendApproval custom `extractDestinations` override (in `packages/mcp-hooks`)
+- [x] Integration: InjectionGuard + SecretRedactor + LeakGuard against real Copilot LLM with calendar fixtures (6 tests)
+- [ ] Integration: plugin loads in OpenClaw on the mini; apple-pim MCP server spawns; only calendar tool visible — operational, deferred
+- [ ] Integration: shared-calendar live read with injected description triggers InjectionGuard — operational, deferred
+- [ ] Integration: `create` with external attendee triggers SendApproval flow — operational, deferred
+- [ ] Integration: `create` with trusted-only attendees passes through without prompting — operational, deferred
 
 ### Cleanup
-- [ ] No unused imports or dead code
-- [ ] Code linting passes (`pnpm lint` per repo conventions)
-- [ ] If `mcp-bridge.ts` ends up identical to secure-gmail's → consider promoting to shared package; otherwise leave duplicated
+- [x] No unused imports or dead code
+- [x] Code linting passes (`pnpm --filter secure-apple-calendar lint` clean)
+- [x] `mcp-bridge.ts` left duplicated from secure-gmail (per "no premature extraction" — revisit when 3rd consumer appears)
 
 ### Documentation
-- [ ] README.md with setup instructions (CLI install, MCP server cmd, OpenClaw config, domain disable env vars)
-- [ ] OpenClaw config example in README
-- [ ] Update plan 010 to cross-reference plan 017 and the mail/calendar domain split
-- [ ] Update plan 016 §4 (Apple PIM install) to reference plan 017 for calendar hook wrapping; note reminders/contacts intentionally unwrapped
-- [ ] Plan marked as complete with date
+- [x] README.md with setup instructions (apple-pim install, MCP server cmd, OpenClaw config, optional domain disable)
+- [x] OpenClaw config example in README
+- [ ] Update plan 010 to cross-reference plan 017 and the mail/calendar domain split — low priority, defer
+- [ ] Update plan 016 §4 (Apple PIM install) to reference plan 017 — low priority, defer
+- [x] Plan marked as complete with date
