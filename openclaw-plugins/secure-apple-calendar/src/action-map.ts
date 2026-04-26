@@ -10,8 +10,6 @@ export interface CalendarHooks {
   ingress: IngressHook[];
   /** Used for create/update/batch_create when the call has attendees. */
   sendApproval: EgressHook;
-  /** Used for create/update/batch_create when the call has NO attendees. */
-  leakGuard: EgressHook;
 }
 
 export interface ActionMapOptions {
@@ -47,7 +45,9 @@ export const READ_ACTIONS = new Set<CalendarAction>([
 
 /**
  * Mutating calendar actions. Surfaced as the `calendar_write` OpenClaw tool.
- * Egress hooks (SendApproval / LeakGuard) gate every call here.
+ * Writes with untrusted attendees go through SendApproval (egress); writes
+ * with no attendees or with all-trusted attendees pass through unhooked
+ * because nothing leaves the user's iCloud account in those cases.
  */
 export const WRITE_ACTIONS = new Set<CalendarAction>([
   "create",
@@ -64,11 +64,17 @@ export const WRITE_ACTIONS = new Set<CalendarAction>([
  *   - events, get, search                    → ingress only (read paths can carry
  *                                              prompt-injection from external
  *                                              attendees / shared calendars)
- *   - create, update, batch_create with attendees    → SendApproval (egress)
- *   - create, update, batch_create without attendees → LeakGuard (egress)
+ *   - create, update, batch_create with untrusted attendees → SendApproval (egress)
+ *   - create, update, batch_create with all-trusted attendees → no hooks (skipEgress)
+ *   - create, update, batch_create with no attendees         → no hooks
  *
- * Egress content focuses on the user-supplied text fields (title, notes,
- * location, url) — the fields actually persisted and shared with attendees.
+ * Why nothing on the no-attendee write path: the event lands only on the
+ * user's own iCloud account; there's no recipient and no network egress to
+ * an external party, so there's nothing for an egress hook to protect.
+ *
+ * Egress content (when SendApproval runs) focuses on the user-supplied text
+ * fields (title, notes, location, url) — the fields actually persisted and
+ * shared with attendees.
  *
  * If every attendee's email is in `trustedAttendeeDomains`, the egress hook
  * is skipped (skipEgress=true) — the user has pre-approved this destination.
@@ -96,19 +102,16 @@ export function selectHooksForCalendar(
     case "update":
     case "batch_create": {
       const emails = extractAttendeeEmails(args);
-      const egressContent = buildEgressContent(args);
-      if (emails.length > 0) {
-        if (allTrusted(emails, trustedDomains)) {
-          return { skipEgress: true };
-        }
-        return {
-          egress: [hooks.sendApproval],
-          egressContent,
-        };
+      if (emails.length === 0) {
+        // No recipient — event stays on the user's iCloud account only.
+        return {};
+      }
+      if (allTrusted(emails, trustedDomains)) {
+        return { skipEgress: true };
       }
       return {
-        egress: [hooks.leakGuard],
-        egressContent,
+        egress: [hooks.sendApproval],
+        egressContent: buildEgressContent(args),
       };
     }
 

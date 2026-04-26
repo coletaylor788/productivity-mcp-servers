@@ -57,12 +57,6 @@ vi.mock("mcp-hooks", async () => {
         return { action: "allow" as const };
       }
     },
-    LeakGuard: class {
-      name = "LeakGuard";
-      async check() {
-        return { action: "allow" as const };
-      }
-    },
   };
 });
 

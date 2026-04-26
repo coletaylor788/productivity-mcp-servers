@@ -5,7 +5,6 @@ import { homedir } from "node:os";
 import {
   CopilotLLMClient,
   InjectionGuard,
-  LeakGuard,
   SecretRedactor,
   SendApproval,
   TrustStore,
@@ -288,7 +287,7 @@ const secureAppleCalendarPlugin = {
   id: "secure-apple-calendar",
   name: "Secure Apple Calendar",
   description:
-    "Wraps apple-pim's calendar MCP tool with prompt-injection + secret-redaction (ingress) and SendApproval / LeakGuard (egress) hooks.",
+    "Wraps apple-pim's calendar MCP tool with prompt-injection + secret-redaction (ingress) and SendApproval (egress) hooks.",
 
   register(api: OpenClawPluginApi) {
     const config = (api.pluginConfig ?? {}) as Partial<SecureAppleCalendarConfig>;
@@ -338,8 +337,7 @@ const secureAppleCalendarPlugin = {
       trustStore,
       extractDestinations: calendarExtractDestinations,
     });
-    const leakGuard = new LeakGuard({ llm });
-    const calendarHooks: CalendarHooks = { ingress, sendApproval, leakGuard };
+    const calendarHooks: CalendarHooks = { ingress, sendApproval };
 
     // Lazy MCP bridge: spawn apple-pim MCP only on first invocation.
     let bridgePromise: Promise<McpBridge> | null = null;
@@ -393,8 +391,9 @@ const secureAppleCalendarPlugin = {
     const CALENDAR_WRITE_TOOL = narrowCalendarTool(
       "calendar_write",
       "Create, update, or delete macOS Calendar events. Mutating only — use " +
-        "`calendar_read` to query. Events with attendees go through " +
-        "SendApproval; events without attendees go through LeakGuard.",
+        "`calendar_read` to query. Events with attendees outside " +
+        "`trustedAttendeeDomains` go through SendApproval; events with no " +
+        "attendees or only trusted attendees pass through unhooked.",
       WRITE_ACTIONS,
     );
 

@@ -1,14 +1,12 @@
 /**
- * Integration test: run InjectionGuard + SecretRedactor + LeakGuard against
- * the real GitHub Copilot LLM (using the PAT in the macOS Keychain). Covers
- * the calendar-specific threat surfaces:
+ * Integration test: run InjectionGuard + SecretRedactor against the real
+ * GitHub Copilot LLM (using the PAT in the macOS Keychain). Covers the
+ * calendar-specific threat surfaces:
  *
  *  - InjectionGuard on event-description-shaped content (the highest-risk
  *    surface for this plugin — meeting descriptions from external attendees
  *    routinely contain conferencing URLs and natural-language instructions).
  *  - SecretRedactor on event-notes content with a 2FA-shaped code.
- *  - LeakGuard on title/notes egress (simulating create_event without
- *    attendees, where LeakGuard is the active hook).
  *
  * Skipped automatically when no Copilot token is reachable in the keychain.
  *
@@ -21,7 +19,6 @@ import { describe, it, expect, beforeAll } from "vitest";
 import {
   CopilotLLMClient,
   InjectionGuard,
-  LeakGuard,
   SecretRedactor,
 } from "mcp-hooks";
 
@@ -31,13 +28,11 @@ const describeIfAuth = hasPat ? describe : describe.skip;
 describeIfAuth("integration: hooks against real Copilot LLM (calendar)", () => {
   let injectionGuard: InjectionGuard;
   let secretRedactor: SecretRedactor;
-  let leakGuard: LeakGuard;
 
   beforeAll(() => {
     const llm = new CopilotLLMClient({ model: "claude-haiku-4.5" });
     injectionGuard = new InjectionGuard({ llm });
     secretRedactor = new SecretRedactor({ llm });
-    leakGuard = new LeakGuard({ llm });
   });
 
   it("InjectionGuard flags a malicious event description from an external attendee", async () => {
@@ -104,35 +99,6 @@ describeIfAuth("integration: hooks against real Copilot LLM (calendar)", () => {
     ].join("\n");
 
     const verdict = await secretRedactor.check("calendar", clean);
-    expect(verdict.action).toBe("allow");
-  }, 60_000);
-
-  it("LeakGuard blocks an outgoing event whose notes contain credentials (no attendees path)", async () => {
-    // Simulates buildEgressContent output for a `create` action without
-    // attendees, where LeakGuard is the active egress hook.
-    const egressContent = [
-      "title: Personal todo",
-      "notes: Stripe live key sk" + "_live_" + "51AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcdEfGh",
-    ].join("\n");
-
-    const verdict = await leakGuard.check("calendar", egressContent);
-    if (verdict.action === "allow") {
-      console.warn(
-        "[integration] LeakGuard allowed an obvious secret — likely API failure (fail-open).",
-      );
-      return;
-    }
-    expect(verdict.action).toBe("block");
-    expect(verdict.reason).toBeTruthy();
-  }, 60_000);
-
-  it("LeakGuard allows a benign personal event title + notes", async () => {
-    const egressContent = [
-      "title: Coffee with friend",
-      "notes: catch up about new job",
-    ].join("\n");
-
-    const verdict = await leakGuard.check("calendar", egressContent);
     expect(verdict.action).toBe("allow");
   }, 60_000);
 });

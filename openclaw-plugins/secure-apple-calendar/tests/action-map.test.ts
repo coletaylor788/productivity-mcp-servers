@@ -19,15 +19,9 @@ const stubSendApproval: EgressHook = {
     return { action: "allow", trustLevel: "trusted" } as never;
   },
 };
-const stubLeakGuard: EgressHook = {
-  async check() {
-    return { action: "allow" } as const;
-  },
-};
 const hooks: CalendarHooks = {
   ingress: [stubIngress],
   sendApproval: stubSendApproval,
-  leakGuard: stubLeakGuard,
 };
 
 describe("extractAttendeeEmails", () => {
@@ -166,12 +160,13 @@ describe("selectHooksForCalendar", () => {
     expect(sel.egressContent).toBe("title: Sync\nnotes: monthly");
   });
 
-  it("routes create without attendees → LeakGuard", () => {
+  it("routes create without attendees → no hooks (event stays in user's iCloud)", () => {
     const sel = selectHooksForCalendar(
       { action: "create", title: "private", notes: "pwd hunter2" },
       hooks,
     );
-    expect(sel.egress).toEqual([hooks.leakGuard]);
+    expect(sel.egress).toBeUndefined();
+    expect(sel.ingress).toBeUndefined();
     expect(sel.skipEgress).toBeFalsy();
   });
 
@@ -235,7 +230,7 @@ describe("selectHooksForCalendar", () => {
     expect(sel.egress).toEqual([hooks.sendApproval]);
   });
 
-  it("batch_create with no attendees on any event → LeakGuard", () => {
+  it("batch_create with no attendees on any event → no hooks", () => {
     const sel = selectHooksForCalendar(
       {
         action: "batch_create",
@@ -243,7 +238,8 @@ describe("selectHooksForCalendar", () => {
       },
       hooks,
     );
-    expect(sel.egress).toEqual([hooks.leakGuard]);
+    expect(sel.egress).toBeUndefined();
+    expect(sel.ingress).toBeUndefined();
   });
 
   it("unknown actions fall back to ingress (fail-closed for reads)", () => {

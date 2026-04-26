@@ -19,10 +19,11 @@ Each tool's `execute()`:
    rejected call.
 2. Inspects the `action` arg to decide which hooks apply (see table below).
 3. Runs **egress** hooks first on mutation actions (`calendar_write`):
-   - `SendApproval` if the event has attendees, gated by an
-     attendee-domain TrustStore. External (untrusted) domains require
-     approval; trusted domains pass.
-   - `LeakGuard` otherwise (no attendees → no recipient to evaluate).
+   - `SendApproval` if the event has attendees outside
+     `trustedAttendeeDomains` (gated by an attendee-domain TrustStore).
+     External (untrusted) domains require approval; trusted domains pass.
+   - Otherwise (no attendees, or all-trusted attendees) the call passes
+     through unhooked — nothing leaves the user's iCloud account.
 4. Calls the underlying MCP tool only if egress allowed.
 5. Pipes the text result through **ingress** hooks (`InjectionGuard` +
    `SecretRedactor`) on read actions (`calendar_read`) before returning it
@@ -42,9 +43,9 @@ top of any apple-pim per-domain config.
 |---|---|---|
 | `list`, `schema`, `delete` | — | — |
 | `events`, `get`, `search` | InjectionGuard + SecretRedactor | — |
-| `create`, `update`, `batch_create` (with attendees, all trusted) | — | skipped |
-| `create`, `update`, `batch_create` (with at least one untrusted attendee) | — | SendApproval |
-| `create`, `update`, `batch_create` (no attendees) | — | LeakGuard |
+| `create`, `update`, `batch_create` (no attendees) | — | — |
+| `create`, `update`, `batch_create` (all-trusted attendees) | — | — |
+| `create`, `update`, `batch_create` (any untrusted attendee) | — | SendApproval |
 | any unknown action | InjectionGuard + SecretRedactor | — (fail-closed for reads) |
 
 ## Why this lives in `execute()`
@@ -218,9 +219,9 @@ pnpm build               # emits dist/
 ```
 
 The integration test (`tests/integration.hooks.test.ts`) runs
-`InjectionGuard`, `SecretRedactor`, and `LeakGuard` against canned
-calendar-shaped fixtures using the real GitHub Copilot API. It skips
-automatically when no PAT is reachable in the keychain.
+`InjectionGuard` and `SecretRedactor` against canned calendar-shaped
+fixtures using the real GitHub Copilot API. It skips automatically when
+no PAT is reachable in the keychain.
 
 ## Manual integration smoke test
 
@@ -236,8 +237,8 @@ automatically when no PAT is reachable in the keychain.
    Verify it goes through without an approval prompt.
 6. Ask: "Create an event with stranger@unknown-domain.com". Verify
    SendApproval blocks (or prompts).
-7. Ask: "Create a personal event titled 'todo' with notes containing
-   sk_live_..." (no attendees). Verify LeakGuard blocks.
+7. Ask: "Create a personal event titled 'todo' with no attendees".
+   Verify it goes through unhooked (no recipient = no egress check).
 
 ## Layout
 
