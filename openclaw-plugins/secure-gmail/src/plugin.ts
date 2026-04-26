@@ -89,6 +89,9 @@ function createAuditLogger(
  * Add a SendApproval-style egress hook before exposing any tool that
  * could permanently destroy user data (e.g., delete_email).
  *
+ * Per-tool ingress: only tools whose response surfaces external content
+ * (sender-controlled text) get ingress hooks. See INGRESS_TOOLS below.
+ *
  * Why static? OpenClaw's plugin loader snapshots `api.registerTool(...)`
  * calls synchronously at the end of `register()`. Spawning the gmail-mcp
  * subprocess and calling `listTools()` is async, so any `registerTool`
@@ -219,6 +222,26 @@ const EXPOSED_TOOLS: McpTool[] = [
   },
 ];
 
+/**
+ * Tools whose response carries external/sender-controlled content and
+ * therefore warrants ingress hooks (InjectionGuard + SecretRedactor).
+ *
+ * Excluded:
+ *   - `get_attachments`: response is a plugin-generated path list, not
+ *     attachment contents. The agent never sees the file bodies through
+ *     this tool — they land on disk and are read separately.
+ *   - `archive_email`, `add_label`: response is a plugin-generated success
+ *     string ("Archived N email(s)."). Nothing sender-controlled to scan.
+ *
+ * Included:
+ *   - `list_emails`: response includes subject/snippet/sender (external).
+ *   - `get_email`: full email body, headers — highest injection risk.
+ */
+const INGRESS_TOOLS = new Set(["list_emails", "get_email"]);
+
+/** Exported for tests. */
+export const INGRESS_ENABLED_TOOLS: ReadonlySet<string> = INGRESS_TOOLS;
+
 const secureGmailPlugin = {
   id: "secure-gmail",
   name: "Secure Gmail",
@@ -283,11 +306,14 @@ const secureGmailPlugin = {
 
     api.logger.info?.(
       `[secure-gmail] registering ${EXPOSED_TOOLS.length} gmail tools (audit log: ${auditLogPath}): ${
-        EXPOSED_TOOLS.map((t) => t.name).join(", ")
-      }`,
+        EXPOSED_TOOLS.map(
+          (t) => `${t.name}${INGRESS_TOOLS.has(t.name) ? "*" : ""}`,
+        ).join(", ")
+      } (* = ingress hooks enabled)`,
     );
 
     for (const tool of EXPOSED_TOOLS) {
+      const toolIngress = INGRESS_TOOLS.has(tool.name) ? ingress : [];
       // Factory form: OpenClaw invokes this per calling agent and provides
       // that agent's resolved context (incl. workspaceDir). Each agent gets
       // its own bound tool instance — that lets get_attachments scope writes
@@ -297,7 +323,7 @@ const secureGmailPlugin = {
           tool.name === "get_attachments"
             ? wrapAttachmentsCaller(lazyCaller, ctx, api)
             : lazyCaller;
-        return wrapMcpTool(tool, caller, { ingress, audit });
+        return wrapMcpTool(tool, caller, { ingress: toolIngress, audit });
       });
     }
 
