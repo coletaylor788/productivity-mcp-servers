@@ -27,13 +27,37 @@ Do NOT flag: business/organization names, public figures in news, fictional name
 
 Respond with JSON only: {"detected": true/false, "evidence": "brief description of what was found"}`;
 
+/**
+ * Function that pulls destination identifiers (typically email addresses) out
+ * of a tool call's params. Used to look up trust levels and to surface to the
+ * user in the approval prompt. Receives the unparsed `toolName` so a single
+ * extractor can route across multiple tool shapes if needed.
+ */
+export type ExtractDestinations = (
+  toolName: string,
+  params: Record<string, unknown>,
+) => string[];
+
 export class SendApproval {
   private llm: CopilotLLMClient;
   private trustStore: TrustStore;
+  private extractDestinationsImpl: ExtractDestinations;
 
-  constructor(options: { llm: CopilotLLMClient; trustStore: TrustStore }) {
+  constructor(options: {
+    llm: CopilotLLMClient;
+    trustStore: TrustStore;
+    /**
+     * Override the built-in destination extractor. The built-in only knows
+     * about `to`/`recipient`/`recipients`/`email`/`address` — provide a custom
+     * extractor for tools that nest destinations elsewhere (e.g. calendar
+     * `attendees: [{ email }]`).
+     */
+    extractDestinations?: ExtractDestinations;
+  }) {
     this.llm = options.llm;
     this.trustStore = options.trustStore;
+    this.extractDestinationsImpl =
+      options.extractDestinations ?? defaultExtractDestinations;
   }
 
   async check(
@@ -42,7 +66,7 @@ export class SendApproval {
     params?: Record<string, unknown>,
   ): Promise<SendApprovalResult> {
     // Extract destinations from params and resolve their combined trust level
-    const destinations = this.extractDestinations(toolName, params ?? {});
+    const destinations = this.extractDestinationsImpl(toolName, params ?? {});
     const trustLevel = destinations.length > 0
       ? this.trustStore.resolveAll(destinations)
       : "unknown" as TrustLevel;
@@ -120,18 +144,7 @@ export class SendApproval {
     };
   }
 
-  private extractDestinations(
-    toolName: string,
-    params: Record<string, unknown>,
-  ): string[] {
-    // Try common parameter names for destination
-    for (const key of ["to", "recipient", "recipients", "email", "address"]) {
-      const val = params[key];
-      if (typeof val === "string") return [val];
-      if (Array.isArray(val)) return val.filter((v): v is string => typeof v === "string");
-    }
-    return [];
-  }
+
 
   private async classify(
     content: string,
@@ -149,3 +162,13 @@ export class SendApproval {
     }
   }
 }
+
+/** Default destination extractor — handles common email-tool param shapes. */
+const defaultExtractDestinations: ExtractDestinations = (_toolName, params) => {
+  for (const key of ["to", "recipient", "recipients", "email", "address"]) {
+    const val = params[key];
+    if (typeof val === "string") return [val];
+    if (Array.isArray(val)) return val.filter((v): v is string => typeof v === "string");
+  }
+  return [];
+};

@@ -11,6 +11,34 @@ importers:
 
   .: {}
 
+  openclaw-plugins/secure-apple-calendar:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.18.0
+        version: 1.29.0(zod@4.3.6)
+      mcp-hooks:
+        specifier: workspace:*
+        version: link:../../packages/mcp-hooks
+      openclaw:
+        specifier: '*'
+        version: 2026.4.23(@napi-rs/canvas@0.1.99)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.17
+      esbuild:
+        specifier: ^0.25.0
+        version: 0.25.12
+      keytar:
+        specifier: ^7.9.0
+        version: 7.9.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/node@22.19.17)(jiti@2.6.1)(yaml@2.8.3)
+
   openclaw-plugins/secure-gmail:
     dependencies:
       '@modelcontextprotocol/sdk':

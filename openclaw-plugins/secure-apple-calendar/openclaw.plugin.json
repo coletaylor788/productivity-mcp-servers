@@ -1,0 +1,46 @@
+{
+  "id": "secure-apple-calendar",
+  "name": "Secure Apple Calendar",
+  "version": "0.1.0",
+  "description": "Wraps apple-pim's calendar MCP tool with mcp-hooks ingress (InjectionGuard + SecretRedactor) and egress (SendApproval / LeakGuard) security.",
+  "configSchema": {
+    "type": "object",
+    "required": ["applePimMcpCommand"],
+    "additionalProperties": false,
+    "properties": {
+      "applePimMcpCommand": {
+        "type": "string",
+        "description": "Command to spawn the apple-pim MCP server (typically 'node')."
+      },
+      "applePimMcpArgs": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Args to spawn the apple-pim MCP server (e.g. ['/abs/path/to/apple-pim/mcp-server/dist/server.js'])."
+      },
+      "applePimMcpCwd": {
+        "type": "string",
+        "description": "Working directory for the apple-pim MCP subprocess (optional)."
+      },
+      "applePimMcpEnv": {
+        "type": "object",
+        "description": "Extra env vars passed to the apple-pim MCP subprocess (e.g. APPLE_PIM_PROFILE).",
+        "additionalProperties": { "type": "string" }
+      },
+      "trustedAttendeeDomains": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Email domains whose attendees auto-pass SendApproval (e.g. ['example.com']). Matching is case-insensitive.",
+        "default": []
+      },
+      "model": {
+        "type": "string",
+        "description": "Copilot model used by hook LLM checks.",
+        "default": "claude-haiku-4.5"
+      },
+      "auditLogPath": {
+        "type": "string",
+        "description": "Override path for the JSONL audit log (default: ~/.openclaw/logs/secure-apple-calendar-audit.jsonl)."
+      }
+    }
+  }
+}
