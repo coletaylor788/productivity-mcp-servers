@@ -1,6 +1,8 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import type {
+  OpenClawPluginApi,
+} from "openclaw/plugin-sdk";
 import { appendFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import {
   CopilotLLMClient,
@@ -10,7 +12,21 @@ import {
 } from "mcp-hooks";
 import { connectMcpBridge, McpBridge } from "./mcp-bridge.js";
 import { wrapMcpTool, type AuditEntry, type AuditLogger } from "./wrap-tool.js";
-import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js";
+import type {
+  CallToolResult,
+  Tool as McpTool,
+} from "@modelcontextprotocol/sdk/types.js";
+import type { McpCaller } from "./wrap-tool.js";
+
+/**
+ * Subset of OpenClaw's plugin-sdk `OpenClawPluginToolContext` we depend on.
+ * Defined structurally because the type isn't re-exported from
+ * `openclaw/plugin-sdk`'s public index in 2026.4.x.
+ */
+export interface PluginToolContext {
+  workspaceDir?: string;
+  agentId?: string;
+}
 
 interface SecureGmailConfig {
   gmailMcpCommand: string;
@@ -140,7 +156,13 @@ const EXPOSED_TOOLS: McpTool[] = [
   },
   {
     name: "get_attachments",
-    description: "Download attachments from an email.",
+    description:
+      "Download attachments from an email into the calling agent's workspace " +
+      "under `attachments/`. Returned paths are workspace-relative.",
+    // NOTE: `save_to` is intentionally omitted from the schema. The plugin
+    // forces attachments into `<callingAgent.workspaceDir>/attachments/` so
+    // the agent can read what it downloaded but cannot write outside its
+    // sandboxed workspace. See ATTACHMENTS_SUBDIR / wrapAttachmentsCaller.
     inputSchema: {
       type: "object",
       properties: {
@@ -153,10 +175,6 @@ const EXPOSED_TOOLS: McpTool[] = [
           description:
             "Specific attachment filename to download " +
             "(downloads all if omitted)",
-        },
-        save_to: {
-          type: "string",
-          description: "Directory to save files (default: ~/Downloads)",
         },
       },
       required: ["email_id"],
@@ -270,7 +288,17 @@ const secureGmailPlugin = {
     );
 
     for (const tool of EXPOSED_TOOLS) {
-      api.registerTool(wrapMcpTool(tool, lazyCaller, { ingress, audit }));
+      // Factory form: OpenClaw invokes this per calling agent and provides
+      // that agent's resolved context (incl. workspaceDir). Each agent gets
+      // its own bound tool instance — that lets get_attachments scope writes
+      // to the caller's workspace without trusting tool-arg paths.
+      api.registerTool((ctx: PluginToolContext) => {
+        const caller =
+          tool.name === "get_attachments"
+            ? wrapAttachmentsCaller(lazyCaller, ctx, api)
+            : lazyCaller;
+        return wrapMcpTool(tool, caller, { ingress, audit });
+      });
     }
 
     api.on("session_end", async () => {
@@ -284,3 +312,90 @@ const secureGmailPlugin = {
 };
 
 export default secureGmailPlugin;
+
+/** Subdirectory inside each agent's workspace where attachments land. */
+export const ATTACHMENTS_SUBDIR = "attachments";
+
+/**
+ * Returns an McpCaller that, for the wrapped tool, forces `save_to` to
+ * `<ctx.workspaceDir>/attachments/` and rewrites the returned paths to be
+ * workspace-relative (e.g. `attachments/foo.pdf`). Fails closed if the
+ * calling agent has no workspaceDir.
+ */
+export function wrapAttachmentsCaller(
+  inner: McpCaller,
+  ctx: PluginToolContext,
+  api?: Pick<OpenClawPluginApi, "logger">,
+): McpCaller {
+  return {
+    async callTool(
+      name: string,
+      args: Record<string, unknown>,
+    ): Promise<CallToolResult> {
+      if (!ctx.workspaceDir) {
+        const msg =
+          "[secure-gmail] get_attachments unavailable: calling agent has no workspaceDir";
+        api?.logger?.warn?.(msg);
+        return {
+          content: [{ type: "text", text: msg }],
+          isError: true,
+        };
+      }
+
+      const attachmentsDir = join(ctx.workspaceDir, ATTACHMENTS_SUBDIR);
+      try {
+        mkdirSync(attachmentsDir, { recursive: true });
+      } catch (err) {
+        const msg = `[secure-gmail] could not create attachments dir ${attachmentsDir}: ${
+          err instanceof Error ? err.message : String(err)
+        }`;
+        api?.logger?.warn?.(msg);
+        return { content: [{ type: "text", text: msg }], isError: true };
+      }
+
+      // Strip any caller-supplied save_to defensively (schema already hides
+      // it, but a misbehaving client could still send it). Force our path.
+      const { save_to: _ignored, ...rest } = args as { save_to?: unknown } & Record<
+        string,
+        unknown
+      >;
+      const result = await inner.callTool(name, {
+        ...rest,
+        save_to: attachmentsDir,
+      });
+
+      return rewriteAttachmentPaths(result, ctx.workspaceDir);
+    },
+  };
+}
+
+/**
+ * Replace absolute host paths under `workspaceDir` with workspace-relative
+ * paths in every text block of the result. Inside the sandbox the workspace
+ * is bind-mounted at `/home/sandbox/`, so a relative path like
+ * `attachments/foo.pdf` works for both bind-mount layouts.
+ */
+export function rewriteAttachmentPaths(
+  result: CallToolResult,
+  workspaceDir: string,
+): CallToolResult {
+  if (!result?.content) return result;
+  return {
+    ...result,
+    content: result.content.map((block) => {
+      if (block.type !== "text" || typeof block.text !== "string") return block;
+      const parts = block.text.split(workspaceDir);
+      if (parts.length === 1) return block;
+      // Join parts back together, stripping the leading path separator that
+      // followed each occurrence of workspaceDir so we emit clean relative
+      // paths like `attachments/foo.pdf` rather than `/attachments/foo.pdf`.
+      const rewritten = parts.reduce((acc, p, i) => {
+        if (i === 0) return p;
+        const stripped =
+          p.startsWith("/") || p.startsWith("\\") ? p.slice(1) : p;
+        return acc + stripped;
+      }, "");
+      return { ...block, text: rewritten };
+    }),
+  };
+}
