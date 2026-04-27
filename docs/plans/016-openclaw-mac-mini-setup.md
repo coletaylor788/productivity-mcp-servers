@@ -436,6 +436,31 @@ Inspired by https://lobster.shahine.com/guides/bluebubbles-health/ but reverse-e
 
 **Note:** macOS lacks `timeout`; use `perl -e 'alarm shift; exec @ARGV' 5 <cmd>` and run inside `bash -c '...' 2>/dev/null` to suppress SIGALRM job-status noise.
 
+### 6.1.4 — Gateway silent-wedge watchdog (TODO)
+
+**Trigger:** 2026-04-26 evening incident — initially diagnosed as transient network blip during scheduled `github-copilot` OAuth refresh (18:18 PDT). Refresh failed twice with `Connect Timeout Error api.github.com:443`, scheduled-retry never recovered, gateway stayed `state=running` for ~12 hours but processed **zero agent runs** while continuing to accept BlueBubbles webhooks. Discovered next morning when DMs got no reply. `launchctl kickstart -k` recovered it instantly.
+
+**Real root cause (later discovery):** A second wedge on 2026-04-27 morning showed the same symptoms but with a clear fingerprint — `embedded run tool start: tool=list_emails` with no matching `tool end`, and `~/.openclaw/logs/secure-gmail-audit.jsonl` not updated. The actual culprit was the `gmail-mcp` Python bridge: blocking `googleapiclient.execute()` calls inside `async def` handlers with no socket timeout. A hung Google API call froze the bridge's asyncio event loop, which made the gateway appear wedged. Fixed in `servers/gmail-mcp/docs/plans/009-async-bridge-resilience.md` (`asyncio.to_thread` + `httplib2` 30s socket timeout + 60s asyncio timeout + structured logging).
+
+**Why existing health-monitor missed it:** OpenClaw's built-in `[health-monitor]` runs every 300s and checks plumbing (channels connected, plugins loaded) but doesn't detect "auth subsystem dead," "bridge process wedged," or "webhooks accepted but no runs starting."
+
+**Watchdog is now defense-in-depth, not the primary fix.** Plan 009 prevents the specific gmail-mcp wedge. The watchdog still catches:
+- Other bridges hanging on their own blocking I/O.
+- Auth-subsystem failures (the original 18:18 hypothesis was probably correct as a contributing factor — `Runtime auth refresh failed` did precede both incidents).
+- Generic "webhooks accepted but no runs starting" patterns from unknown future causes.
+
+**Plan:** new script `~/.openclaw/bin/gateway-stall-watchdog.sh` on the mini.
+- Read-only check: parse `~/.openclaw/logs/gateway.log` for the most recent `embedded run start` and the most recent `bluebubbles webhook accepted`. If a webhook was accepted >5 min ago AND no `embedded run start` followed it, the gateway is wedged.
+- Also flag standalone signal: `Runtime auth refresh failed` in last 30 min with no subsequent `Runtime auth refreshed for github-copilot` success.
+- Mutating: `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway`, then re-check after 30s.
+- Schedule: `/Library/LaunchDaemons/ai.openclaw.gateway-stall-watchdog.plist`, `StartInterval=600` (10 min), runs as `puddles`, logs to `~/.openclaw/logs/gateway-stall/`.
+
+**Upstream first:** before deploying the watchdog, check whether `openclaw update` (currently v2026.4.21 → latest v2026.4.25 as of 2026-04-27) fixes the auth-retry bug. If yes, the watchdog is still worth deploying as defense-in-depth — silent-wedge can come from many sources, not just auth.
+
+**Also file OpenClaw issues:**
+- "scheduled-retry auth refresh gives up after one attempt; gateway becomes silent black hole accepting webhooks while processing nothing; health-monitor doesn't detect auth-subsystem death"
+- "secure-gmail (and other bridge wraps) should enforce a per-call timeout on bridge stdio responses; today a wedged bridge wedges the wrap forever with no audit row"
+
 ### 6.2 — FileVault + remote unlock (architecture)
 
 **Why FileVault is now viable for a headless server:** macOS Tahoe 26 added "lightweight SSH" pre-user-login. After reboot, the box halts at FileVault unlock, but sshd responds with `"This system is locked. To unlock it, use a local account name and password"`. Entering a FileVault-enabled user's password completes the boot.
