@@ -761,22 +761,25 @@ class TestArchiveEmail:
 class TestGetLabelId:
     """Tests for _get_label_id helper."""
 
-    def test_returns_system_label_id(self):
+    @pytest.mark.asyncio
+    async def test_returns_system_label_id(self):
         """Returns uppercase name for system labels."""
         mock_service = MagicMock()
-        assert _get_label_id(mock_service, "STARRED") == "STARRED"
-        assert _get_label_id(mock_service, "IMPORTANT") == "IMPORTANT"
-        assert _get_label_id(mock_service, "INBOX") == "INBOX"
+        assert await _get_label_id(mock_service, "STARRED") == "STARRED"
+        assert await _get_label_id(mock_service, "IMPORTANT") == "IMPORTANT"
+        assert await _get_label_id(mock_service, "INBOX") == "INBOX"
         # Should not call the API for system labels
         mock_service.users.return_value.labels.return_value.list.assert_not_called()
 
-    def test_system_label_case_insensitive(self):
+    @pytest.mark.asyncio
+    async def test_system_label_case_insensitive(self):
         """System label lookup is case-insensitive."""
         mock_service = MagicMock()
-        assert _get_label_id(mock_service, "starred") == "STARRED"
-        assert _get_label_id(mock_service, "Important") == "IMPORTANT"
+        assert await _get_label_id(mock_service, "starred") == "STARRED"
+        assert await _get_label_id(mock_service, "Important") == "IMPORTANT"
 
-    def test_returns_custom_label_id(self):
+    @pytest.mark.asyncio
+    async def test_returns_custom_label_id(self):
         """Looks up custom label via API and returns its ID."""
         mock_service = MagicMock()
         mock_list = mock_service.users.return_value.labels.return_value.list
@@ -786,25 +789,27 @@ class TestGetLabelId:
                 {"id": "Label_2", "name": "Personal"},
             ]
         }
-        assert _get_label_id(mock_service, "Work") == "Label_1"
+        assert await _get_label_id(mock_service, "Work") == "Label_1"
 
-    def test_custom_label_case_insensitive(self):
+    @pytest.mark.asyncio
+    async def test_custom_label_case_insensitive(self):
         """Custom label lookup is case-insensitive."""
         mock_service = MagicMock()
         mock_list = mock_service.users.return_value.labels.return_value.list
         mock_list.return_value.execute.return_value = {
             "labels": [{"id": "Label_1", "name": "Work"}]
         }
-        assert _get_label_id(mock_service, "work") == "Label_1"
+        assert await _get_label_id(mock_service, "work") == "Label_1"
 
-    def test_returns_none_for_unknown_label(self):
+    @pytest.mark.asyncio
+    async def test_returns_none_for_unknown_label(self):
         """Returns None when label doesn't exist."""
         mock_service = MagicMock()
         mock_list = mock_service.users.return_value.labels.return_value.list
         mock_list.return_value.execute.return_value = {
             "labels": [{"id": "Label_1", "name": "Work"}]
         }
-        assert _get_label_id(mock_service, "Nonexistent") is None
+        assert await _get_label_id(mock_service, "Nonexistent") is None
 
 
 class TestAddLabel:

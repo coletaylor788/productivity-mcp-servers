@@ -4,6 +4,7 @@ import asyncio
 import base64
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,9 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
+from ._async import run_blocking
 from .auth import get_gmail_service, is_authenticated, run_oauth_flow
+from .logging_setup import log
 
 # Initialize MCP server
 server = Server("gmail-mcp")
@@ -160,20 +163,34 @@ async def list_tools() -> list[Tool]:
 @server.call_tool()
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     """Handle tool calls."""
-    if name == "authenticate":
-        return await _authenticate()
-    elif name == "list_emails":
-        return await _list_emails(arguments)
-    elif name == "get_email":
-        return await _get_email(arguments)
-    elif name == "get_attachments":
-        return await _get_attachments(arguments)
-    elif name == "archive_email":
-        return await _archive_email(arguments)
-    elif name == "add_label":
-        return await _add_label(arguments)
-    else:
-        raise ValueError(f"Unknown tool: {name}")
+    start = time.monotonic()
+    log("info", "tool_start", tool=name, args=arguments)
+    ok = False
+    try:
+        if name == "authenticate":
+            result = await _authenticate()
+        elif name == "list_emails":
+            result = await _list_emails(arguments)
+        elif name == "get_email":
+            result = await _get_email(arguments)
+        elif name == "get_attachments":
+            result = await _get_attachments(arguments)
+        elif name == "archive_email":
+            result = await _archive_email(arguments)
+        elif name == "add_label":
+            result = await _add_label(arguments)
+        else:
+            raise ValueError(f"Unknown tool: {name}")
+        ok = True
+        return result
+    finally:
+        log(
+            "info",
+            "tool_done",
+            tool=name,
+            ok=ok,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+        )
 
 
 async def _authenticate() -> list[TextContent]:
@@ -256,7 +273,10 @@ async def _list_emails(arguments: dict[str, Any]) -> list[TextContent]:
         if query:
             request_kwargs["q"] = query
 
-        results = service.users().messages().list(**request_kwargs).execute()
+        results = await run_blocking(
+            lambda: service.users().messages().list(**request_kwargs).execute(),
+            op="messages.list",
+        )
 
         messages = results.get("messages", [])
         if not messages:
@@ -265,11 +285,13 @@ async def _list_emails(arguments: dict[str, Any]) -> list[TextContent]:
         output = [f"Found {len(messages)} emails:\n"]
 
         for i, msg in enumerate(messages, 1):
-            msg_data = (
-                service.users()
+            msg_id = msg["id"]
+            msg_data = await run_blocking(
+                lambda mid=msg_id: service.users()
                 .messages()
-                .get(userId="me", id=msg["id"], format="metadata")
-                .execute()
+                .get(userId="me", id=mid, format="metadata")
+                .execute(),
+                op="messages.get.metadata",
             )
             headers = {h["name"]: h["value"] for h in msg_data["payload"]["headers"]}
             snippet = msg_data.get("snippet", "")
@@ -363,11 +385,12 @@ async def _get_email(arguments: dict[str, Any]) -> list[TextContent]:
     format_type = arguments.get("format", "full")
 
     try:
-        msg = (
-            service.users()
+        msg = await run_blocking(
+            lambda: service.users()
             .messages()
             .get(userId="me", id=email_id, format="full")
-            .execute()
+            .execute(),
+            op="messages.get.full",
         )
 
         headers = {h["name"]: h["value"] for h in msg["payload"]["headers"]}
@@ -480,11 +503,12 @@ async def _get_attachments(arguments: dict[str, Any]) -> list[TextContent]:
 
     try:
         # Get email to find attachments
-        msg = (
-            service.users()
+        msg = await run_blocking(
+            lambda: service.users()
             .messages()
             .get(userId="me", id=email_id, format="full")
-            .execute()
+            .execute(),
+            op="messages.get.full",
         )
 
         _, _, attachments = _extract_body_parts(msg["payload"])
@@ -505,13 +529,15 @@ async def _get_attachments(arguments: dict[str, Any]) -> list[TextContent]:
 
         saved_files = []
         for att in attachments:
+            att_id = att["id"]
             # Download attachment
-            att_data = (
-                service.users()
+            att_data = await run_blocking(
+                lambda aid=att_id: service.users()
                 .messages()
                 .attachments()
-                .get(userId="me", messageId=email_id, id=att["id"])
-                .execute()
+                .get(userId="me", messageId=email_id, id=aid)
+                .execute(),
+                op="attachments.get",
             )
 
             # Decode and save
@@ -567,11 +593,17 @@ async def _archive_email(arguments: dict[str, Any]) -> list[TextContent]:
 
     for email_id in email_ids:
         try:
-            service.users().messages().modify(
-                userId="me",
-                id=email_id,
-                body={"removeLabelIds": ["INBOX"]},
-            ).execute()
+            await run_blocking(
+                lambda eid=email_id: service.users()
+                .messages()
+                .modify(
+                    userId="me",
+                    id=eid,
+                    body={"removeLabelIds": ["INBOX"]},
+                )
+                .execute(),
+                op="messages.modify.archive",
+            )
             successes.append(email_id)
         except Exception as e:
             failures.append(f"{email_id}: {e}")
@@ -588,7 +620,7 @@ async def _archive_email(arguments: dict[str, Any]) -> list[TextContent]:
     return [TextContent(type="text", text="\n".join(lines))]
 
 
-def _get_label_id(service, label_name: str) -> str | None:
+async def _get_label_id(service, label_name: str) -> str | None:
     """Get the label ID for a given label name.
 
     System labels (INBOX, SENT, TRASH, SPAM, STARRED, IMPORTANT, etc.)
@@ -617,7 +649,10 @@ def _get_label_id(service, label_name: str) -> str | None:
         return upper_name
 
     # Look up custom label
-    results = service.users().labels().list(userId="me").execute()
+    results = await run_blocking(
+        lambda: service.users().labels().list(userId="me").execute(),
+        op="labels.list",
+    )
     labels = results.get("labels", [])
     for label in labels:
         if label["name"].lower() == label_name.lower():
@@ -654,7 +689,7 @@ async def _add_label(arguments: dict[str, Any]) -> list[TextContent]:
         return [TextContent(type="text", text="Error: label is required.")]
 
     # Look up label ID
-    label_id = _get_label_id(service, label_name)
+    label_id = await _get_label_id(service, label_name)
     if not label_id:
         return [
             TextContent(
@@ -668,11 +703,17 @@ async def _add_label(arguments: dict[str, Any]) -> list[TextContent]:
 
     for email_id in email_ids:
         try:
-            service.users().messages().modify(
-                userId="me",
-                id=email_id,
-                body={"addLabelIds": [label_id]},
-            ).execute()
+            await run_blocking(
+                lambda eid=email_id, lid=label_id: service.users()
+                .messages()
+                .modify(
+                    userId="me",
+                    id=eid,
+                    body={"addLabelIds": [lid]},
+                )
+                .execute(),
+                op="messages.modify.add_label",
+            )
             successes.append(email_id)
         except Exception as e:
             failures.append(f"{email_id}: {e}")

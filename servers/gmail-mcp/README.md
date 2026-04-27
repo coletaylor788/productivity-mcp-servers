@@ -212,6 +212,31 @@ ruff check src/
 pytest
 ```
 
+## Logging
+
+The bridge emits one JSON record per line on stderr, captured by the MCP host
+(OpenClaw writes these to `~/.openclaw/logs/` on the mini). Useful events:
+
+| Event          | When                                            | Key fields                              |
+|----------------|-------------------------------------------------|-----------------------------------------|
+| `tool_start`   | Tool call received                              | `tool`, `args` (sanitized)              |
+| `tool_done`    | Tool call returned (success or error)           | `tool`, `ok`, `elapsed_ms`              |
+| `auth_refresh` | OAuth token refresh attempted                   | `source`, `ok`, `elapsed_ms`            |
+| `api_call`     | About to invoke a Google API method             | `op` (e.g. `messages.list`)             |
+| `api_done`     | Google API method returned                      | `op`, `elapsed_ms`, `result_size`       |
+| `slow_call`    | API call still in flight after 10s, then 30s    | `op`, `elapsed_ms`, `threshold_s`       |
+| `api_timeout`  | API call exceeded the 60s asyncio timeout       | `op`, `elapsed_ms`, `timeout_s`         |
+| `api_error`    | API call raised                                 | `op`, `exc_type`, `msg`                 |
+
+A `slow_call` event is the early warning that real-world Google API latency is
+trending toward our timeout threshold. An `api_timeout` should be rare; if it
+recurs, investigate Google API status or network issues before raising the
+limit.
+
+Sanitization rules: OAuth tokens, bodies (`body_text`/`body_html`/`snippet`),
+attachment payloads, and lists with >10 items are scrubbed. Email addresses,
+subjects, and IDs are logged as-is.
+
 ## License
 
 MIT

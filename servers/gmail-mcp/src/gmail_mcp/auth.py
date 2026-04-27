@@ -9,12 +9,37 @@ Supports two storage backends, selected automatically:
 import json
 import os
 
+import httplib2
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google_auth_httplib2 import AuthorizedHttp
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from .config import GOOGLE_TOKEN_ENV, KEYCHAIN_SERVICE, get_credentials_path
+from .logging_setup import log
+
+# Socket-level timeout (seconds) for every Gmail API HTTP request. This is
+# the underlying httplib2 transport timeout — defense in depth below the
+# asyncio per-call timeout in `_async.run_blocking`. Without it, httplib2
+# defaults to no timeout and a stalled Google response will hang the worker
+# thread forever.
+HTTP_SOCKET_TIMEOUT_S = 30
+
+
+def _build_service(creds: Credentials):
+    """Build a Gmail API service with a socket-level timeout on the transport.
+
+    The default `build("gmail", "v1", credentials=creds)` constructs an
+    httplib2 client with **no** timeout. We replace it with an
+    `AuthorizedHttp` that wraps `httplib2.Http(timeout=...)` so a single
+    hung Google API call cannot block forever.
+
+    `cache_discovery=False` avoids googleapiclient writing a discovery cache
+    to disk (it warns otherwise on systems without `oauth2client`).
+    """
+    http = AuthorizedHttp(creds, http=httplib2.Http(timeout=HTTP_SOCKET_TIMEOUT_S))
+    return build("gmail", "v1", http=http, cache_discovery=False)
 
 # Gmail API scopes
 # - gmail.modify: read, write, and modify emails (includes archive)
@@ -54,7 +79,7 @@ def _env_get_token() -> Credentials | None:
     if _cached_creds is None:
         _env_load_credentials()
     if _cached_creds and _cached_creds.expired and _cached_creds.refresh_token:
-        _cached_creds.refresh(Request())
+        _refresh_credentials(_cached_creds, source="env")
     return _cached_creds
 
 
@@ -150,6 +175,38 @@ def _has_required_scopes(creds: Credentials) -> bool:
     return all(scope in creds.scopes for scope in SCOPES)
 
 
+def _refresh_credentials(creds: Credentials, *, source: str) -> bool:
+    """Refresh OAuth credentials in place, logging timing and outcome.
+
+    Returns True on success, False on any exception. The caller decides
+    whether a failure should fall back to re-auth or surface as an error.
+    """
+    import time
+
+    start = time.monotonic()
+    try:
+        creds.refresh(Request())
+    except Exception as exc:
+        log(
+            "error",
+            "auth_refresh",
+            source=source,
+            ok=False,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+            exc_type=type(exc).__name__,
+            msg=str(exc),
+        )
+        return False
+    log(
+        "info",
+        "auth_refresh",
+        source=source,
+        ok=True,
+        elapsed_ms=int((time.monotonic() - start) * 1000),
+    )
+    return True
+
+
 def run_oauth_flow() -> str:
     """Run OAuth flow to authenticate with Gmail.
 
@@ -167,21 +224,18 @@ def run_oauth_flow() -> str:
     creds = get_token()
     if creds and creds.valid and _has_required_scopes(creds):
         # Already authenticated with correct scopes - just get the email
-        service = build("gmail", "v1", credentials=creds)
+        service = _build_service(creds)
         profile = service.users().getProfile(userId="me").execute()
         return profile.get("emailAddress", "unknown")
 
     # Try to refresh expired token (only if scopes are correct)
     if creds and creds.expired and creds.refresh_token and _has_required_scopes(creds):
-        try:
-            creds.refresh(Request())
+        if _refresh_credentials(creds, source="oauth_flow"):
             store_token(creds)
-            service = build("gmail", "v1", credentials=creds)
+            service = _build_service(creds)
             profile = service.users().getProfile(userId="me").execute()
             return profile.get("emailAddress", "unknown")
-        except Exception:
-            # Refresh failed, need to re-authenticate
-            pass
+        # Refresh failed, fall through to re-authenticate
 
     # Need to run OAuth flow (either no token, invalid, or missing scopes)
     credentials_path = get_credentials_path()
@@ -199,7 +253,7 @@ def run_oauth_flow() -> str:
     store_token(creds)
 
     # Get user's email address
-    service = build("gmail", "v1", credentials=creds)
+    service = _build_service(creds)
     profile = service.users().getProfile(userId="me").execute()
     email = profile.get("emailAddress", "unknown")
 
@@ -219,13 +273,11 @@ def get_gmail_service():
 
     # Refresh token if expired
     if creds.expired and creds.refresh_token:
-        try:
-            creds.refresh(Request())
-            store_token(creds)
-        except Exception:
+        if not _refresh_credentials(creds, source="get_service"):
             return None
+        store_token(creds)
 
     if not creds.valid:
         return None
 
-    return build("gmail", "v1", credentials=creds)
+    return _build_service(creds)
