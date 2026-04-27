@@ -86,8 +86,9 @@ function createAuditLogger(
  * Mutating tools (`archive_email`, `add_label`) are exposed but currently
  * have no human-in-the-loop / approval gate. Ingress hooks only run on the
  * tool *response*, so destructive params are not vetted before execution.
- * Add a SendApproval-style egress hook before exposing any tool that
- * could permanently destroy user data (e.g., delete_email).
+ * Add a `ContactsEgressGuard` (from mcp-hooks) before exposing any tool that
+ * could permanently destroy user data (e.g., delete_email) or that emits
+ * content to an external recipient (e.g., send_email).
  *
  * Per-tool ingress: only tools whose response surfaces external content
  * (sender-controlled text) get ingress hooks. See INGRESS_TOOLS below.

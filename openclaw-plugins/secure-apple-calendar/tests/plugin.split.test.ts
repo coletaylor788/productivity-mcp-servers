@@ -51,8 +51,16 @@ vi.mock("mcp-hooks", async () => {
         return { action: "allow" as const };
       }
     },
-    SendApproval: class {
-      name = "SendApproval";
+    ContactsTrustResolver: class {
+      constructor(_opts: unknown) {}
+      async isTrustedEmail() {
+        return true;
+      }
+      async healthCheck() {}
+    },
+    ContactsEgressGuard: class {
+      name = "ContactsEgressGuard";
+      constructor(_opts: unknown) {}
       async check() {
         return { action: "allow" as const };
       }

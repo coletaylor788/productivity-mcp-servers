@@ -2,19 +2,14 @@ import type { EgressHook, IngressHook } from "mcp-hooks";
 import type { HookSelection } from "./wrap-tool.js";
 
 /**
- * Hooks the action-map can wire into a calendar tool call. SendApproval is
- * configured by the plugin entrypoint with a calendar-aware
- * extractDestinations callback so it can see `attendees[].email`.
+ * Hooks the action-map can wire into a calendar tool call. The egress hook
+ * is `ContactsEgressGuard` (configured by plugin.ts with a calendar-aware
+ * extractDestinations callback so it can see `attendees[].email`).
  */
 export interface CalendarHooks {
   ingress: IngressHook[];
   /** Used for create/update/batch_create when the call has attendees. */
-  sendApproval: EgressHook;
-}
-
-export interface ActionMapOptions {
-  /** Email domains whose attendees auto-pass SendApproval. Case-insensitive. */
-  trustedAttendeeDomains?: string[];
+  egress: EgressHook[];
 }
 
 /** Action handled by apple-pim's `calendar` MCP tool. */
@@ -45,9 +40,9 @@ export const READ_ACTIONS = new Set<CalendarAction>([
 
 /**
  * Mutating calendar actions. Surfaced as the `calendar_write` OpenClaw tool.
- * Writes with untrusted attendees go through SendApproval (egress); writes
- * with no attendees or with all-trusted attendees pass through unhooked
- * because nothing leaves the user's iCloud account in those cases.
+ * Writes with attendees go through the egress guard (ContactsEgressGuard);
+ * writes with no attendees pass through unhooked because nothing leaves the
+ * user's iCloud account in those cases.
  */
 export const WRITE_ACTIONS = new Set<CalendarAction>([
   "create",
@@ -64,28 +59,26 @@ export const WRITE_ACTIONS = new Set<CalendarAction>([
  *   - events, get, search                    → ingress only (read paths can carry
  *                                              prompt-injection from external
  *                                              attendees / shared calendars)
- *   - create, update, batch_create with untrusted attendees → SendApproval (egress)
- *   - create, update, batch_create with all-trusted attendees → no hooks (skipEgress)
- *   - create, update, batch_create with no attendees         → no hooks
+ *   - create, update, batch_create with attendees → egress guard
+ *   - create, update, batch_create with no attendees → no hooks
  *
  * Why nothing on the no-attendee write path: the event lands only on the
  * user's own iCloud account; there's no recipient and no network egress to
  * an external party, so there's nothing for an egress hook to protect.
  *
- * Egress content (when SendApproval runs) focuses on the user-supplied text
+ * Why no all-trusted-domain fast path: trusted-domain handling lives inside
+ * `ContactsEgressGuard` itself, which short-circuits the contacts lookup but
+ * still runs content classifiers on the egress payload as a final safety net.
+ *
+ * Egress content (when the guard runs) focuses on the user-supplied text
  * fields (title, notes, location, url) — the fields actually persisted and
  * shared with attendees.
- *
- * If every attendee's email is in `trustedAttendeeDomains`, the egress hook
- * is skipped (skipEgress=true) — the user has pre-approved this destination.
  */
 export function selectHooksForCalendar(
   args: Record<string, unknown>,
   hooks: CalendarHooks,
-  opts: ActionMapOptions = {},
 ): HookSelection {
   const action = (args.action as CalendarAction | undefined) ?? "events";
-  const trustedDomains = normalizeDomains(opts.trustedAttendeeDomains ?? []);
 
   switch (action) {
     case "list":
@@ -106,11 +99,8 @@ export function selectHooksForCalendar(
         // No recipient — event stays on the user's iCloud account only.
         return {};
       }
-      if (allTrusted(emails, trustedDomains)) {
-        return { skipEgress: true };
-      }
       return {
-        egress: [hooks.sendApproval],
+        egress: hooks.egress,
         egressContent: buildEgressContent(args),
       };
     }
@@ -155,9 +145,9 @@ export function extractAttendeeEmails(args: Record<string, unknown>): string[] {
 }
 
 /**
- * `extractDestinations` callback for SendApproval. Routes calendar attendees
- * (single or batch) into the trust-store lookup. The plugin wires this into
- * the SendApproval instance at construction time.
+ * `extractDestinations` callback for the egress guard. Routes calendar
+ * attendees (single or batch) into the trust check. The plugin wires this
+ * into the `ContactsEgressGuard` instance at construction time.
  */
 export function calendarExtractDestinations(
   _toolName: string,
@@ -199,20 +189,4 @@ export function buildEgressContent(args: Record<string, unknown>): string {
   }
 
   return parts.join("\n");
-}
-
-function normalizeDomains(domains: string[]): string[] {
-  return domains
-    .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
-    .filter((d) => d.length > 0);
-}
-
-function allTrusted(emails: string[], trustedDomains: string[]): boolean {
-  if (trustedDomains.length === 0) return false;
-  return emails.every((email) => {
-    const at = email.lastIndexOf("@");
-    if (at === -1) return false;
-    const domain = email.slice(at + 1);
-    return trustedDomains.includes(domain);
-  });
 }

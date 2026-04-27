@@ -81,8 +81,9 @@ Every plugin in this folder must:
    options.
 5. Fail open on hook errors (the hooks library does this internally; plugins
    should not re-block on caught exceptions).
-6. Surface `HookResult.reason` and any `SendApprovalResult.approval` payload
-   through OpenClaw's user-facing approval UX rather than logging silently.
+6. Surface `HookResult.reason` to the user when a hook returns `block`,
+   so the agent can ask the user to take corrective action (e.g. add
+   the recipient to Contacts) rather than retrying blindly.
 
 See [`packages/mcp-hooks/docs/architecture.md`](../packages/mcp-hooks/docs/architecture.md)
 for the underlying hook contracts.

@@ -25,7 +25,7 @@ function ingressHook(result: HookResult, name = "TestIngress"): IngressHook {
   return { name, check: vi.fn().mockResolvedValue(result) };
 }
 
-class TestSendApproval implements EgressHook {
+class TestEgress implements EgressHook {
   constructor(private result: HookResult) {}
   check = vi.fn(async () => this.result);
 }
@@ -104,7 +104,7 @@ describe("wrapMcpTool", () => {
 
   it("egress block does NOT call the delegate (the whole point of egress)", async () => {
     const caller = makeCaller();
-    const block = new TestSendApproval({
+    const block = new TestEgress({
       action: "block",
       reason: "Unknown destination",
     });
@@ -125,7 +125,7 @@ describe("wrapMcpTool", () => {
 
   it("egress allow then ingress allow proceeds normally", async () => {
     const caller = makeCaller("calendar result");
-    const allowEgress = new TestSendApproval({
+    const allowEgress = new TestEgress({
       action: "allow",
     } as HookResult);
     const wrapped = wrapMcpTool(tool, caller, {
@@ -151,7 +151,7 @@ describe("wrapMcpTool", () => {
 
   it("audit logger receives one entry per hook verdict with phase tag", async () => {
     const audits: any[] = [];
-    const block = new TestSendApproval({
+    const block = new TestEgress({
       action: "block",
       reason: "leak",
     } as HookResult);
@@ -165,14 +165,14 @@ describe("wrapMcpTool", () => {
       toolName: "calendar",
       phase: "egress",
       action: "block",
-      hookName: "TestSendApproval",
+      hookName: "TestEgress",
       reason: "leak",
     });
   });
 
   it("skipEgress=true bypasses egress hooks entirely", async () => {
     const caller = makeCaller("ok");
-    const block = new TestSendApproval({
+    const block = new TestEgress({
       action: "block",
       reason: "should not run",
     });

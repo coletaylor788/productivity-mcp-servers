@@ -9,7 +9,7 @@ Security hooks for MCP tool pipelines. Provides egress and ingress content scann
 | Hook | Purpose | Runs on |
 |------|---------|---------|
 | **LeakGuard** | Blocks secrets, sensitive data, and PII from leaking via non-send tools | web_search, web_fetch, exec, etc. |
-| **SendApproval** | Destination-aware trust check for deliberate communication | send_email, message, etc. |
+| **ContactsEgressGuard** | Destination-aware trust check backed by iCloud Contacts | send_email, message, calendar create/update with attendees, etc. |
 
 ### Ingress (inbound content)
 
@@ -24,10 +24,10 @@ Security hooks for MCP tool pipelines. Provides egress and ingress content scann
 import {
   CopilotLLMClient,
   LeakGuard,
-  SendApproval,
+  ContactsEgressGuard,
+  ContactsTrustResolver,
   InjectionGuard,
   SecretRedactor,
-  TrustStore,
 } from "mcp-hooks";
 
 // LLM client — reads GitHub PAT from keychain, exchanges for Copilot token
@@ -38,48 +38,60 @@ const leakGuard = new LeakGuard({ llm });
 const result = await leakGuard.check("web_search", queryText);
 // result.action: "allow" | "block"
 
-// Egress: destination-aware approval for send tools
-const trustStore = new TrustStore({
-  pluginId: "secure-gmail",
-  extractDestination: (toolName, params) => params.to as string,
+// Egress: destination-aware approval for send tools, backed by iCloud Contacts
+const contacts = new ContactsTrustResolver({
+  // optional: cliPath defaults to "contacts-cli" on PATH
 });
-trustStore.seedDomains(["mycompany.com"]);
 
-const sendApproval = new SendApproval({ llm, trustStore });
-const result = await sendApproval.check("send_email", emailBody, { to: "someone@random.com" });
-// result.action: "allow" | "block"
-// result.trustLevel: "unknown" | "approved" | "trusted"
-// result.approval?: { title, description, severity }
+const sendGuard = new ContactsEgressGuard({
+  contacts,
+  trustedDomains: ["mycompany.com"], // domain short-circuit (case-insensitive)
+  llm,                                 // optional: enable secrets/sensitive classifiers
+  extractDestinations: (toolName, params) =>
+    Array.isArray(params.to) ? (params.to as string[]) : [params.to as string],
+});
+
+const sendResult = await sendGuard.check(
+  "send_email",
+  emailBody,
+  { to: "someone@random.com" },
+);
+// sendResult.action: "allow" | "block"
+// sendResult.reason (if blocked): action-oriented string naming the offending recipient(s)
 
 // Ingress: detect prompt injection
 const injectionGuard = new InjectionGuard({ llm });
-const result = await injectionGuard.check("get_email", emailContent);
-// result.action: "allow" | "block"
+const ingressResult = await injectionGuard.check("get_email", emailContent);
 
 // Ingress: redact secrets
 const secretRedactor = new SecretRedactor({ llm });
-const result = await secretRedactor.check("get_email", emailContent);
-// result.action: "allow" | "modify"
-// result.content: redacted text (if "modify")
+const redactResult = await secretRedactor.check("get_email", emailContent);
+// redactResult.action: "allow" | "modify"
+// redactResult.content: redacted text (if "modify")
 ```
 
 ## Trust Model
 
-SendApproval uses a two-tier trust model:
+`ContactsEgressGuard` treats **membership in iCloud Contacts** as the
+sole source of egress trust. There are no persisted approvals, no
+runtime-mutable trust ladder, no on-disk store. To grant trust, the user
+adds the recipient to Contacts (the agent can do this via apple-pim's
+`contact create` once the user authorizes).
 
-| Trust Level | Can message? | Can send PII? |
-|---|---|---|
-| **unknown** | Needs approval | Needs approval |
-| **approved** | ✅ | Needs approval |
-| **trusted** | ✅ | ✅ |
+Decision flow per call:
 
-Secrets and sensitive data are **always blocked** regardless of trust.
+1. Content has secrets → **block** (always).
+2. Content has sensitive data → **block** (always).
+3. For each destination (email):
+   - email domain matches `trustedDomains` → trusted
+   - email matches a Contact → trusted
+   - else → untrusted
+4. If any destination is untrusted → **block** with an action-oriented
+   reason naming the offending recipient(s).
+5. Otherwise → **allow**.
 
-Trust is built through user approvals:
-- `allow-always` on unknown destination → upgrades to **approved**
-- `allow-always` on approved destination (with PII) → upgrades to **trusted**
-
-Trust stores persist to `~/.openclaw/trust/{pluginId}.json`.
+Fail-closed: if `contacts-cli` can't read AddressBook (e.g. TCC
+permission revoked), every destination is untrusted until repaired.
 
 ## LLM Client
 

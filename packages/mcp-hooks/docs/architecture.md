@@ -32,20 +32,21 @@ using the same two-step token exchange OpenClaw uses.
 packages/mcp-hooks/
 ├── src/
 │   ├── index.ts              # Public API surface
-│   ├── types.ts              # HookResult, HookAction, TrustLevel, ContentClassification
+│   ├── types.ts              # HookResult, HookAction, ContentClassification
 │   ├── copilot-llm.ts        # CopilotLLMClient — token exchange + caching + classify()
-│   ├── trust-store.ts        # TrustStore — destination trust persistence + resolution
+│   ├── contacts/
+│   │   └── contacts-trust.ts # ContactsTrustResolver — iCloud Contacts membership lookup
 │   ├── egress/
-│   │   ├── leak-guard.ts     # LeakGuard — universal egress blocker
-│   │   └── send-approval.ts  # SendApproval — destination-aware send check
+│   │   ├── leak-guard.ts            # LeakGuard — universal egress blocker
+│   │   └── contacts-egress-guard.ts # ContactsEgressGuard — destination-aware send check
 │   └── ingress/
 │       ├── injection-guard.ts # InjectionGuard — prompt-injection detector
 │       └── secret-redactor.ts # SecretRedactor — regex + LLM redaction
 ├── tests/
 │   ├── copilot-llm.test.ts
-│   ├── trust-store.test.ts
+│   ├── contacts-trust.test.ts
 │   ├── leak-guard.test.ts
-│   ├── send-approval.test.ts
+│   ├── contacts-egress-guard.test.ts
 │   ├── injection-guard.test.ts
 │   ├── secret-redactor.test.ts
 │   ├── wiring.test.ts          # End-to-end wiring with mocked LLM
@@ -64,29 +65,22 @@ Everything in `index.ts` is part of the public API; everything else is internal.
 // Shared types
 type HookAction = "allow" | "block" | "modify";
 interface HookResult { action: HookAction; content?: string; reason?: string; }
-type TrustLevel = "unknown" | "approved" | "trusted";
 interface ContentClassification {
   has_secrets: boolean;
   has_sensitive: boolean;
   has_personal: boolean;
 }
-interface SendApprovalResult extends HookResult {
-  classification?: ContentClassification;
-  trustLevel: TrustLevel;
-  destination?: string;
-  approval?: { title: string; description: string; severity: "info" | "warning" | "critical"; };
-}
-interface EgressHook  { check(toolName, content, params?): Promise<HookResult | SendApprovalResult>; }
+interface EgressHook  { check(toolName, content, params?): Promise<HookResult>; }
 interface IngressHook { check(toolName, content): Promise<HookResult>; }
 
 // Implementations
 class CopilotLLMClient { /* …token mgmt + classify(content, systemPrompt) */ }
-class TrustStore { /* …destination trust persistence */ }
+class ContactsTrustResolver { /* …iCloud Contacts membership lookup via contacts-cli */ }
 
-class LeakGuard      implements EgressHook  { constructor({ llm }) }
-class SendApproval   implements EgressHook  { constructor({ llm, trustStore }) }
-class InjectionGuard implements IngressHook { constructor({ llm }) }
-class SecretRedactor implements IngressHook { constructor({ llm }) }
+class LeakGuard           implements EgressHook  { constructor({ llm }) }
+class ContactsEgressGuard implements EgressHook  { constructor({ contacts, trustedDomains?, llm?, extractDestinations? }) }
+class InjectionGuard      implements IngressHook { constructor({ llm }) }
+class SecretRedactor      implements IngressHook { constructor({ llm }) }
 ```
 
 ---
@@ -96,7 +90,7 @@ class SecretRedactor implements IngressHook { constructor({ llm }) }
 | Hook | Direction | Runs on | Decisions |
 |---|---|---|---|
 | **LeakGuard** | egress | non-send tools (web_search, web_fetch, exec…) | secrets/sensitive/PII → **block**; otherwise allow |
-| **SendApproval** | egress | send-type tools (email, message…) | secrets/sensitive → **block**; PII → trust-dependent; clean → trust-dependent (may surface approval) |
+| **ContactsEgressGuard** | egress | send-type tools (email, message, calendar w/ attendees…) | secrets/sensitive → **block**; recipient not in iCloud Contacts (and not a trusted domain) → **block**; otherwise allow |
 | **InjectionGuard** | ingress | any tool returning external content | injection detected → **block**; otherwise allow |
 | **SecretRedactor** | ingress | tools returning authenticated content | regex + LLM pass → **modify** (redacted) or allow |
 
@@ -106,10 +100,10 @@ Important behavioral details:
   PII) — separate single-purpose prompts are more reliable than asking one
   prompt to classify three categories. Latency is the same; cost is 3× but
   Haiku is cheap.
-- **SendApproval reuses the same three prompts as LeakGuard** but routes PII
-  through the trust store instead of blocking unconditionally. The two hooks
-  intentionally duplicate the prompt text rather than sharing a module — keeps
-  each hook self-contained and lets the prompts diverge later if needed.
+- **ContactsEgressGuard reuses LeakGuard's secrets/sensitive prompts** but
+  drops PII (since trust is membership-driven, not classifier-driven). The two
+  hooks intentionally duplicate the prompt text rather than sharing a module —
+  keeps each hook self-contained and lets the prompts diverge later if needed.
 - **SecretRedactor is regex-first, LLM-second.** Regex catches the
   well-formatted majority (API keys, JWTs, private keys, connection strings,
   bearer tokens, reset links, 2FA codes, SSNs, credit cards). The LLM pass runs
@@ -169,79 +163,109 @@ clients should call this; one-shot scripts can ignore it.
 
 ---
 
-## TrustStore
+## ContactsTrustResolver
 
-Plugin-injected destination trust resolver, persisted to disk.
+Reads iCloud Contacts membership via the `contacts-cli` Swift binary.
+No persistence, no cache — every `isTrustedEmail()` call shells out
+fresh (~50–100ms; invisible at our call frequency).
 
 ### Configuration
 
 ```ts
-new TrustStore({
-  pluginId: "secure-gmail",
-  extractDestination: (toolName, params) => params.to as string,
+new ContactsTrustResolver({
   // optional:
-  extractDomain: (dest) => /* default: split on @ */,
-  storageDir: /* default: ~/.openclaw/trust/ */,
+  cliPath: "contacts-cli",   // PATH lookup, or absolute path
+  timeoutMs: 5_000,
+  logger: { warn: (msg) => /* … */ },
 });
 ```
 
-The plugin only needs to teach the store **how to extract a destination key
-from arbitrary tool params**. Everything else (resolution, persistence, tier
-upgrades) is handled internally.
-
 ### Resolution
 
-`resolve(toolName, params)` and `resolveDestination(dest)` return:
+`isTrustedEmail(email)` returns `boolean`:
 
-- Contact-level trust (exact match, lowercased) if present, else
-- Domain-level trust (default extractor splits on `@`) if present, else
-- `"unknown"`.
+- `true` if any AddressBook entry has an `emails[]` value matching
+  `email` case-insensitively.
+- `false` on any failure (CLI missing, TCC denied, JSON parse error,
+  timeout). Fail-closed; no email is implicitly trusted.
 
-Contacts always override domains.
+The first failure emits a single `warn` log; subsequent failures are
+silent until a successful call resets the warning latch.
 
-`resolveAll(destinations[])` returns the **lowest** level across a recipient
-list — any `unknown` recipient yields `unknown`; any `approved` recipient
-caps the result at `approved`; only an all-`trusted` set is `trusted`.
+`healthCheck()` performs the same shellout and surfaces the failure
+mode to consumers without being routed through a check decision.
 
-### Tier upgrades
+---
 
+## ContactsEgressGuard
+
+Plugin-injected egress hook that combines content classification with
+contacts-backed destination trust.
+
+### Configuration
+
+```ts
+new ContactsEgressGuard({
+  contacts: new ContactsTrustResolver(),
+  // optional:
+  trustedDomains: ["mycompany.com"],   // case-insensitive; "@" prefix tolerated
+  llm: copilotClient,                   // enables secrets/sensitive classifiers
+  runContentClassifiers: true,          // explicit override (default: !!llm)
+  extractDestinations: (toolName, params) => /* string[] */,
+});
 ```
-allow-once                            → no change
-allow-always on unknown destination   → upgrade to approved
-allow-always on approved + PII flagged → upgrade to trusted
-deny                                   → no change
-```
 
-Implemented in `handleApprovalDecision(destinations, decision, piiDetected)`.
+The plugin teaches the guard **how to extract destinations from
+arbitrary tool params** (defaults to common shapes: `to`, `recipient`,
+`recipients`, `email`, `address`).
 
-### Persistence
+### Decision flow
 
-- Path: `${storageDir}/${pluginId}.json`, default
-  `~/.openclaw/trust/${pluginId}.json`.
-- Format: `{ contacts: { dest: TrustLevel }, domains: { domain: TrustLevel } }`.
-- Permissions: parent directory created `0o700`, file written `0o600`.
-- Loaded once at construction; corrupt files fall back to an empty store
-  rather than throwing.
+1. If `content` contains secrets → **block**.
+2. If `content` contains sensitive data → **block**.
+3. For every destination from `extractDestinations`:
+   - email domain in `trustedDomains` → trusted
+   - email in resolver's AddressBook → trusted
+   - else → **untrusted**
+4. If any destination is untrusted → **block** with an action-oriented
+   reason naming the offender(s).
+5. Otherwise → **allow**.
 
-`seedDomains(domains, level = "trusted")` is the standard way for a plugin to
-preload trusted domains from config.
+Block reason wording is deliberate: it names *who* and that approval is
+human-gated, but never names the trust mechanism (no "contacts", no
+"address book", no "add them" instructions). The agent learns *who* to
+flag and *that* approval is human-gated — not *how*. When the user says
+"yes, add them," the agent reaches for `contact create` because that's
+the natural tool.
+
+### Granting trust
+
+- Add the recipient to iCloud Contacts (the agent can do this via
+  apple-pim's `contact create` once the user authorizes), or
+- Add the recipient's domain to `trustedDomains` in the consuming
+  plugin's config (e.g. for company-internal addresses).
+
+There is **no runtime trust mutation**: no allow-once / allow-always
+ladder, no on-disk approval store. Trust is whatever Contacts says it
+is, evaluated fresh on every check.
 
 ---
 
 ## Trust + classification matrix
 
-The two egress hooks share the classification but diverge on PII:
+The two egress hooks share the secrets/sensitive classifiers but
+diverge on what comes after:
 
-| Finding | LeakGuard (non-send) | SendApproval / unknown | SendApproval / approved | SendApproval / trusted |
-|---|---|---|---|---|
-| Secrets | **block** | **block** | **block** | **block** |
-| Sensitive | **block** | **block** | **block** | **block** |
-| PII | **block** | **block** + approval | **block** + approval | allow |
-| Clean | allow | **block** + approval | allow | allow |
+| Finding | LeakGuard (non-send) | ContactsEgressGuard / untrusted dest | ContactsEgressGuard / trusted dest |
+|---|---|---|---|
+| Secrets | **block** | **block** | **block** |
+| Sensitive | **block** | **block** | **block** |
+| PII | **block** | trust-driven (block if dest untrusted, otherwise allow) | trust-driven (block if dest untrusted, otherwise allow) |
+| Clean | allow | **block** | allow |
 
-When SendApproval blocks with `approval: {...}` set, the consumer is expected
-to surface that approval to the user and feed the result back through
-`TrustStore.handleApprovalDecision()`.
+ContactsEgressGuard does not classify PII separately — `trustedDomains`
++ Contacts membership is the gate. Send-style tools that need a PII
+classifier should re-introduce one in their plugin layer.
 
 ---
 
@@ -261,8 +285,8 @@ The classifier prompts are deliberately verbose because Haiku-class models
 respond well to enumerated do/don't lists. Iteration on these prompts is a
 core part of Plan 015 (hook evals).
 
-**Shared prompt text:** LeakGuard and SendApproval currently duplicate the
-secrets/sensitive/PII prompt strings verbatim. This is intentional — the two
+**Shared prompt text:** LeakGuard and ContactsEgressGuard currently duplicate
+the secrets/sensitive prompt strings verbatim. This is intentional — the two
 hooks are tested independently and may evolve different examples. If they
 drift, that's fine. If they don't, dedup later when a third consumer appears.
 
@@ -294,11 +318,9 @@ To add a new hook:
 5. Add a unit test file alongside, mocking `CopilotLLMClient.classify`.
 6. Add an integration test case in `tests/integration.test.ts`.
 
-To support a new tool destination shape in SendApproval, override
-`extractDestinations` semantics by passing a custom `extractDestination`
-function to the `TrustStore` — SendApproval reads destinations from common
-param keys (`to`, `recipient`, `recipients`, `email`, `address`) but defers
-trust resolution entirely to the store.
+To support a new tool destination shape in ContactsEgressGuard, pass a custom
+`extractDestinations` function in the constructor. The default extractor reads
+common param keys (`to`, `recipient`, `recipients`, `email`, `address`).
 
 ---
 
@@ -307,13 +329,15 @@ trust resolution entirely to the store.
 - **Keychain bootstrap:** Store the GitHub PAT once with
   `security add-generic-password -s "openclaw" -a "github-pat" -w "<pat>"`.
   Storage is shared with OpenClaw itself.
-- **Trust store inspection:** `cat ~/.openclaw/trust/<pluginId>.json` to
-  audit current trust state. Edit by hand if you want to revoke.
-- **Cost:** A single LeakGuard or SendApproval check is ~3 Haiku calls;
-  InjectionGuard and SecretRedactor are 1 each. A typical send-email flow
-  through Gmail's secure plugin (Plan 010) will run SendApproval (3 calls)
-  for the outbound body.
-- **Logging:** The library emits no logs. Consumers should log
-  `HookResult.reason` on block decisions and approval prompts for audit
-  trails — the library is intentionally quiet so consumers control PII in
-  logs.
+- **Trust source of truth:** iCloud Contacts. To revoke trust for a
+  recipient, delete or edit them in Contacts.app. To inspect what
+  ContactsEgressGuard sees, run
+  `contacts-cli list --format json --limit 5000`.
+- **Cost:** A single LeakGuard or ContactsEgressGuard check is ~2–3 Haiku
+  calls (secrets + sensitive, plus PII for LeakGuard); InjectionGuard and
+  SecretRedactor are 1 each. Contacts lookups are local (~50–100ms shellout)
+  and incur no LLM cost.
+- **Logging:** The library emits no logs aside from a single warn-once per
+  process when the contacts CLI degrades. Consumers should log
+  `HookResult.reason` on block decisions for audit trails — the library is
+  intentionally quiet so consumers control PII in logs.

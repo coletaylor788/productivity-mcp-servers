@@ -19,11 +19,13 @@ Each tool's `execute()`:
    rejected call.
 2. Inspects the `action` arg to decide which hooks apply (see table below).
 3. Runs **egress** hooks first on mutation actions (`calendar_write`):
-   - `SendApproval` if the event has attendees outside
-     `trustedAttendeeDomains` (gated by an attendee-domain TrustStore).
-     External (untrusted) domains require approval; trusted domains pass.
-   - Otherwise (no attendees, or all-trusted attendees) the call passes
-     through unhooked — nothing leaves the user's iCloud account.
+   - `ContactsEgressGuard` whenever the event has attendees. Each attendee
+     email is checked against `trustedAttendeeDomains` (case-insensitive
+     domain short-circuit) and then against iCloud Contacts via
+     `ContactsTrustResolver`. Any untrusted attendee blocks the call with
+     an action-oriented reason naming the offender.
+   - When there are no attendees the call passes through unhooked —
+     nothing leaves the user's iCloud account.
 4. Calls the underlying MCP tool only if egress allowed.
 5. Pipes the text result through **ingress** hooks (`InjectionGuard` +
    `SecretRedactor`) on read actions (`calendar_read`) before returning it
@@ -44,8 +46,7 @@ top of any apple-pim per-domain config.
 | `list`, `schema`, `delete` | — | — |
 | `events`, `get`, `search` | InjectionGuard + SecretRedactor | — |
 | `create`, `update`, `batch_create` (no attendees) | — | — |
-| `create`, `update`, `batch_create` (all-trusted attendees) | — | — |
-| `create`, `update`, `batch_create` (any untrusted attendee) | — | SendApproval |
+| `create`, `update`, `batch_create` (any attendee) | — | ContactsEgressGuard |
 | any unknown action | InjectionGuard + SecretRedactor | — (fail-closed for reads) |
 
 ## Why this lives in `execute()`
@@ -70,17 +71,25 @@ architecture rationale (the same constraint shaped secure-gmail).
   which exposes any calendar added to macOS Calendar.app at the OS level.
   The agent sees the same risk surface regardless of source.
 - **Attendees are extracted from `args.attendees[].email`**, including
-  inside `args.events[]` for `batch_create`. SendApproval treats the entire
-  attendee list as the recipient set; ALL must match
-  `trustedAttendeeDomains` to skip approval.
+  inside `args.events[]` for `batch_create`. ContactsEgressGuard treats
+  the entire attendee list as the recipient set; ALL must be trusted
+  (via `trustedAttendeeDomains` or iCloud Contacts) for the call to
+  proceed.
+- **Trust comes from iCloud Contacts** (read via the `contacts-cli`
+  Swift binary) plus the `trustedAttendeeDomains` allowlist. There is no
+  runtime allow/deny ladder; to grant trust, add the recipient to
+  Contacts. The agent can do this through apple-pim's `contact create`
+  if you've registered that tool — but ContactsEgressGuard never names
+  Contacts in its block reason, so the agent must learn this from your
+  own instruction set.
 - **Egress content is focused on free-text fields the agent could leak
   through**: title, location, notes, url. IDs / calendar names / dates /
   durations are excluded — they're not meaningful exfil channels and only
   inflate LLM cost.
 - **Calendar invites still route through the source provider's mail
-  server.** SendApproval evaluates the attendee email — if it's a Gmail
-  address, the invite goes through Gmail regardless of which calendar the
-  event lives in.
+  server.** ContactsEgressGuard evaluates the attendee email — if it's
+  a Gmail address, the invite goes through Gmail regardless of which
+  calendar the event lives in.
 
 ## Install in OpenClaw
 
@@ -152,7 +161,7 @@ After enabling, add the config block below.
 | `applePimMcpArgs` | | `[]` | Args appended to the command (path to apple-pim's `mcp-server/dist/server.js`). |
 | `applePimMcpCwd` | | — | Working directory for the subprocess. |
 | `applePimMcpEnv` | | — | Extra env vars passed to the subprocess. |
-| `trustedAttendeeDomains` | | `[]` | Email domains whose attendees auto-pass SendApproval. Case-insensitive; leading `@` accepted. |
+| `trustedAttendeeDomains` | | `[]` | Email domains whose attendees auto-pass the egress guard without a Contacts lookup. Case-insensitive; leading `@` accepted. |
 | `model` | | `claude-haiku-4.5` | Copilot model used by hook LLM checks. |
 | `auditLogPath` | | `~/.openclaw/logs/secure-apple-calendar-audit.jsonl` | JSONL audit log. |
 
@@ -235,8 +244,10 @@ no PAT is reachable in the keychain.
 5. Ask: "Create an event 'Coffee with Alice' tomorrow at 10am with
    alice@example.com" (where `example.com` is in `trustedAttendeeDomains`).
    Verify it goes through without an approval prompt.
-6. Ask: "Create an event with stranger@unknown-domain.com". Verify
-   SendApproval blocks (or prompts).
+6. Ask: "Create an event with stranger@unknown-domain.com" (where
+   `stranger@unknown-domain.com` is **not** in iCloud Contacts and not
+   in `trustedAttendeeDomains`). Verify ContactsEgressGuard blocks with
+   a reason naming the recipient.
 7. Ask: "Create a personal event titled 'todo' with no attendees".
    Verify it goes through unhooked (no recipient = no egress check).
 

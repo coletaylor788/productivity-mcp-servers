@@ -14,14 +14,14 @@ const stubIngress: IngressHook = {
     return { action: "allow" } as const;
   },
 };
-const stubSendApproval: EgressHook = {
+const stubEgress: EgressHook = {
   async check() {
-    return { action: "allow", trustLevel: "trusted" } as never;
+    return { action: "allow" } as const;
   },
 };
 const hooks: CalendarHooks = {
   ingress: [stubIngress],
-  sendApproval: stubSendApproval,
+  egress: [stubEgress],
 };
 
 describe("extractAttendeeEmails", () => {
@@ -144,7 +144,7 @@ describe("selectHooksForCalendar", () => {
     }
   });
 
-  it("routes create with attendees → SendApproval; egressContent excludes IDs/dates", () => {
+  it("routes create with attendees → egress; egressContent excludes IDs/dates", () => {
     const sel = selectHooksForCalendar(
       {
         action: "create",
@@ -155,7 +155,7 @@ describe("selectHooksForCalendar", () => {
       },
       hooks,
     );
-    expect(sel.egress).toEqual([hooks.sendApproval]);
+    expect(sel.egress).toBe(hooks.egress);
     expect(sel.skipEgress).toBeFalsy();
     expect(sel.egressContent).toBe("title: Sync\nnotes: monthly");
   });
@@ -170,53 +170,15 @@ describe("selectHooksForCalendar", () => {
     expect(sel.skipEgress).toBeFalsy();
   });
 
-  it("update with attendees → SendApproval (same as create)", () => {
+  it("update with attendees → egress (same as create)", () => {
     const sel = selectHooksForCalendar(
       { action: "update", id: "evt-1", attendees: [{ email: "a@x.com" }] },
       hooks,
     );
-    expect(sel.egress).toEqual([hooks.sendApproval]);
+    expect(sel.egress).toBe(hooks.egress);
   });
 
-  it("trustedAttendeeDomains short-circuits SendApproval when ALL attendees match", () => {
-    const sel = selectHooksForCalendar(
-      {
-        action: "create",
-        attendees: [{ email: "a@trusted.com" }, { email: "b@trusted.com" }],
-      },
-      hooks,
-      { trustedAttendeeDomains: ["trusted.com"] },
-    );
-    expect(sel.skipEgress).toBe(true);
-    expect(sel.egress).toBeUndefined();
-  });
-
-  it("trustedAttendeeDomains does NOT short-circuit when any attendee is outside the allowlist", () => {
-    const sel = selectHooksForCalendar(
-      {
-        action: "create",
-        attendees: [
-          { email: "a@trusted.com" },
-          { email: "b@external.com" },
-        ],
-      },
-      hooks,
-      { trustedAttendeeDomains: ["trusted.com"] },
-    );
-    expect(sel.skipEgress).toBeFalsy();
-    expect(sel.egress).toEqual([hooks.sendApproval]);
-  });
-
-  it("trustedAttendeeDomains is case-insensitive and accepts a leading @", () => {
-    const sel = selectHooksForCalendar(
-      { action: "create", attendees: [{ email: "x@Trusted.COM" }] },
-      hooks,
-      { trustedAttendeeDomains: ["@TRUSTED.com"] },
-    );
-    expect(sel.skipEgress).toBe(true);
-  });
-
-  it("batch_create with attendees on any event → SendApproval", () => {
+  it("batch_create with attendees on any event → egress", () => {
     const sel = selectHooksForCalendar(
       {
         action: "batch_create",
@@ -227,7 +189,7 @@ describe("selectHooksForCalendar", () => {
       },
       hooks,
     );
-    expect(sel.egress).toEqual([hooks.sendApproval]);
+    expect(sel.egress).toBe(hooks.egress);
   });
 
   it("batch_create with no attendees on any event → no hooks", () => {

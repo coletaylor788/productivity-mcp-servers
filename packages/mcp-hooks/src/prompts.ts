@@ -2,7 +2,7 @@
  * Centralized prompt definitions for all LLM-powered hooks.
  *
  * Why centralized: SECRETS_PROMPT, SENSITIVE_PROMPT, and PII_PROMPT are used
- * by both LeakGuard and SendApproval. Keeping a single source of truth
+ * by both LeakGuard and ContactsEgressGuard. Keeping a single source of truth
  * prevents silent drift (we already had a small wording divergence between
  * the two copies before this consolidation) and lets the eval harness
  * exercise the exact prompt strings production uses.

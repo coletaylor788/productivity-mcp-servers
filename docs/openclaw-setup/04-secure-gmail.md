@@ -44,7 +44,7 @@ So the wiring has to do three things at once:
 - Run **every** Gmail response through ingress hooks before the agent sees it: `InjectionGuard` to flag prompt-injection attempts and `SecretRedactor` to strip 2FA codes, reset links, and similar high-risk strings.
 - Log every hook verdict to disk so I can audit later — what got blocked, what got modified, by which hook, on which tool, when.
 
-We're explicitly **not** doing send / reply / draft yet. There's no `send_email` tool exposed in this guide. Egress (`LeakGuard`, `SendApproval` from `mcp-hooks`) is deferred until after `gmail-mcp` actually lands a send-style tool — see plan 014 in the repo for the design that's waiting.
+We're explicitly **not** doing send / reply / draft yet. There's no `send_email` tool exposed in this guide. Egress (`LeakGuard`, `ContactsEgressGuard` from `mcp-hooks`) is deferred until after `gmail-mcp` actually lands a send-style tool — see plan 018 in the repo for the design that's waiting.
 
 ## 2. The pieces
 
@@ -677,7 +677,7 @@ Things this setup does **not** do, and that I want you to know going in:
 - **`get_attachments` is host-write capable.** `save_to` is unsanitized in current `gmail-mcp`. This guide doesn't expose it to any agent.
 - **The audit log is local-only.** If the box is compromised, the log is also at risk. There is no remote SIEM.
 - **The audit log is not safe-to-share by default.** `evidence` and `reason` are LLM-generated and not truncated by the wrapper; they can echo small slices of the original content. Lower-risk than raw email, not zero-risk.
-- **No egress hooks yet.** When `send_email` lands on `gmail-mcp`, this guide gets a section on `LeakGuard` and `SendApproval`. Until then, there is no agent-driven path for content to leave Gmail through this plugin.
+- **No egress hooks yet.** When `send_email` lands on `gmail-mcp`, this guide gets a section on `LeakGuard` and `ContactsEgressGuard`. Until then, there is no agent-driven path for content to leave Gmail through this plugin.
 
 If those tradeoffs are uncomfortable, tighten further: take `archive_email` / `add_label` off `main` (you lose the "Puddles organises my mail" feature but inbox manipulation through the agent path goes to zero), don't expose `get_attachments`, run a smaller mailbox at first, or wait until the delegate-access path is fully shipped.
 

@@ -1,11 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { CopilotLLMClient } from "../src/copilot-llm.js";
-import { TrustStore } from "../src/trust-store.js";
 import { LeakGuard } from "../src/egress/leak-guard.js";
-import { SendApproval } from "../src/egress/send-approval.js";
 import { SecretRedactor } from "../src/ingress/secret-redactor.js";
 import { InjectionGuard } from "../src/ingress/injection-guard.js";
 
@@ -18,15 +13,9 @@ function makeMockLLM() {
 
 describe("Integration Tests", () => {
   let llm: ReturnType<typeof makeMockLLM>;
-  let tempDir: string;
 
   beforeEach(() => {
     llm = makeMockLLM();
-    tempDir = mkdtempSync(join(tmpdir(), "integration-test-"));
-  });
-
-  afterEach(() => {
-    rmSync(tempDir, { recursive: true, force: true });
   });
 
   describe("LeakGuard + real classification flow", () => {
@@ -66,102 +55,6 @@ describe("Integration Tests", () => {
 
       expect(result.action).toBe("allow");
       expect(llm.classify).toHaveBeenCalledTimes(3);
-    });
-  });
-
-  describe("SendApproval + TrustStore → full lifecycle", () => {
-    it("should block unknown → approve → allow on re-check", async () => {
-      const trustStore = new TrustStore({
-        pluginId: "integration-test",
-        extractDestination: (_tool, params) => (params.to as string) ?? null,
-        storageDir: tempDir,
-      });
-
-      llm.classify.mockResolvedValue(
-        JSON.stringify({ detected: false, evidence: "" }),
-      );
-
-      const approval = new SendApproval({ llm, trustStore });
-
-      // Step 1: First send to unknown → should block
-      const result1 = await approval.check("send_email", "Hello!", {
-        to: "newperson@example.com",
-      });
-      expect(result1.action).toBe("block");
-      expect(result1.trustLevel).toBe("unknown");
-      expect(result1.approval).toBeDefined();
-
-      // Step 2: User approves → trust upgrade
-      trustStore.handleApprovalDecision(
-        ["newperson@example.com"],
-        "allow-always",
-        false,
-      );
-      expect(trustStore.resolveDestination("newperson@example.com")).toBe(
-        "approved",
-      );
-
-      // Step 3: Second send → should allow
-      const result2 = await approval.check("send_email", "Follow-up!", {
-        to: "newperson@example.com",
-      });
-      expect(result2.action).toBe("allow");
-      expect(result2.trustLevel).toBe("approved");
-    });
-
-    it("should upgrade from approved to trusted after PII approval", async () => {
-      const trustStore = new TrustStore({
-        pluginId: "integration-test-pii",
-        extractDestination: (_tool, params) => (params.to as string) ?? null,
-        storageDir: tempDir,
-      });
-
-      // Approve the contact first
-      trustStore.approve("colleague@company.com");
-
-      // PII detection on
-      llm.classify.mockImplementation((_content: string, prompt: string) => {
-        if (prompt.includes("personally identifiable")) {
-          return Promise.resolve(
-            JSON.stringify({
-              detected: true,
-              evidence: "phone number found",
-            }),
-          );
-        }
-        return Promise.resolve(
-          JSON.stringify({ detected: false, evidence: "" }),
-        );
-      });
-
-      const approval = new SendApproval({ llm, trustStore });
-
-      // PII to approved → block with approval request
-      const result1 = await approval.check(
-        "send_email",
-        "Call me at 555-1234",
-        { to: "colleague@company.com" },
-      );
-      expect(result1.action).toBe("block");
-      expect(result1.trustLevel).toBe("approved");
-
-      // User approves with PII → trust upgrade to trusted
-      trustStore.handleApprovalDecision(
-        ["colleague@company.com"],
-        "allow-always",
-        true,
-      );
-      expect(trustStore.resolveDestination("colleague@company.com")).toBe(
-        "trusted",
-      );
-
-      // PII to trusted → allow
-      const result2 = await approval.check(
-        "send_email",
-        "Also, my SSN is 123-45-6789",
-        { to: "colleague@company.com" },
-      );
-      expect(result2.action).toBe("allow");
     });
   });
 
@@ -266,41 +159,6 @@ describe("Integration Tests", () => {
 
       expect(injectionResult.action).toBe("allow");
       expect(redactionResult.action).toBe("allow");
-    });
-  });
-
-  describe("Full egress pipeline: LeakGuard then SendApproval", () => {
-    it("should run LeakGuard first, then SendApproval for trusted destination", async () => {
-      const trustStore = new TrustStore({
-        pluginId: "pipeline-test",
-        extractDestination: (_tool, params) => (params.to as string) ?? null,
-        storageDir: tempDir,
-      });
-      trustStore.trust("trusted@example.com");
-
-      // Clean content
-      llm.classify.mockResolvedValue(
-        JSON.stringify({ detected: false, evidence: "" }),
-      );
-
-      const leakGuard = new LeakGuard({ llm });
-      const sendApproval = new SendApproval({ llm, trustStore });
-
-      const content = "Project update for Q3 planning session.";
-      const params = { to: "trusted@example.com" };
-
-      // Step 1: LeakGuard
-      const leakResult = await leakGuard.check("send_email", content);
-      expect(leakResult.action).toBe("allow");
-
-      // Step 2: SendApproval (only if LeakGuard allows)
-      const sendResult = await sendApproval.check(
-        "send_email",
-        content,
-        params,
-      );
-      expect(sendResult.action).toBe("allow");
-      expect(sendResult.trustLevel).toBe("trusted");
     });
   });
 });

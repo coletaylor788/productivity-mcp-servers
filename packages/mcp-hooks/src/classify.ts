@@ -2,7 +2,7 @@ import type { CopilotLLMClient } from "./copilot-llm.js";
 
 /**
  * Outcome of a boolean LLM classification call. Used by LeakGuard,
- * SendApproval, InjectionGuard, and the eval harness.
+ * ContactsEgressGuard, InjectionGuard, and the eval harness.
  *
  * `outcome` distinguishes the failure modes that production callers all
  * collapse to "fail open" but evals want to track separately:

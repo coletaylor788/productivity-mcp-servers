@@ -3,11 +3,11 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { homedir } from "node:os";
 import {
+  ContactsEgressGuard,
+  ContactsTrustResolver,
   CopilotLLMClient,
   InjectionGuard,
   SecretRedactor,
-  SendApproval,
-  TrustStore,
   type IngressHook,
 } from "mcp-hooks";
 import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js";
@@ -20,7 +20,6 @@ import {
 } from "./wrap-tool.js";
 import {
   calendarExtractDestinations,
-  extractAttendeeEmails,
   READ_ACTIONS,
   selectHooksForCalendar,
   WRITE_ACTIONS,
@@ -34,6 +33,8 @@ interface SecureAppleCalendarConfig {
   applePimMcpCwd?: string;
   applePimMcpEnv?: Record<string, string>;
   trustedAttendeeDomains?: string[];
+  /** Override path to the contacts-cli binary. Defaults to "contacts-cli" on PATH. */
+  contactsCliPath?: string;
   model?: string;
   /** Override path for the audit log file. */
   auditLogPath?: string;
@@ -287,7 +288,7 @@ const secureAppleCalendarPlugin = {
   id: "secure-apple-calendar",
   name: "Secure Apple Calendar",
   description:
-    "Wraps apple-pim's calendar MCP tool with prompt-injection + secret-redaction (ingress) and SendApproval (egress) hooks.",
+    "Wraps apple-pim's calendar MCP tool with prompt-injection + secret-redaction (ingress) and ContactsEgressGuard (egress) hooks.",
 
   register(api: OpenClawPluginApi) {
     const config = (api.pluginConfig ?? {}) as Partial<SecureAppleCalendarConfig>;
@@ -309,35 +310,29 @@ const secureAppleCalendarPlugin = {
       model: config.model ?? "claude-haiku-4.5",
     });
 
-    // Trust store: seed `trustedAttendeeDomains` as trusted so the seeded
-    // domains short-circuit at the action-map level too. The TrustStore
-    // requires a singular extractDestination — return the first attendee
-    // (only used by .resolve(), which we don't call). The plural lookup
-    // (.resolveAll) flows through SendApproval.extractDestinations.
-    const trustStore = new TrustStore({
-      pluginId: "secure-apple-calendar",
-      extractDestination: (_tool, params) => {
-        const emails = extractAttendeeEmails(params ?? {});
-        return emails.length > 0 ? emails[0] : null;
-      },
+    // Trust resolver reads the local AddressBook on every egress check (no
+    // cache; the per-call cost is invisible at this call frequency and
+    // eliminates staleness after `contact create`).
+    const contacts = new ContactsTrustResolver({
+      cliPath: config.contactsCliPath,
+      logger: { warn: (m) => api.logger.warn?.(m) },
     });
+
     const trustedDomains = (config.trustedAttendeeDomains ?? [])
       .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
       .filter((d) => d.length > 0);
-    if (trustedDomains.length > 0) {
-      trustStore.seedDomains(trustedDomains, "trusted");
-    }
 
     const ingress: IngressHook[] = [
       new InjectionGuard({ llm }),
       new SecretRedactor({ llm }),
     ];
-    const sendApproval = new SendApproval({
-      llm,
-      trustStore,
+    const egressGuard = new ContactsEgressGuard({
+      contacts,
+      trustedDomains,
       extractDestinations: calendarExtractDestinations,
+      llm,
     });
-    const calendarHooks: CalendarHooks = { ingress, sendApproval };
+    const calendarHooks: CalendarHooks = { ingress, egress: [egressGuard] };
 
     // Lazy MCP bridge: spawn apple-pim MCP only on first invocation.
     let bridgePromise: Promise<McpBridge> | null = null;
@@ -391,9 +386,8 @@ const secureAppleCalendarPlugin = {
     const CALENDAR_WRITE_TOOL = narrowCalendarTool(
       "calendar_write",
       "Create, update, or delete macOS Calendar events. Mutating only — use " +
-        "`calendar_read` to query. Events with attendees outside " +
-        "`trustedAttendeeDomains` go through SendApproval; events with no " +
-        "attendees or only trusted attendees pass through unhooked.",
+        "`calendar_read` to query. Events with attendees are gated by an " +
+        "egress guard; events with no attendees pass through unhooked.",
       WRITE_ACTIONS,
     );
 
@@ -408,10 +402,7 @@ const secureAppleCalendarPlugin = {
         CALENDAR_READ_TOOL,
         restrictActionsCaller(lazyCaller, "calendar_read", READ_ACTIONS, api),
         {
-          selectHooks: (args) =>
-            selectHooksForCalendar(args, calendarHooks, {
-              trustedAttendeeDomains: trustedDomains,
-            }),
+          selectHooks: (args) => selectHooksForCalendar(args, calendarHooks),
           audit,
           source: "secure-apple-calendar",
         },
@@ -423,10 +414,7 @@ const secureAppleCalendarPlugin = {
         CALENDAR_WRITE_TOOL,
         restrictActionsCaller(lazyCaller, "calendar_write", WRITE_ACTIONS, api),
         {
-          selectHooks: (args) =>
-            selectHooksForCalendar(args, calendarHooks, {
-              trustedAttendeeDomains: trustedDomains,
-            }),
+          selectHooks: (args) => selectHooksForCalendar(args, calendarHooks),
           audit,
           source: "secure-apple-calendar",
         },

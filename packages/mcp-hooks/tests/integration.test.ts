@@ -1,30 +1,22 @@
 /**
  * Integration tests — hit the real Copilot API.
- * Requires GitHub PAT in keychain (service: "mcp-hooks", account: "github-pat").
+ * Requires GitHub PAT in keychain (service: "openclaw", account: "github-pat").
  * Run separately: pnpm test:integration
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { CopilotLLMClient } from "../src/copilot-llm.js";
 import { LeakGuard } from "../src/egress/leak-guard.js";
-import { SendApproval } from "../src/egress/send-approval.js";
 import { InjectionGuard } from "../src/ingress/injection-guard.js";
 import { SecretRedactor } from "../src/ingress/secret-redactor.js";
-import { TrustStore } from "../src/trust-store.js";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 
 let llm: CopilotLLMClient;
-let tmpDir: string;
 
 beforeAll(() => {
   llm = new CopilotLLMClient({ model: "claude-haiku-4.5" });
-  tmpDir = mkdtempSync(join(tmpdir(), "mcp-hooks-integration-"));
 });
 
 afterAll(() => {
   llm.destroy();
-  rmSync(tmpDir, { recursive: true, force: true });
 });
 
 describe("CopilotLLMClient", () => {
@@ -94,41 +86,4 @@ describe("SecretRedactor", () => {
     const result = await redactor().check("get_email", "Hey, lunch at noon tomorrow?");
     expect(result.action).toBe("allow");
   }, 30_000);
-});
-
-describe("SendApproval + TrustStore", () => {
-  it("full trust lifecycle", async () => {
-    const trustStore = new TrustStore({
-      pluginId: "test-integration",
-      extractDestination: (_t, p) => p.to as string,
-      storageDir: tmpDir,
-    });
-
-    const approval = new SendApproval({ llm, trustStore });
-
-    // Unknown destination → should block (needs approval)
-    const r1 = await approval.check("send_email", "Hey, let's meet tomorrow", { to: "stranger@random.com" });
-    expect(r1.action).toBe("block");
-    expect(r1.trustLevel).toBe("unknown");
-
-    // Approve the destination
-    trustStore.approve("stranger@random.com");
-
-    // Approved destination, clean content → should allow
-    const r2 = await approval.check("send_email", "Hey, let's meet tomorrow", { to: "stranger@random.com" });
-    expect(r2.action).toBe("allow");
-    expect(r2.trustLevel).toBe("approved");
-
-    // Approved destination, PII content → should block
-    const r3 = await approval.check("send_email", "My SSN is 123-45-6789", { to: "stranger@random.com" });
-    expect(r3.action).toBe("block");
-
-    // Trust the destination
-    trustStore.trust("stranger@random.com");
-
-    // Trusted destination, PII content → should allow
-    const r4 = await approval.check("send_email", "My address is 123 Main St, Springfield IL 62701", { to: "stranger@random.com" });
-    expect(r4.action).toBe("allow");
-    expect(r4.trustLevel).toBe("trusted");
-  }, 60_000);
 });

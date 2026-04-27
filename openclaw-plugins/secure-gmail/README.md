@@ -16,7 +16,7 @@ the raw content. If all hooks return `allow` the original MCP result passes
 through unchanged.
 
 > **v1 scope:** ingress hooks only. gmail-mcp does not yet expose a
-> `send_email` tool, so egress hooks (LeakGuard / SendApproval) are not wired.
+> `send_email` tool, so egress hooks (LeakGuard / ContactsEgressGuard) are not wired.
 > When `send_email` lands they'll be added — see Plan 014.
 
 ## Why ingress runs inside `execute()` (not via `tool_result_persist`)
