@@ -170,9 +170,9 @@ After merge to `main`:
 - [x] Mark this plan complete with date
 
 ### Commit & push
-- [ ] One commit covering server changes + tests + README
-- [ ] Separate commit for plan 016 §6.1.4 update
-- [ ] Push to remote
+- [x] One commit covering server changes + tests + README
+- [x] Separate commit for plan 016 §6.1.4 update
+- [x] Push to remote
 
 ### Deploy (separate phase, post-merge)
 - [ ] Pull + reinstall on mini
