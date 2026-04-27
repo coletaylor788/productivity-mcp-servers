@@ -72,7 +72,7 @@ export class SecretRedactor {
 
     // Phase 2: LLM (on already-redacted content)
     try {
-      const raw = await this.llm.classify(redacted, REDACT_PROMPT);
+      const raw = await this.llm.classify(redacted, REDACT_PROMPT, { label: "secret-redact" });
       const parsed = JSON.parse(raw);
 
       if (Array.isArray(parsed.findings)) {

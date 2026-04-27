@@ -115,6 +115,30 @@ Or pass directly:
 const llm = new CopilotLLMClient({ githubToken: "ghp_..." });
 ```
 
+### Timeouts and logging
+
+All chat completion calls are bounded by a hard timeout (default 30s, override
+with `requestTimeoutMs`) using both the OpenAI SDK's `timeout`/`maxRetries: 0`
+options and an `AbortSignal`. A `slowCallMs` warning (default 10s) fires for
+chronic slowness before it becomes a wedge. The token-exchange fetch is bounded
+separately by `tokenExchangeTimeoutMs` (default 15s).
+
+Every call emits structured JSON to stderr (lands in
+`~/.openclaw/logs/gateway.err.log`):
+
+| Event | Fields |
+|---|---|
+| `llm_call_start` | `call_id`, `label`, `model`, `content_len`, `timeout_ms` |
+| `llm_call_done` | `call_id`, `label`, `elapsed_ms`, `outcome: "ok"`, `response_len` |
+| `llm_call_slow` | `call_id`, `label`, `elapsed_ms`, `threshold_ms` |
+| `llm_call_timeout` | `call_id`, `label`, `elapsed_ms`, `error` |
+| `llm_call_error` | `call_id`, `label`, `elapsed_ms`, `error` |
+| `classify_start` / `classify_done` | `label`, `elapsed_ms`, `outcome`, `detected` |
+| `token_refresh_start` / `token_refresh_done` / `token_refresh_error` | `elapsed_ms`, `expires_in_ms` |
+
+`label` identifies the caller (e.g. `leak.secrets`, `injection`, `secret-redact`,
+`contacts-egress.sensitive`) so wedges can be diagnosed quickly.
+
 ## Development
 
 ```bash

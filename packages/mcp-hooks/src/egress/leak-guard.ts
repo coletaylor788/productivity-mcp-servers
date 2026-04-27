@@ -12,9 +12,9 @@ export class LeakGuard {
 
   async check(_toolName: string, content: string): Promise<HookResult> {
     const [secrets, sensitive, pii] = await Promise.all([
-      classifyBoolean(this.llm, content, SECRETS_PROMPT),
-      classifyBoolean(this.llm, content, SENSITIVE_PROMPT),
-      classifyBoolean(this.llm, content, PII_PROMPT),
+      classifyBoolean(this.llm, content, SECRETS_PROMPT, "leak.secrets"),
+      classifyBoolean(this.llm, content, SENSITIVE_PROMPT, "leak.sensitive"),
+      classifyBoolean(this.llm, content, PII_PROMPT, "leak.pii"),
     ]);
 
     // Fail open: api_error/parse_error → treat as not-detected (matches prior behavior)

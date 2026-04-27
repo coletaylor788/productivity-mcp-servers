@@ -60,8 +60,8 @@ export class ContactsEgressGuard implements EgressHook {
   ): Promise<HookResult> {
     if (this.runContentClassifiers && this.llm && content.length > 0) {
       const [secrets, sensitive] = await Promise.all([
-        classifyBoolean(this.llm, content, SECRETS_PROMPT),
-        classifyBoolean(this.llm, content, SENSITIVE_PROMPT),
+        classifyBoolean(this.llm, content, SECRETS_PROMPT, "contacts-egress.secrets"),
+        classifyBoolean(this.llm, content, SENSITIVE_PROMPT, "contacts-egress.sensitive"),
       ]);
       if (secrets.outcome === "ok" && secrets.detected) {
         return {

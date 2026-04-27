@@ -1,4 +1,5 @@
 import type { CopilotLLMClient } from "./copilot-llm.js";
+import { log } from "./logger.js";
 
 /**
  * Outcome of a boolean LLM classification call. Used by LeakGuard,
@@ -32,34 +33,58 @@ export async function classifyBoolean(
   llm: CopilotLLMClient,
   content: string,
   prompt: string,
+  label = "unlabeled",
 ): Promise<ClassificationResult> {
+  const start = Date.now();
+  log("classify_start", { label, content_len: content.length });
   let raw: string;
   try {
-    raw = await llm.classify(content, prompt);
+    raw = await llm.classify(content, prompt, { label });
   } catch (err) {
-    return {
+    const result: ClassificationResult = {
       detected: false,
       evidence: "",
       outcome: "api_error",
       error: err instanceof Error ? err.message : String(err),
     };
+    log("classify_done", {
+      label,
+      elapsed_ms: Date.now() - start,
+      outcome: "api_error",
+      error: result.error,
+    });
+    return result;
   }
 
   try {
     const parsed = JSON.parse(raw);
-    return {
+    const result: ClassificationResult = {
       detected: Boolean(parsed.detected),
       evidence: String(parsed.evidence ?? ""),
       outcome: "ok",
       raw,
     };
+    log("classify_done", {
+      label,
+      elapsed_ms: Date.now() - start,
+      outcome: "ok",
+      detected: result.detected,
+    });
+    return result;
   } catch (err) {
-    return {
+    const result: ClassificationResult = {
       detected: false,
       evidence: "",
       outcome: "parse_error",
       raw,
       error: err instanceof Error ? err.message : String(err),
     };
+    log("classify_done", {
+      label,
+      elapsed_ms: Date.now() - start,
+      outcome: "parse_error",
+      error: result.error,
+    });
+    return result;
   }
 }

@@ -12,7 +12,7 @@ export class InjectionGuard {
   }
 
   async check(_toolName: string, content: string): Promise<HookResult> {
-    const result = await classifyBoolean(this.llm, content, INJECTION_PROMPT);
+    const result = await classifyBoolean(this.llm, content, INJECTION_PROMPT, "injection");
     if (result.outcome !== "ok" || !result.detected) {
       // Fail open on api_error/parse_error to avoid blocking legitimate work
       return { action: "allow" };

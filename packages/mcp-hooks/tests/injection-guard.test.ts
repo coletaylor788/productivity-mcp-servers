@@ -86,6 +86,7 @@ describe("InjectionGuard", () => {
     expect(llm.classify).toHaveBeenCalledWith(
       "test content here",
       expect.stringContaining("prompt injection"),
+      { label: "injection" },
     );
   });
 });
