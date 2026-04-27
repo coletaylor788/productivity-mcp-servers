@@ -107,8 +107,18 @@ Tokens cached in-memory with proactive refresh (5 min before expiry).
 Store your GitHub PAT in macOS Keychain (service `openclaw`, account `github-pat` —
 shared with OpenClaw itself):
 ```bash
-security add-generic-password -s "openclaw" -a "github-pat" -w "ghp_your_token_here"
+security add-generic-password -s openclaw -a github-pat -w "ghp_your_token_here" \
+  -T /opt/homebrew/opt/node@22/bin/node \
+  -T /opt/homebrew/bin/node \
+  -T '' \
+  -U
 ```
+The `-T` flags pre-authorize the binaries that will read the entry. Both node
+paths matter — the gateway invokes one path directly, and helper subprocesses
+may resolve through the brew-managed symlink (a separate ACL identity). Without
+these, headless callers (LaunchAgents) hang on an invisible Keychain prompt —
+see `docs/openclaw-setup/04-secure-gmail.md` §7 for the full recovery
+procedure if you've already created an entry without these flags.
 
 Or pass directly:
 ```typescript

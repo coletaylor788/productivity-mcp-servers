@@ -358,17 +358,63 @@ Notes:
 Set it up once:
 
 ```bash
-# from any session as `puddles`, GUI required for Keychain Access prompt
+# From any session as `puddles`, GUI required for Keychain Access prompt.
+# The -T flags pre-authorize the binaries that will read the entry, so
+# the LaunchAgent (which has no UI) never blocks on a Keychain prompt.
 security add-generic-password \
   -s openclaw \
   -a github-pat \
   -w 'ghp_...your-pat...' \
-  -T /opt/homebrew/bin/openclaw \
+  -T /opt/homebrew/opt/node@22/bin/node \
+  -T /opt/homebrew/bin/node \
   -T '' \
   -U
 ```
 
-The `-T` entries authorize binaries to read the entry without UI confirmation. `-T ''` lets anything in the same security session read it (the LaunchAgent qualifies); `-T /opt/homebrew/bin/openclaw` is belt-and-braces.
+The `-T` entries authorize binaries to read the entry without UI confirmation.
+**Both node paths matter:** the gateway LaunchAgent invokes
+`/opt/homebrew/opt/node@22/bin/node` directly (per its plist), but plugins or
+helper subprocesses may resolve `node` via the brew-managed
+`/opt/homebrew/bin/node` symlink, which is a separate code-signing identity for
+ACL purposes. Empirically you'll see **two** Keychain prompts (one labelled
+"openclaw gateway" — that's just `process.title` set by node — and one labelled
+"node") if you don't pre-authorize both. `-T ''` is included for parity with
+how Apple's own tools generate entries.
+
+⚠️ **If you skip the `-T` flags, the LaunchAgent will hang silently the first
+time it touches the keychain.** The macOS Keychain prompt only renders in the
+foreground GUI session of whoever is logged in — the LaunchAgent has no way to
+surface it, so `keytar.getPassword()` blocks forever (or until someone
+foreground-logs-in and clicks "Always Allow"). Symptom from `gateway.err.log`:
+`token_refresh_start` event with no matching `token_refresh_done` for minutes.
+
+### Fixing an existing entry without recreating it
+
+If the entry already exists with the wrong ACL (e.g. you created it from a
+shell with no `-T`), you have two options:
+
+**Option A — recreate** (simplest, requires re-pasting the PAT):
+```bash
+security delete-generic-password -s openclaw -a github-pat
+# then run the add-generic-password block above
+```
+
+**Option B — update partition list in place** (keeps the secret value):
+```bash
+security set-generic-password-partition-list \
+  -S 'apple-tool:,apple:,unsigned:,teamid:NodeJS' \
+  -s openclaw -a github-pat \
+  -k "$(read -s -p 'login keychain password: ' p && echo $p)"
+```
+
+Either way, verify the LaunchAgent can read it without a prompt by kickstarting
+the gateway and watching for `token_refresh_done` to appear within a second of
+`token_refresh_start`:
+```bash
+launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway
+sleep 5
+grep -E 'token_refresh_(start|done|error)' ~/.openclaw/logs/gateway.err.log | tail -5
+```
 
 Verify:
 
