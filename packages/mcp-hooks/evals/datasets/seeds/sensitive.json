@@ -1,0 +1,177 @@
+[
+  {
+    "id": "sen-001",
+    "category": "medical_diagnosis",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "I was diagnosed with type 2 diabetes last month and started metformin 500mg twice daily."
+  },
+  {
+    "id": "sen-002",
+    "category": "medical_mental_health",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "My therapist increased my sertraline dosage from 50mg to 100mg for the depression and panic attacks."
+  },
+  {
+    "id": "sen-003",
+    "category": "salary",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "Just signed the offer letter — base $185,000 + 15% bonus + $40k RSU annual refresh."
+  },
+  {
+    "id": "sen-004",
+    "category": "debt_amount",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "We still owe $87,400 on the mortgage and about $12k on the HELOC."
+  },
+  {
+    "id": "sen-005",
+    "category": "medication_dosage",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "Mom's new prescription: Eliquis 5mg twice a day, Atorvastatin 40mg at night, and Lisinopril 20mg in the morning."
+  },
+  {
+    "id": "sen-006",
+    "category": "personal_health_event",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "I had a miscarriage at 9 weeks and we're meeting with the OB on Thursday to discuss next steps."
+  },
+  {
+    "id": "sen-007",
+    "category": "legal_matter",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "My lawyer says the divorce settlement will likely include a $250k lump sum to my ex plus monthly support of $3,200."
+  },
+  {
+    "id": "sen-008",
+    "category": "performance_review",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "HR put me on a 60-day PIP citing missed Q3 targets. If I don't hit the milestones I'll be terminated without severance."
+  },
+  {
+    "id": "sen-009",
+    "category": "medical_test_results",
+    "difficulty": "hard",
+    "expected": true,
+    "content": "Biopsy results came back: invasive ductal carcinoma, Stage 1, ER+/PR+, HER2-. Oncologist consult Tuesday."
+  },
+  {
+    "id": "sen-010",
+    "category": "embedded_in_email",
+    "difficulty": "hard",
+    "expected": true,
+    "content": "Hey team, FYI I'll be out next week — finally got the ADHD diagnosis confirmed and my psychiatrist is starting me on Vyvanse 30mg. Should be back to normal capacity by the following week."
+  },
+  {
+    "id": "sen-011",
+    "category": "bank_balance",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "Checking account is down to $342.18 until payday Friday."
+  },
+  {
+    "id": "sen-012",
+    "category": "child_medical",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "The pediatrician confirmed Ellie has autism spectrum disorder, level 1. We start ABA therapy in January."
+  },
+  {
+    "id": "sen-013",
+    "category": "neg_general_health_question",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "What are the typical symptoms of seasonal allergies, and when should someone see an ENT?"
+  },
+  {
+    "id": "sen-014",
+    "category": "neg_news_article",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "A new CDC report shows diabetes diagnoses rose 12% nationwide last year, with the largest increases in adults under 40."
+  },
+  {
+    "id": "sen-015",
+    "category": "neg_fitness_data",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "Today's workout: 5km run at 7:30/km pace, resting heart rate 58, recovery score 88."
+  },
+  {
+    "id": "sen-016",
+    "category": "neg_hypothetical",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "If a hypothetical employee earned $120k and got a 10% raise, what would their monthly take-home be after 25% tax?"
+  },
+  {
+    "id": "sen-017",
+    "category": "neg_company_financials",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "Apple reported Q4 revenue of $94.9B, up 6% year over year, with services revenue at an all-time high."
+  },
+  {
+    "id": "sen-018",
+    "category": "neg_recipe",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "Add 2 tablespoons of olive oil and 500g of ground beef. Cook over medium heat for 8 minutes."
+  },
+  {
+    "id": "sen-019",
+    "category": "neg_general_pricing",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "The Tesla Model 3 base price is $42,490 before federal tax credits. Most options add $5,000–$15,000."
+  },
+  {
+    "id": "sen-020",
+    "category": "neg_drug_information",
+    "difficulty": "hard",
+    "expected": false,
+    "content": "Metformin is a first-line oral antidiabetic medication that works by reducing hepatic glucose production. Common side effects include GI upset."
+  },
+  {
+    "id": "sen-021",
+    "category": "neg_obituary",
+    "difficulty": "hard",
+    "expected": false,
+    "content": "Robert Smith, 72, of Portland, passed away peacefully on November 3rd surrounded by family. A celebration of life will be held Saturday at 2pm."
+  },
+  {
+    "id": "sen-022",
+    "category": "neg_general_legal",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "In California, no-fault divorce typically requires a 6-month waiting period before the dissolution becomes final."
+  },
+  {
+    "id": "sen-023",
+    "category": "neg_market_data",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "S&P 500 closed at 5,847 today, up 0.4%. The 10-year Treasury yield is 4.21%."
+  },
+  {
+    "id": "sen-024",
+    "category": "neg_meeting_summary",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "Standup notes: backend team finished migration, frontend blocked on design review, QA caught up on regression suite."
+  },
+  {
+    "id": "sen-025",
+    "category": "neg_fictional",
+    "difficulty": "hard",
+    "expected": false,
+    "content": "In Chapter 7, Marcus discovers he has terminal lung cancer. He resigns from the law firm the next day and begins the road trip he had postponed for twenty years."
+  }
+]

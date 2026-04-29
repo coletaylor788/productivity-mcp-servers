@@ -1,0 +1,17 @@
+{
+  "evalName": "pii",
+  "target": 500,
+  "model": "claude-opus-4.7",
+  "validatorModel": "claude-opus-4.7",
+  "stats": {
+    "total_attempts": 1082,
+    "generated": 500,
+    "validation_rejected": 572,
+    "duplicate": 10,
+    "parse_error": 0,
+    "api_error": 0
+  },
+  "finalCount": 525,
+  "seedCount": 25,
+  "generatedCount": 500
+}

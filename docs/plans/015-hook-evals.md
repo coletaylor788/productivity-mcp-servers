@@ -768,8 +768,8 @@ packages/mcp-hooks/
 
 ## Checklist
 
-This plan is being delivered in **3 phases**. Phase 1 (harness + seed datasets
-+ baseline) is complete; Phases 2-3 are deferred.
+This plan is being delivered in **3 phases**. Phases 1 and 2a are complete;
+Phases 2b and 3 are deferred.
 
 ### Phase 1 — harness + seed datasets + baseline (✅ 2026-04-25)
 
@@ -829,21 +829,52 @@ This plan is being delivered in **3 phases**. Phase 1 (harness + seed datasets
 
 ---
 
-### Phase 2 — full datasets (deferred)
+### Phase 2 — full datasets
 
-- [ ] Generate secrets dataset across 85+ categories (35 infra types + 25 email/message types + 15 contexts + 20 negatives) — target 5K+ cases
-- [ ] Generate sensitive dataset across 75+ categories (51 positive + 10 personal-assistant negatives + 25 general negatives)
-- [ ] Generate PII dataset across 75+ categories (45 positive + 10 personal-assistant positives + 10 PA negatives + 20 general negatives)
-- [ ] Generate injection dataset across 95+ categories (70 positive including 15 PA-targeted + 30 general negatives + 10 PA negatives)
-- [ ] Generate redact dataset across 35 categories
-- [ ] Human review all generated cases for quality
-- [ ] Verify cross-cutting dimension coverage (lengths, formats, languages, tones, contexts, difficulty)
-- [ ] Tag each case with category, difficulty, and dimensions for analysis
-- [ ] Run baseline against full datasets; commit new baselines
+#### Phase 2a (n≈500 per eval) — **DONE 2026-04-29**
+
+Generated synthetic datasets with `claude-opus-4.7` + independent
+LLM validation:
+
+| Eval      | Total | Seed | Generated | Reject% | F1 (validOnly) | Precision | Recall | FPR   |
+|-----------|------:|-----:|----------:|--------:|---------------:|----------:|-------:|------:|
+| secrets   |   529 |   30 |       499 |    13%  |          0.930 |     0.935 |  0.924 | 0.072 |
+| sensitive |   525 |   25 |       500 |    58%  |          0.925 |     0.979 |  0.877 | 0.019 |
+| pii       |   525 |   25 |       500 |    53%  |          0.979 |     0.960 |  1.000 | 0.042 |
+| injection |   509 |   25 |       484 |     2%  |          1.000 |     1.000 |  1.000 | 0.000 |
+| redact    |   215 |   20 |       195 |     7%  |          0.929 |     0.867 |  1.000 | 0.354 |
+
+Pipeline: `evals/generate.ts` + `evals/generate-config.ts`. For each
+case: round-robin (category × intended label) → Opus generation
+(temp=0.9) → dedup-by-hash → independent validator prompt
+(temp=0, max_tokens=5, NOT the production prompt) → auto-base64 if
+content matches a credential regex.
+
+Notes:
+- Statistical signal much stronger than Phase 1 (n=25-30 → n=500).
+- Sensitive and PII have ~50% validation reject rates — generator
+  occasionally drifts off-label; validator catches it. Kept cases all
+  passed independent validation.
+- Redact FPR still 0.354 (Phase 1 was 0.40). Confirms over-redaction
+  is a real prompt issue, not seed-set artifact. → Phase 3 target.
+- Injection F1=1.0 (validOnly) suggests the Phase 1 prompt is already
+  near-saturated for this taxonomy. May want harder edge cases in 2b.
+- Phase 1 seed cases are preserved at `evals/datasets/seeds/<eval>.json`.
+
+#### Phase 2b — scale to 5K+/eval (deferred)
+
+Same pipeline; bump `totalTarget` in `evals/generate-config.ts`.
+Expected wall time: ~5-10× Phase 2a (~hours, not days).
+
+- [ ] Bump per-eval targets, re-run generator
+- [ ] Per-category metrics with statistically meaningful per-cell n
+- [ ] Stratified sampling for cross-cutting dimensions (length, tone, format)
+- [ ] Optional: human review of N=50 spot-check sample per eval
 
 ### Phase 3 — prompt iteration (deferred)
 
 - [ ] Identify and analyze false positives and false negatives from Phase 2 baseline
+- [ ] Focus on redact FPR (over-redaction) as highest-priority target
 - [ ] Iterate on prompts until targets met (P ≥ 95%, R ≥ 90%, F1 ≥ 92%)
 - [ ] Document final prompt versions and scores
 - [ ] Compare against Phase 1 baseline to verify no regressions on small set
