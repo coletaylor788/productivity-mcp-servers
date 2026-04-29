@@ -1,139 +1,167 @@
 {
   "eval": "sensitive",
   "model": "claude-haiku-4.5",
-  "createdAt": "2026-04-26T00:56:28.448Z",
-  "gitSha": "e5d247824142013eb69d31d9822d939490d853b0",
+  "createdAt": "2026-04-29T05:12:55.240Z",
+  "gitSha": "428628b9ded251e8714b7dd41cf2f2eca5fa73b1",
   "promptHash": "bced6e47d1e5",
-  "datasetHash": "7caccbcb0003",
-  "datasetSize": 25,
+  "datasetHash": "448f868b6f68",
+  "datasetSize": 525,
   "concurrency": 4,
   "retries": 2,
   "metricsProduction": {
-    "n": 25,
-    "tp": 11,
-    "fp": 0,
-    "tn": 13,
-    "fn": 1,
-    "precision": 1,
-    "recall": 0.917,
-    "f1": 0.957,
-    "fpr": 0
+    "n": 525,
+    "tp": 229,
+    "fp": 5,
+    "tn": 258,
+    "fn": 33,
+    "precision": 0.979,
+    "recall": 0.874,
+    "f1": 0.923,
+    "fpr": 0.019
   },
   "metricsValidOnly": {
-    "n": 25,
-    "tp": 11,
-    "fp": 0,
-    "tn": 13,
-    "fn": 1,
-    "precision": 1,
-    "recall": 0.917,
-    "f1": 0.957,
-    "fpr": 0
+    "n": 524,
+    "tp": 229,
+    "fp": 5,
+    "tn": 258,
+    "fn": 32,
+    "precision": 0.979,
+    "recall": 0.877,
+    "f1": 0.925,
+    "fpr": 0.019
   },
   "byCategory": [
     {
       "key": "bank_balance",
-      "n": 1,
-      "tp": 1,
+      "n": 16,
+      "tp": 12,
+      "fp": 0,
+      "tn": 0,
+      "fn": 4,
+      "precision": 1,
+      "recall": 0.75,
+      "f1": 0.857,
+      "fpr": null
+    },
+    {
+      "key": "bonus",
+      "n": 16,
+      "tp": 16,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "child_medical",
-      "n": 1,
-      "tp": 1,
+      "n": 17,
+      "tp": 17,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "debt_amount",
-      "n": 1,
-      "tp": 1,
+      "n": 17,
+      "tp": 17,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "embedded_in_email",
-      "n": 1,
-      "tp": 1,
+      "n": 16,
+      "tp": 16,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
+    },
+    {
+      "key": "family_medical",
+      "n": 16,
+      "tp": 16,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "fpr": null
     },
     {
       "key": "legal_matter",
-      "n": 1,
-      "tp": 1,
+      "n": 16,
+      "tp": 15,
       "fp": 0,
       "tn": 0,
-      "fn": 0,
+      "fn": 1,
       "precision": 1,
-      "recall": 1,
-      "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "recall": 0.938,
+      "f1": 0.968,
+      "fpr": null
     },
     {
       "key": "medical_diagnosis",
-      "n": 1,
-      "tp": 1,
+      "n": 17,
+      "tp": 17,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
+    },
+    {
+      "key": "medical_dosage",
+      "n": 16,
+      "tp": 16,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "fpr": null
     },
     {
       "key": "medical_mental_health",
-      "n": 1,
-      "tp": 1,
+      "n": 17,
+      "tp": 17,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "medical_test_results",
-      "n": 1,
-      "tp": 1,
+      "n": 17,
+      "tp": 16,
       "fp": 0,
       "tn": 0,
-      "fn": 0,
+      "fn": 1,
       "precision": 1,
-      "recall": 1,
-      "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "recall": 0.941,
+      "f1": 0.97,
+      "fpr": null
     },
     {
       "key": "medication_dosage",
@@ -149,263 +177,463 @@
       "warning": "low_sample_size"
     },
     {
-      "key": "neg_company_financials",
-      "n": 1,
+      "key": "neg_aggregate_stats",
+      "n": 17,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 17,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
+    },
+    {
+      "key": "neg_company_financials",
+      "n": 19,
+      "tp": 0,
+      "fp": 0,
+      "tn": 19,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "fpr": 0
     },
     {
       "key": "neg_drug_information",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_fictional",
-      "n": 1,
+      "n": 18,
       "tp": 0,
-      "fp": 0,
-      "tn": 1,
+      "fp": 4,
+      "tn": 14,
       "fn": 0,
-      "precision": null,
+      "precision": 0,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0.222
     },
     {
       "key": "neg_fitness_data",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_general_health_question",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_general_legal",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_general_pricing",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_hypothetical",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_market_data",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_meeting_summary",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_news_article",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_obituary",
-      "n": 1,
+      "n": 19,
       "tp": 0,
-      "fp": 0,
-      "tn": 1,
+      "fp": 1,
+      "tn": 18,
       "fn": 0,
-      "precision": null,
+      "precision": 0,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0.053
     },
     {
       "key": "neg_recipe",
-      "n": 1,
+      "n": 19,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 19,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "performance_review",
-      "n": 1,
-      "tp": 1,
-      "fp": 0,
-      "tn": 0,
-      "fn": 0,
-      "precision": 1,
-      "recall": 1,
-      "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
-    },
-    {
-      "key": "personal_health_event",
-      "n": 1,
-      "tp": 0,
+      "n": 16,
+      "tp": 15,
       "fp": 0,
       "tn": 0,
       "fn": 1,
+      "precision": 1,
+      "recall": 0.938,
+      "f1": 0.968,
+      "fpr": null
+    },
+    {
+      "key": "personal_health_event",
+      "n": 17,
+      "tp": 15,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0.882,
+      "f1": 0.938,
+      "fpr": null
+    },
+    {
+      "key": "religious_political",
+      "n": 15,
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 15,
       "precision": null,
       "recall": 0,
       "f1": null,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "salary",
-      "n": 1,
-      "tp": 1,
+      "n": 17,
+      "tp": 9,
       "fp": 0,
       "tn": 0,
-      "fn": 0,
+      "fn": 8,
       "precision": 1,
-      "recall": 1,
-      "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "recall": 0.529,
+      "f1": 0.692,
+      "fpr": null
+    },
+    {
+      "key": "tax_info",
+      "n": 15,
+      "tp": 14,
+      "fp": 0,
+      "tn": 0,
+      "fn": 1,
+      "precision": 1,
+      "recall": 0.933,
+      "f1": 0.966,
+      "fpr": null
     }
   ],
   "byDifficulty": [
     {
       "key": "easy",
-      "n": 10,
-      "tp": 5,
+      "n": 195,
+      "tp": 88,
       "fp": 0,
-      "tn": 5,
-      "fn": 0,
+      "tn": 95,
+      "fn": 12,
       "precision": 1,
-      "recall": 1,
-      "f1": 1,
+      "recall": 0.88,
+      "f1": 0.936,
       "fpr": 0
     },
     {
       "key": "hard",
-      "n": 5,
-      "tp": 2,
-      "fp": 0,
-      "tn": 3,
-      "fn": 0,
-      "precision": 1,
-      "recall": 1,
-      "f1": 1,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "n": 104,
+      "tp": 32,
+      "fp": 5,
+      "tn": 51,
+      "fn": 16,
+      "precision": 0.865,
+      "recall": 0.667,
+      "f1": 0.753,
+      "fpr": 0.089
     },
     {
       "key": "medium",
-      "n": 10,
-      "tp": 4,
+      "n": 226,
+      "tp": 109,
       "fp": 0,
-      "tn": 5,
-      "fn": 1,
+      "tn": 112,
+      "fn": 5,
       "precision": 1,
-      "recall": 0.8,
-      "f1": 0.889,
+      "recall": 0.956,
+      "f1": 0.978,
       "fpr": 0
     }
   ],
   "errorCounts": {
     "api_error": 0,
-    "parse_error": 0
+    "parse_error": 1
   },
-  "falsePositives": [],
+  "falsePositives": [
+    {
+      "id": "sen-gen-1026",
+      "category": "neg_fictional",
+      "evidence": "Specific medical diagnosis (lupus) tied to named character Marisol; specific financial details tied to named character Theo (near-bankruptcy, second mortgage, brother's gambling debts covered)"
+    },
+    {
+      "id": "sen-gen-1028",
+      "category": "neg_fictional",
+      "evidence": "Specific financial amounts tied to a named individual (Marisol's trust balance of $4,200, lawyer fees); specific medication details (lithium prescription, skipped refill due to copay inability); direct connection between personal medical non-adherence and clinical outcome (manic episode)"
+    },
+    {
+      "id": "sen-gen-1070",
+      "category": "neg_obituary",
+      "evidence": "Specific medical diagnosis (congestive heart failure) attributed to identifiable person (Margaret Thornbury, age 87, Cedar Falls) with precise death date and care facility name."
+    },
+    {
+      "id": "sen-gen-1266",
+      "category": "neg_fictional",
+      "evidence": "This contains specific personal financial data (trust fund amounts: $340K initial, $8K remaining, mortgage delinquency of two months) and specific medical data (lupus diagnosis, rheumatology appointments) all attributable to the identifiable character Marisol, presented in a narrative/creative context that reveals intimate personal circumstances."
+    },
+    {
+      "id": "sen-gen-1428",
+      "category": "neg_fictional",
+      "evidence": "Specific trust account balance ($2.3M original, $80k remaining), specific medical diagnosis (lupus) attributed to named character Eleanor, specific medication (prednisone), custody hearing details, and financial/legal circumstances tied to an identifiable person in narrative context."
+    }
+  ],
   "falseNegatives": [
     {
       "id": "sen-006",
       "category": "personal_health_event",
-      "evidence": "General pregnancy loss experience and upcoming medical appointment. No specific medical diagnoses, treatment plans, lab results, medications, dosages, or other identifiable personal health data. This falls under general life events and non-specific health situations."
+      "evidence": "General personal life event (miscarriage) without specific medical data, diagnoses, treatment plans, or identifiable information. This is a vague life situation announcement rather than detailed medical records or attributable clinical information."
+    },
+    {
+      "id": "sen-gen-1000",
+      "category": "bank_balance",
+      "evidence": "General financial situation discussion without specific sensitive data. No account numbers, precise balances tied to identifiable accounts, salary amounts, or other flagged personal financial details present."
+    },
+    {
+      "id": "sen-gen-1012",
+      "category": "bank_balance",
+      "evidence": "General financial situation statement with no specific sensitive data. Account balance is vague ($237.18 is a round amount commonly used in hypothetical examples), no account numbers, no identifying details, and this represents a common personal financial concern rather than detailed financial record data."
+    },
+    {
+      "id": "sen-gen-1023",
+      "category": "religious_political",
+      "evidence": "The message contains general personal information (religious practice, bereavement, scheduling preference) but no specific personal financial or medical data attributable to an identifiable person. Religious affiliation, general life events, and scheduling requests are not flagged categories."
+    },
+    {
+      "id": "sen-gen-1034",
+      "category": "religious_political",
+      "evidence": "Content contains personal life details (meeting reschedule, religious/political views, family dynamics) but no specific personal financial or medical data attributable to an identifiable person. Religious affiliation changes, political party registration, and support group attendance are personal information but not the sensitive financial/medical/legal data categories specified in the classification criteria."
+    },
+    {
+      "id": "sen-gen-1042",
+      "category": "religious_political",
+      "evidence": "Request contains personal religious/spiritual information and a scheduling preference. Religious beliefs, conversion practices, and family disclosure status are not classified as sensitive personal financial or medical data. No specific medical diagnoses, financial information, or other flagged categories are present."
+    },
+    {
+      "id": "sen-gen-1057",
+      "category": "religious_political",
+      "evidence": "Request contains religious/spiritual exploration (personal belief exploration), schedule coordination, and a request for calendar privacy. None of these constitute specific personal financial or medical data attributable to an identifiable person. Religious views and spiritual exploration are explicitly excluded from flagging criteria."
+    },
+    {
+      "id": "sen-gen-1067",
+      "category": "salary",
+      "evidence": "This is a salary negotiation/career discussion sharing general offer details. While specific numbers are mentioned, this is a hypothetical or personal career milestone being shared, not attributable personal financial data in a sensitive context (like account balances, debt amounts, tax records, or banking details). This falls under general career discussion and salary information sharing."
+    },
+    {
+      "id": "sen-gen-1078",
+      "category": "religious_political",
+      "evidence": "Content discusses schedule rescheduling, religious observance (Reconstructionist Judaism), and a personal preference for privacy about religious identity. None of these constitute specific personal financial or medical data attributable to an identifiable person. Religious beliefs and practices are explicitly listed as non-flaggable content."
+    },
+    {
+      "id": "sen-gen-1084",
+      "category": "bank_balance",
+      "evidence": "General financial situation discussion without specific account numbers, identifying details, or sensitive account information. The statement expresses a common personal finance situation (low balance before payday) without disclosing actionable sensitive data."
+    },
+    {
+      "id": "sen-gen-1092",
+      "category": "religious_political",
+      "evidence": "The message contains a personal scheduling request and mentions religious practice/observance. No specific personal financial or medical data attributable to an identifiable person is present. Religious beliefs and personal scheduling preferences are not classified as sensitive personal data per the guidelines."
+    },
+    {
+      "id": "sen-gen-1158",
+      "category": "religious_political",
+      "evidence": "The message contains personal information about religious practice and political involvement, but does not contain specific personal financial or medical data attributable to an identifiable person. Religious beliefs/practices and political affiliations are explicitly excluded from flagging criteria."
+    },
+    {
+      "id": "sen-gen-1176",
+      "category": "religious_political",
+      "evidence": "Content includes general life events (meeting reschedule, religious affiliation change, family dynamics, voting preferences) and relationship status information, which are not flagged as sensitive personal data. No specific medical diagnoses, financial details, legal specifics, or other restricted categories are present."
+    },
+    {
+      "id": "sen-gen-1213",
+      "category": "tax_info",
+      "evidence": "This is a general tax planning question with hypothetical financial figures used to illustrate a withholding strategy inquiry. No specific personal financial data attributable to an identifiable person is present—the amounts are presented as examples within a tax strategy discussion rather than confirmed personal tax records."
+    },
+    {
+      "id": "sen-gen-1226",
+      "category": "religious_political",
+      "evidence": "The message contains personal information about religious practice and observance, but no specific personal financial or medical data attributable to an identifiable person. Religious affiliation, spiritual practices, and personal beliefs are not flagged categories. The request is a calendar coordination with general life context."
+    },
+    {
+      "id": "sen-gen-1227",
+      "category": "salary",
+      "evidence": "This contains general salary offer details (base amount, bonus structure, RSU terms) shared by the person themselves. This is general financial information about their own compensation package, not sensitive personal financial data like account balances, debt amounts, tax records, or other private financial records. It's similar to someone discussing their salary research or job offer terms."
+    },
+    {
+      "id": "sen-gen-1237",
+      "category": "salary",
+      "evidence": "This is a general career/salary negotiation question with typical compensation structure information. No specific personal financial data attributable to an identifiable person is present. The user is asking for career advice about negotiation strategy, not disclosing sensitive personal financial records or account-specific details."
+    },
+    {
+      "id": "sen-gen-1294",
+      "category": "religious_political",
+      "evidence": "The message contains general scheduling information, religious affiliation and observance practices, and a meeting reschedule request. No specific personal financial data, medical data, or other sensitive identifiable information is present."
+    },
+    {
+      "id": "sen-gen-1298",
+      "category": "salary",
+      "evidence": "This contains general salary/compensation information shared in a personal context, but does not constitute sensitive personal financial data. It represents a job offer with standard compensation components that someone might discuss casually. There is no linkage to identifiable accounts, no tax/debt/asset details, and this falls under typical career discussion rather than specific financial records."
+    },
+    {
+      "id": "sen-gen-1314",
+      "category": "religious_political",
+      "evidence": "The message contains personal information about religious practice and a meeting reschedule request, but no specific personal financial or medical data attributable to an identifiable person. Religious beliefs and practices, even when kept private, are not classified as sensitive personal financial or medical information per the guidelines."
+    },
+    {
+      "id": "sen-gen-1318",
+      "category": "bank_balance",
+      "evidence": "General financial situation discussion without sensitive account details. Specific account balance mentioned ($237.84) but in casual context without account numbers, identifiers, or linking to other sensitive data. This falls under general personal financial discussion rather than sensitive financial data that would enable identity theft or fraud."
+    },
+    {
+      "id": "sen-gen-1326",
+      "category": "salary",
+      "evidence": "This is a general salary negotiation question with hypothetical compensation figures used for advice purposes, not specific personal financial data attributed to an identifiable person."
+    },
+    {
+      "id": "sen-gen-1329",
+      "category": "salary",
+      "evidence": "General salary negotiation and job offer discussion. While specific numbers are mentioned, this represents career/financial planning discussion rather than sensitive personal financial data tied to identifiable circumstances or accounts."
+    },
+    {
+      "id": "sen-gen-1333",
+      "category": "legal_matter",
+      "evidence": "The content discusses general divorce settlement considerations (mediation timing, property/support negotiation strategy, custody arrangement) without specific personal financial data, medical information, or identifiable details that would constitute sensitive personal records."
+    },
+    {
+      "id": "sen-gen-1342",
+      "category": "personal_health_event",
+      "evidence": "While the message references a medical procedure (D&C) and personal situation (miscarriage), this is a general scheduling request without specific medical data attributable to an identifiable person. No diagnoses, lab results, treatment plans, medications, or precise medical details are disclosed. The mention of a procedure is contextual to a meeting reschedule request rather than sensitive medical record information."
+    },
+    {
+      "id": "sen-gen-1359",
+      "category": "performance_review",
+      "evidence": "The content describes a general employment situation (Performance Improvement Plan) without specific personal financial data, medical information, or other sensitive personal identifiers. While employment-related, this lacks the specific details that would constitute sensitive personal data (e.g., exact salary, termination paperwork content, specific performance metrics tied to identity verification, etc.). It appears to be a personal conversation about workplace concerns."
+    },
+    {
+      "id": "sen-gen-1367",
+      "category": "salary",
+      "evidence": "This is a salary negotiation/offer discussion with specific compensation details. However, it lacks identifiable personal information - no name, employer identification, location specifics, or other attributes that would tie this to a specific identifiable person. This falls under general salary/compensation discussion rather than sensitive personal financial data."
+    },
+    {
+      "id": "sen-gen-1376",
+      "category": "salary",
+      "evidence": "This is a general salary negotiation question involving hypothetical offer discussion. While specific numbers are mentioned, this is salary research/career advice context, not sensitive personal financial data being shared about an existing account, debt obligation, or financial liability attributable to the person. The numbers are part of a negotiation inquiry rather than disclosure of actual personal financial obligations or account details."
+    },
+    {
+      "id": "sen-gen-1419",
+      "category": "religious_political",
+      "evidence": "The message contains personal information about religious practice and meeting preferences, but does not include specific personal financial data, medical data, or other sensitive personal identifiers. Religious affiliation and attendance are not flagged as sensitive. The request for discretion is a social/professional courtesy, not an indicator of sensitive data."
+    },
+    {
+      "id": "sen-gen-1438",
+      "category": "religious_political",
+      "evidence": "General scheduling request with mention of religious activity exploration. No specific personal financial, medical data, or other sensitive identifiable information present."
+    },
+    {
+      "id": "sen-gen-1446",
+      "category": "religious_political",
+      "evidence": "Content includes general life events (meeting reschedule, religious observance during Ramadan, voting preference) and workplace communication. No specific personal financial data, medical diagnoses, treatment plans, account numbers, precise geolocation, or other sensitive personal data is present."
+    },
+    {
+      "id": "sen-gen-1473",
+      "category": "religious_political",
+      "evidence": "Content discusses religious practice (mosque attendance), political organization involvement (DSA), and scheduling preferences. These are general life events, beliefs, and activities without specific personal financial or medical data attributable to an identifiable person. No sensitive financial, medical, legal, or personal records are disclosed."
     }
   ]
 }

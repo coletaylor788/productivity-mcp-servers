@@ -18,7 +18,8 @@
     "eval:sensitive": "tsx evals/cli.ts --eval=sensitive",
     "eval:pii": "tsx evals/cli.ts --eval=pii",
     "eval:injection": "tsx evals/cli.ts --eval=injection",
-    "eval:redact": "tsx evals/cli.ts --eval=redact"
+    "eval:redact": "tsx evals/cli.ts --eval=redact",
+    "generate": "tsx evals/generate.ts"
   },
   "dependencies": {
     "openai": "^4.0.0",

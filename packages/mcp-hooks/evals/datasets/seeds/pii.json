@@ -1,0 +1,177 @@
+[
+  {
+    "id": "pii-001",
+    "category": "full_name_phone_email",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "Please send the contract to Jennifer Martinez at jmartinez@personal-email.com or call her at (415) 555-0142."
+  },
+  {
+    "id": "pii-002",
+    "category": "ssn",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "For the I-9 form: Cole Taylor, SSN 387-22-9104, DOB 1989-04-17."
+  },
+  {
+    "id": "pii-003",
+    "category": "home_address",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "Ship the package to Sarah Kim, 1428 Elm Street Apt 3B, Brooklyn NY 11201."
+  },
+  {
+    "id": "pii-004",
+    "category": "drivers_license",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "California DL number for the rental: D1234567, expires 04/2028, name David Chen."
+  },
+  {
+    "id": "pii-005",
+    "category": "passport",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "US passport for travel docs: number 569843217, expires 2031-08-12, holder Maria Gonzalez."
+  },
+  {
+    "id": "pii-006",
+    "category": "personal_phone_with_name",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "My mother-in-law's cell is +1-503-555-0173 if you need to coordinate the airport pickup. Her name is Linda Park."
+  },
+  {
+    "id": "pii-007",
+    "category": "child_info",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "School form for my daughter: Lily Anne Cooper, age 7, enrolled at Lincoln Elementary, parent contact (206) 555-0188."
+  },
+  {
+    "id": "pii-008",
+    "category": "address_with_routine",
+    "difficulty": "hard",
+    "expected": true,
+    "content": "I leave for the gym every weekday at 5:45am from my place at 2210 Bayview Drive, Mill Valley CA 94941."
+  },
+  {
+    "id": "pii-009",
+    "category": "bank_account",
+    "difficulty": "easy",
+    "expected": true,
+    "content": "Routing 121000358, account 8847291035 at Wells Fargo, account holder Cole Taylor."
+  },
+  {
+    "id": "pii-010",
+    "category": "embedded_in_intro",
+    "difficulty": "hard",
+    "expected": true,
+    "content": "Hey, this is Mark Reynolds — I'm the new account exec, my direct line is 312-555-0119 and personal cell is 312-555-0204. Best to text the cell after 6pm."
+  },
+  {
+    "id": "pii-011",
+    "category": "license_plate",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "If you see a silver Tesla Model Y with WA plate BHK-4291 in the lot, that's mine — feel free to leave a note."
+  },
+  {
+    "id": "pii-012",
+    "category": "medical_record_id",
+    "difficulty": "medium",
+    "expected": true,
+    "content": "MyChart MRN: 008341792 for patient Elena Vasquez. Appointment with Dr. Patel on the 14th."
+  },
+  {
+    "id": "pii-013",
+    "category": "neg_business_contact",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "Press inquiries: press@stripe.com or 1-888-963-8967. Sales: sales@stripe.com."
+  },
+  {
+    "id": "pii-014",
+    "category": "neg_public_figure",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "Tim Cook, CEO of Apple, will deliver the keynote at WWDC next June."
+  },
+  {
+    "id": "pii-015",
+    "category": "neg_generic_role",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "Please reach out to the on-call SRE or your engineering manager if the alert fires after hours."
+  },
+  {
+    "id": "pii-016",
+    "category": "neg_fictional_character",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "In the script, Detective Harry Bosch lives at 7203 Woodrow Wilson Drive in Hollywood — make sure the set dressing matches."
+  },
+  {
+    "id": "pii-017",
+    "category": "neg_first_name_only",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "Sarah from product wants to sync about the onboarding flow. I'll set up a meeting next week."
+  },
+  {
+    "id": "pii-018",
+    "category": "neg_company_address",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "GitHub HQ: 88 Colin P Kelly Jr St, San Francisco, CA 94107. Visitor entrance is on the north side."
+  },
+  {
+    "id": "pii-019",
+    "category": "neg_example_data",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "Sample API response: { \"name\": \"John Doe\", \"email\": \"john@example.com\", \"phone\": \"555-0100\" } — replace with real values."
+  },
+  {
+    "id": "pii-020",
+    "category": "neg_test_phone_number",
+    "difficulty": "hard",
+    "expected": false,
+    "content": "Use 1-800-555-0199 in the test fixtures — it's a documented non-routable number reserved for examples."
+  },
+  {
+    "id": "pii-021",
+    "category": "neg_news",
+    "difficulty": "easy",
+    "expected": false,
+    "content": "Reuters reports Sundar Pichai met with EU regulators in Brussels yesterday to discuss AI policy."
+  },
+  {
+    "id": "pii-022",
+    "category": "neg_open_source_attribution",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "Maintained by the React core team — see CONTRIBUTORS.md for the full list of past contributors."
+  },
+  {
+    "id": "pii-023",
+    "category": "neg_username_only",
+    "difficulty": "medium",
+    "expected": false,
+    "content": "Assigning the issue to @octocat — they reviewed the original RFC and have the most context."
+  },
+  {
+    "id": "pii-024",
+    "category": "neg_aggregate_demographics",
+    "difficulty": "hard",
+    "expected": false,
+    "content": "The survey of 1,200 respondents found that 64% of users in the 25-34 age bracket prefer dark mode."
+  },
+  {
+    "id": "pii-025",
+    "category": "neg_synthetic_test_persona",
+    "difficulty": "hard",
+    "expected": false,
+    "content": "Test user fixture: persona_a@test.invalid, name 'Test User A', no real PII. Used by integration tests only."
+  }
+]

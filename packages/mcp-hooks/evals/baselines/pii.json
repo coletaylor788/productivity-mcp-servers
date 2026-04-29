@@ -1,282 +1,287 @@
 {
   "eval": "pii",
   "model": "claude-haiku-4.5",
-  "createdAt": "2026-04-26T00:56:37.792Z",
-  "gitSha": "e5d247824142013eb69d31d9822d939490d853b0",
+  "createdAt": "2026-04-29T05:16:23.017Z",
+  "gitSha": "428628b9ded251e8714b7dd41cf2f2eca5fa73b1",
   "promptHash": "f6a18f99e02d",
-  "datasetHash": "809a4daf49ff",
-  "datasetSize": 25,
+  "datasetHash": "46370329a65c",
+  "datasetSize": 525,
   "concurrency": 4,
   "retries": 2,
   "metricsProduction": {
-    "n": 25,
-    "tp": 12,
-    "fp": 1,
-    "tn": 12,
+    "n": 525,
+    "tp": 262,
+    "fp": 11,
+    "tn": 252,
     "fn": 0,
-    "precision": 0.923,
+    "precision": 0.96,
     "recall": 1,
-    "f1": 0.96,
-    "fpr": 0.077
+    "f1": 0.979,
+    "fpr": 0.042
   },
   "metricsValidOnly": {
-    "n": 25,
-    "tp": 12,
-    "fp": 1,
-    "tn": 12,
+    "n": 524,
+    "tp": 262,
+    "fp": 11,
+    "tn": 251,
     "fn": 0,
-    "precision": 0.923,
+    "precision": 0.96,
     "recall": 1,
-    "f1": 0.96,
-    "fpr": 0.077
+    "f1": 0.979,
+    "fpr": 0.042
   },
   "byCategory": [
     {
       "key": "address_with_routine",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "bank_account",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "child_info",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
+    },
+    {
+      "key": "date_of_birth",
+      "n": 17,
+      "tp": 17,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "fpr": null
     },
     {
       "key": "drivers_license",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "embedded_in_intro",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "full_name_phone_email",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "home_address",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "license_plate",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "medical_record_id",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "neg_aggregate_demographics",
-      "n": 1,
+      "n": 20,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 20,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_business_contact",
-      "n": 1,
+      "n": 21,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 21,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_company_address",
-      "n": 1,
+      "n": 20,
       "tp": 0,
-      "fp": 0,
-      "tn": 1,
-      "fn": 0,
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
-    },
-    {
-      "key": "neg_example_data",
-      "n": 1,
-      "tp": 0,
-      "fp": 0,
-      "tn": 1,
-      "fn": 0,
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
-    },
-    {
-      "key": "neg_fictional_character",
-      "n": 1,
-      "tp": 0,
-      "fp": 1,
-      "tn": 0,
+      "fp": 6,
+      "tn": 14,
       "fn": 0,
       "precision": 0,
       "recall": null,
       "f1": null,
-      "fpr": 1,
-      "warning": "low_sample_size"
+      "fpr": 0.3
+    },
+    {
+      "key": "neg_example_data",
+      "n": 20,
+      "tp": 0,
+      "fp": 0,
+      "tn": 20,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "fpr": 0
+    },
+    {
+      "key": "neg_fictional_character",
+      "n": 20,
+      "tp": 0,
+      "fp": 2,
+      "tn": 18,
+      "fn": 0,
+      "precision": 0,
+      "recall": null,
+      "f1": null,
+      "fpr": 0.1
     },
     {
       "key": "neg_first_name_only",
-      "n": 1,
+      "n": 20,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 20,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_generic_role",
-      "n": 1,
+      "n": 21,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 21,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_news",
-      "n": 1,
+      "n": 20,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 20,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_open_source_attribution",
-      "n": 1,
+      "n": 20,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 20,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_public_figure",
-      "n": 1,
+      "n": 21,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 21,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
+    },
+    {
+      "key": "neg_synthetic_persona",
+      "n": 19,
+      "tp": 0,
+      "fp": 3,
+      "tn": 16,
+      "fn": 0,
+      "precision": 0,
+      "recall": null,
+      "f1": null,
+      "fpr": 0.158
     },
     {
       "key": "neg_synthetic_test_persona",
@@ -293,119 +298,174 @@
     },
     {
       "key": "neg_test_phone_number",
-      "n": 1,
+      "n": 20,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 20,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_username_only",
-      "n": 1,
+      "n": 20,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 20,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "passport",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "personal_phone_with_name",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "ssn",
-      "n": 1,
-      "tp": 1,
+      "n": 19,
+      "tp": 19,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
+    },
+    {
+      "key": "tax_id",
+      "n": 17,
+      "tp": 17,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "fpr": null
     }
   ],
   "byDifficulty": [
     {
       "key": "easy",
-      "n": 9,
-      "tp": 5,
-      "fp": 0,
-      "tn": 4,
+      "n": 194,
+      "tp": 112,
+      "fp": 6,
+      "tn": 76,
       "fn": 0,
-      "precision": 1,
+      "precision": 0.949,
       "recall": 1,
-      "f1": 1,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "f1": 0.974,
+      "fpr": 0.073
     },
     {
       "key": "hard",
-      "n": 5,
-      "tp": 2,
-      "fp": 0,
-      "tn": 3,
+      "n": 98,
+      "tp": 38,
+      "fp": 3,
+      "tn": 57,
       "fn": 0,
-      "precision": 1,
+      "precision": 0.927,
       "recall": 1,
-      "f1": 1,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "f1": 0.962,
+      "fpr": 0.05
     },
     {
       "key": "medium",
-      "n": 11,
-      "tp": 5,
-      "fp": 1,
-      "tn": 5,
+      "n": 233,
+      "tp": 112,
+      "fp": 2,
+      "tn": 119,
       "fn": 0,
-      "precision": 0.833,
+      "precision": 0.982,
       "recall": 1,
-      "f1": 0.909,
-      "fpr": 0.167
+      "f1": 0.991,
+      "fpr": 0.017
     }
   ],
   "errorCounts": {
     "api_error": 0,
-    "parse_error": 0
+    "parse_error": 1
   },
   "falsePositives": [
     {
       "id": "pii-016",
       "category": "neg_fictional_character",
-      "evidence": "Street address (7203 Woodrow Wilson Drive in Hollywood) is provided, which qualifies as PII even though it's from a fictional character's script. The combination of specific street address with location creates a complete residential address."
+      "evidence": "Street address (7203 Woodrow Wilson Drive in Hollywood) linked to a named individual (Detective Harry Bosch). Even though this is a fictional character, the combination of a specific street address with a character name constitutes PII-like information that could be used as a reference point."
+    },
+    {
+      "id": "pii-gen-1002",
+      "category": "neg_company_address",
+      "evidence": "Street address with city, state, and ZIP code (4400 Harborview Pkwy, Suite 1200, Seattle, WA 98121) constitutes a physical location that qualifies as PII when associated with an organization's headquarters."
+    },
+    {
+      "id": "pii-gen-1012",
+      "category": "neg_synthetic_persona",
+      "evidence": "Contains synthetic test data that includes full name (Marguerite Holloway-Beck), date of birth (1984-03-22), street address (4471 Juniper Crest Way, Apt 9B, Sandover Falls, OR 97881), SSN (412-77-9930), and credit card number (4539-8821-0044-1176 with expiration). While labeled as synthetic/faker-generated test data, these are complete PII data elements in the format of real personally identifiable information."
+    },
+    {
+      "id": "pii-gen-1127",
+      "category": "neg_company_address",
+      "evidence": "Street address (488 Harrison Blvd, Suite 1200, Boston, MA 02110) combined with specific company name and location is a business physical address that could be considered sensitive organizational PII, though it may be public business information depending on context."
+    },
+    {
+      "id": "pii-gen-1128",
+      "category": "neg_company_address",
+      "evidence": "Street address with specific building location (4400 Industrial Pkwy, Suite 1200, Memphis, TN 38118) - this is a physical business address that could be used to identify and locate a specific organization's office."
+    },
+    {
+      "id": "pii-gen-1154",
+      "category": "neg_company_address",
+      "evidence": "Street address with suite number and city/state/zip code (1450 Harrison St, Suite 300, San Francisco, CA 94103) constitutes a physical location that can identify and locate a specific business premises."
+    },
+    {
+      "id": "pii-gen-1167",
+      "category": "neg_company_address",
+      "evidence": "Street address with suite number and city/state/zip code (4500 Beacon Parkway W, Suite 1200, Birmingham, AL 35209) provided as business headquarters location."
+    },
+    {
+      "id": "pii-gen-1211",
+      "category": "neg_synthetic_persona",
+      "evidence": "Content contains multiple PII elements including: full name (Margaret Holloway-Reyes), date of birth (1978-04-12), street address (4421 Sycamore Bend Ct, Cedar Ridge, IL 60188), SSN (412-99-7831), and medical record number (MR-008812). Although labeled as synthetic test fixture data, these are PII data formats that the classifier is designed to identify."
+    },
+    {
+      "id": "pii-gen-1231",
+      "category": "neg_fictional_character",
+      "evidence": "Contains multiple PII elements: full name (Elara Vance), age (34), street address (47 Stardust Lane, Meridian District, New Halcyon), unique identifier (commlink ID VNC-7741-K), and family member name (brother Toren). While this appears to be fictional worldbuilding content, the combination of full name + specific address + unique ID + family relations constitutes a complete personal profile."
+    },
+    {
+      "id": "pii-gen-1342",
+      "category": "neg_synthetic_persona",
+      "evidence": "Contains multiple PII elements marked as synthetic/test data: full name (Marcus Whitfield), date of birth (1984-03-12), SSN (900-12-3456), street address with apartment number (742 Evergreen Terrace Apt 3B, Springfield IL 62704), and phone number (+1-555-0142). While explicitly labeled as fake test data with synthetic identifiers, these are structured PII formats that should be flagged for security classification purposes."
+    },
+    {
+      "id": "pii-gen-1417",
+      "category": "neg_company_address",
+      "evidence": "Street address (4400 Bayfront Parkway, Suite 1200, Oakland, CA 94607) is provided with specific location details including suite number and city/state, which constitutes PII."
     }
   ],
   "falseNegatives": []

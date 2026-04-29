@@ -5,8 +5,12 @@
     "difficulty": "easy",
     "content": "The wifi password is hunter2trustno1, please don't share it.",
     "expected_redactions": [
-      { "secret": "hunter2trustno1", "type": "password" }
-    ]
+      {
+        "secret": "hunter2trustno1",
+        "type": "password"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-002",
@@ -14,8 +18,12 @@
     "difficulty": "medium",
     "content": "My new login password is correct horse battery staple — finally something I can remember.",
     "expected_redactions": [
-      { "secret": "correct horse battery staple", "type": "password" }
-    ]
+      {
+        "secret": "correct horse battery staple",
+        "type": "password"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-003",
@@ -23,8 +31,12 @@
     "difficulty": "easy",
     "content": "Guest WiFi: SSID Lobby-Guest, password CoffeeShop2026!",
     "expected_redactions": [
-      { "secret": "CoffeeShop2026!", "type": "password" }
-    ]
+      {
+        "secret": "CoffeeShop2026!",
+        "type": "password"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-004",
@@ -32,8 +44,12 @@
     "difficulty": "medium",
     "content": "Zoom link: https://zoom.us/j/12345 — the meeting passcode is BlueOcean42!",
     "expected_redactions": [
-      { "secret": "BlueOcean42!", "type": "password" }
-    ]
+      {
+        "secret": "BlueOcean42!",
+        "type": "password"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-005",
@@ -41,8 +57,12 @@
     "difficulty": "easy",
     "content": "Your verification code is 482917. It expires in 10 minutes.",
     "expected_redactions": [
-      { "secret": "482917", "type": "2fa_code" }
-    ]
+      {
+        "secret": "482917",
+        "type": "2fa_code"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-006",
@@ -50,8 +70,12 @@
     "difficulty": "medium",
     "content": "G-739201 is your Google verification code. Don't share it with anyone.",
     "expected_redactions": [
-      { "secret": "G-739201", "type": "2fa_code" }
-    ]
+      {
+        "secret": "G-739201",
+        "type": "2fa_code"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-007",
@@ -59,8 +83,12 @@
     "difficulty": "hard",
     "content": "Quick handoff before vacation: the staging DB credentials are user 'app_staging' and password 'Stg!Pass2025$$' — rotate when you're done.",
     "expected_redactions": [
-      { "secret": "Stg!Pass2025$$", "type": "password" }
-    ]
+      {
+        "secret": "Stg!Pass2025$$",
+        "type": "password"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-008",
@@ -68,11 +96,24 @@
     "difficulty": "medium",
     "content": "Backup codes for your account (save these somewhere safe):\nABCD-1234\nEFGH-5678\nIJKL-9012\nMNOP-3456",
     "expected_redactions": [
-      { "secret": "ABCD-1234", "type": "recovery_code" },
-      { "secret": "EFGH-5678", "type": "recovery_code" },
-      { "secret": "IJKL-9012", "type": "recovery_code" },
-      { "secret": "MNOP-3456", "type": "recovery_code" }
-    ]
+      {
+        "secret": "ABCD-1234",
+        "type": "recovery_code"
+      },
+      {
+        "secret": "EFGH-5678",
+        "type": "recovery_code"
+      },
+      {
+        "secret": "IJKL-9012",
+        "type": "recovery_code"
+      },
+      {
+        "secret": "MNOP-3456",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-009",
@@ -80,8 +121,12 @@
     "difficulty": "medium",
     "content": "Click here to reset your password: https://accounts.google.com/reset?token=abc123def456ghi789jkl012mno345",
     "expected_redactions": [
-      { "secret": "https://accounts.google.com/reset?token=abc123def456ghi789jkl012mno345", "type": "reset_link" }
-    ]
+      {
+        "secret": "https://accounts.google.com/reset?token=abc123def456ghi789jkl012mno345",
+        "type": "reset_link"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-010",
@@ -89,8 +134,12 @@
     "difficulty": "hard",
     "content": "FYI the prod admin password (don't @ me) is P@ssw0rd-Spr1ng-2026!! — change it next week.",
     "expected_redactions": [
-      { "secret": "P@ssw0rd-Spr1ng-2026!!", "type": "password" }
-    ]
+      {
+        "secret": "P@ssw0rd-Spr1ng-2026!!",
+        "type": "password"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-011",
@@ -98,8 +147,12 @@
     "difficulty": "medium",
     "content": "Use this: DATABASE_URL=postgres://app_user:S3cr3t!pwd@db.example.com:5432/production",
     "expected_redactions": [
-      { "secret": "S3cr3t!pwd", "type": "password" }
-    ]
+      {
+        "secret": "S3cr3t!pwd",
+        "type": "password"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-012",
@@ -107,8 +160,12 @@
     "difficulty": "medium",
     "content": "SMTP login for the relay — username relay@corp.example, password Mailer-2026-Bolt!",
     "expected_redactions": [
-      { "secret": "Mailer-2026-Bolt!", "type": "password" }
-    ]
+      {
+        "secret": "Mailer-2026-Bolt!",
+        "type": "password"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-013",
@@ -116,8 +173,12 @@
     "difficulty": "hard",
     "content": "If you need to unlock the conference room iPad, the pin is 4729 — please don't write it on a sticky note this time.",
     "expected_redactions": [
-      { "secret": "4729", "type": "pin" }
-    ]
+      {
+        "secret": "4729",
+        "type": "pin"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-014",
@@ -125,8 +186,12 @@
     "difficulty": "hard",
     "content": "Voicemail pin for the main line is 553801. Press 9 after the greeting and enter it.",
     "expected_redactions": [
-      { "secret": "553801", "type": "pin" }
-    ]
+      {
+        "secret": "553801",
+        "type": "pin"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-015",
@@ -134,42 +199,2481 @@
     "difficulty": "medium",
     "content": "Backup encryption passphrase for the Time Machine drive: silver-pencil-river-anchor-eight. Store in 1Password.",
     "expected_redactions": [
-      { "secret": "silver-pencil-river-anchor-eight", "type": "passphrase" }
-    ]
+      {
+        "secret": "silver-pencil-river-anchor-eight",
+        "type": "passphrase"
+      }
+    ],
+    "source": "seed"
   },
   {
     "id": "red-016",
     "category": "neg_already_redacted",
     "difficulty": "easy",
     "content": "The password was [REDACTED] in the previous reply — please confirm receipt.",
-    "expected_redactions": []
+    "expected_redactions": [],
+    "source": "seed"
   },
   {
     "id": "red-017",
     "category": "neg_public_key",
     "difficulty": "medium",
     "content": "Add my SSH key to the deploy box:\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH9k2L3xN5ckole@laptop",
-    "expected_redactions": []
+    "expected_redactions": [],
+    "source": "seed"
   },
   {
     "id": "red-018",
     "category": "neg_placeholder",
     "difficulty": "easy",
     "content": "Replace <YOUR_PASSWORD> in the config below before running. Default: 'changeme'.",
-    "expected_redactions": []
+    "expected_redactions": [],
+    "source": "seed"
   },
   {
     "id": "red-019",
     "category": "neg_security_advice",
     "difficulty": "hard",
     "content": "Reminder: never share passwords in plain text over Slack. Use the password manager's secure share feature instead.",
-    "expected_redactions": []
+    "expected_redactions": [],
+    "source": "seed"
   },
   {
     "id": "red-020",
     "category": "neg_password_policy",
     "difficulty": "medium",
     "content": "Our password policy requires at least 14 characters, mixed case, one symbol, and rotation every 180 days.",
-    "expected_redactions": []
+    "expected_redactions": [],
+    "source": "seed"
+  },
+  {
+    "id": "red-gen-1000",
+    "content": "Hey - rescheduled the design sync to 3pm. Same Zoom link as before, but I had to set a new passcode: 8tR#2qLm. See you then.",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8tR#2qLm",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1001",
+    "content": "To connect via CLI, run: `mysql -u admin -p<YOUR_PASSWORD> -h db.staging.internal`. Replace the placeholder with the credential from your 1Password vault — don't paste it into Slack.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1002",
+    "content": "hey just rotated the staging db creds — new pw is Tr0ub4d0r&3_$ummer!! please update your local .env when you get a sec",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4d0r&3_$ummer!!",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1003",
+    "content": "Hey, forwarding the creds the vendor sent over: username is svc_billing_prod, password is [REDACTED]. Rotate it after first login per policy.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1004",
+    "content": "hey, finally got the new wallet set up. recovery phrase is: velvet harbor crimson tiger pencil moon. storing it in the safe tonight, but wanted you to have a copy in case something happens to me.",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "velvet harbor crimson tiger pencil moon",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1005",
+    "content": "hey, finally got the old NAS unlocked — turns out the passphrase grandma wrote on that sticky note was 'velvet otter marigold thunder canyon'. backing up her photos now before anything else dies on us.",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "velvet otter marigold thunder canyon",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1006",
+    "content": "Here's my pubkey for the deploy box, please add it to ~/.ssh/authorized_keys when you get a sec:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH7q9XmKp3wQvR2nL8jF5tYbXcZ4vN1mP6sK0aE9hRgT marcus@thinkpad-x1\n\nLet me know once it's in and I'll test the connection.",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1007",
+    "content": "Hey, I finished the quarterly Vault export and dropped the encrypted tarball in the shared drive under /backups/2024Q1/. The passphrase to decrypt it is correct-horse-battery-staple-9471-zk. Please rotate it after you've pulled what you need and let me know once it's done.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-horse-battery-staple-9471-zk",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1008",
+    "content": "Hey, IT here — looks like you got locked out again. Use this link within the next 30 min to set a new password: https://accounts.brightlogix.io/reset?token=qz8Tn2VxLp9MdK4rAe1YwH7sB6cFjU0G&uid=4471. Ping me back once you're in.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "qz8Tn2VxLp9MdK4rAe1YwH7sB6cFjU0G",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1009",
+    "content": "hey can you grab my iPad from the conference room? screen lock is 480219 — there's a slack draft I need to send before the flight. thx",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "480219",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1010",
+    "content": "hey, the wifi password is purpleotter47, just connect and you should be good",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleotter47",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1011",
+    "content": "Hey, I finally got the offsite Restic backup configured on the NAS. The encryption passphrase is: correct-otter-9!Granite-spindle-fjord — please stash it in 1Password under the Ops vault. Without it we literally cannot restore anything, so don't lose it.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-otter-9!Granite-spindle-fjord",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1012",
+    "content": "Hey, I finally got the staging dashboard working after Marco rebuilt the proxy this morning. If you want to poke around before the demo, just hit the internal URL and log in as the shared QA reviewer account — the temporary password he set is Tr0pic@l-Mango!7728 and it's only good until Friday when SSO comes back online. Let me know if anything looks off, especially the latency graphs.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0pic@l-Mango!7728",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1013",
+    "content": "hey, finally rotated my staging login. new pw is Tr0ub4dor&3l3ph@nt!! — please update the shared vault when you get a sec, I'll delete this message after",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor&3l3ph@nt!!",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1014",
+    "content": "hey can you try connecting with this and see if the migration script runs? postgres://svc_migrator:Hn4!qZpL2vWxR@db-staging-03.internal.acme.io:5432/orders_db?sslmode=require — works for me locally but Tom said it timed out from the runner",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Hn4!qZpL2vWxR",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1015",
+    "content": "Here's my pubkey for the bastion — go ahead and add it to ~/.ssh/authorized_keys on the staging boxes:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH8mZ2qLp3vR4tN1xK9wY7bQ5cF6dE8sJ0aM2nP4uV7r jordan@thinkpad\n\nLet me know once it's propagated and I'll test the jump host.",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1016",
+    "content": "Hey, finally got the transactional email working through Sendgrid's relay. Updated the staging .env with SMTP_HOST=smtp.sendgrid.net, SMTP_USER=apikey, and SMTP_PASS=Vt9k!mZqL2pXr8eN-bH3wQ. Can you mirror that on the worker box before the 4pm deploy? I'd rather not chase down auth errors during the demo.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Vt9k!mZqL2pXr8eN-bH3wQ",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1017",
+    "content": "Hey, I finished the offsite backup of the postgres cluster last night. The tarball is encrypted with the passphrase correct-horse-battery-staple-9417-zx — please stash it in 1Password under the DBA vault and let me know once you've confirmed you can decrypt a test slice.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-horse-battery-staple-9417-zx",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1018",
+    "content": "Quick reminder before the audit next week: never paste your SSO password into a Slack DM, even to IT. We will never ask for it. If someone does, screenshot the request and forward it to security@ourco.example. Rotate any credential you suspect was exposed and enable a hardware key if you haven't already.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1019",
+    "content": "hey, finally got the old NAS unlocked — the encryption passphrase the previous admin left in the envelope was 'velvet anchor mango drift seventeen'. going to rotate it tonight after the backup finishes.",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "velvet anchor mango drift seventeen",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1020",
+    "content": "hey, finally got the old encrypted drive mounted. the passphrase my dad left in the safe deposit box was 'velvet thunder maple sixteen orchard' — going through the photos now, it's a lot.",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "velvet thunder maple sixteen orchard",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1021",
+    "content": "Hey — moving our 1:1 to Zoom since the conf room is booked. Same link as last week, passcode is 7Hq!2xN9. Talk in 10.",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7Hq!2xN9",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1022",
+    "content": "Quick reminder before the audit next week: never paste your SSO password into a Slack DM, even if someone claiming to be from IT asks. Real IT will never need it — they can reset it from the admin console. If you get a request like that, screenshot the thread and forward it to security@. Same goes for MFA codes; treat them like cash.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1023",
+    "content": "Hey, can you add my new laptop's key to the deploy server's authorized_keys? Here it is:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHk9vQ2mZx8tPqR4nL6sW3yJfK1bC8dV7hG2aE5oUiMz marcus@thinkpad-x1\n\nThanks!",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1024",
+    "content": "hey the wifi is BlueHeron_5G, password is m@ngo-Tiger-9281",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "m@ngo-Tiger-9281",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1025",
+    "content": "Hey — moving our 1:1 to Zoom since the conf room is booked. Same link as last week, passcode is 8KqM2v. Talk in 10.",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8KqM2v",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1026",
+    "content": "FYI the temp creds I sent earlier were rotated. For the record the message read: 'use db password [REDACTED] and pin [REDACTED] to log into the staging box.' Nothing actionable left in the thread.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1027",
+    "content": "hey, the wifi password is purpleMonkey$42 — let me know once you're connected and I'll send the meeting link",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleMonkey$42",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1028",
+    "content": "hey can you read me the google code that just popped up on the old phone? i'm trying to get back into the shared marketing gmail. should look like G-###### — go ahead and dm it, i'll delete after.\n\nedit: nvm got it on my end: G-481723",
+    "category": "google_2fa_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "G-481723",
+        "type": "google_2fa_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1029",
+    "content": "Hey, I finally got the offsite backups encrypted last night. The Borg repo passphrase is: correct-otter-9!Stapled-bramble-Quartz — please stash it in your password manager so we both have a copy if my laptop dies.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-otter-9!Stapled-bramble-Quartz",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1030",
+    "content": "hey your okta code is 481923, expires in 30s",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "481923",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1031",
+    "content": "Hey Marco — long day, sorry for the delayed handoff. I finally got the staging box reprovisioned after the disk fiasco this morning. The Ansible run completed around 6pm and I verified the new nginx config is loading the right cert. If you want to poke around before standup tomorrow, ssh into bastion-03 as the deploy user and the temp shell password I set is Tr0ut!River-92xQ — please rotate it once you're in, I just needed something memorable while I was juggling tickets. The rest of the runbook is in the usual Confluence page.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ut!River-92xQ",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1032",
+    "content": "hey forgot to mention in standup — staging db creds rotated last night. new pw is Tr0ub4dor&3!Pwn for the readonly user. update your .env when you get a sec",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor&3!Pwn",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1033",
+    "content": "curl -u admin:<YOUR_PASSWORD> https://api.internal.example.com/v2/health",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1034",
+    "content": "hey saved my github backup code in case I lose my phone again — it's 4f2a-9b71-cd83-1e60. don't lose it lol",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "4f2a-9b71-cd83-1e60",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1035",
+    "content": "hey forgot to mention in standup — staging admin login got rotated yesterday. new pw is Tr0ub4dor&3lephant!! ... yeah I know it's long, blame compliance. lmk when you've saved it in 1pass so I can nuke this msg",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor&3lephant!!",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1036",
+    "content": "Here's my pubkey for the deploy box, please add it to ~/.ssh/authorized_keys when you get a chance:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHk9pQz2vL8mR7xJ4nB6tKfYwQ3sV1cE5dHgN8oXuPr2 jamie@thinkpad-x1\n\nThanks!",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1037",
+    "content": "Hey, finally got the offsite backup script working. The passphrase to decrypt the Restic repo is: correct-horse-battery-stapler-9472-zx. Please stash it in your password manager and don't paste it in Slack. We'll rotate after Q2.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-horse-battery-stapler-9472-zx",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1038",
+    "content": "Reminder from IT: legitimate help desk staff will never ask you for your password, MFA code, or the contents of a password reset email. If anyone (including someone claiming to be from our team) requests these over chat, phone, or email, decline and report the message via the 'Report Phishing' button in Outlook. When in doubt, walk over to the security desk on 4F or page #sec-oncall.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1039",
+    "content": "Heads up — I finally got locked out of the vault app on my old phone. Used one of my backup codes to get back in: 7H2K-9QXM-4PRT. Going to regenerate the set tonight so don't worry about it leaking, but figured I'd mention it in case the security log pings you.",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7H2K-9QXM-4PRT",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1040",
+    "content": "hey covering the main line while you're out — pulled the new vm passcode from the desk phone admin so I can clear messages: 048217. lmk if you want me to forward anything urgent to your cell",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "048217",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1041",
+    "content": "Quick reminder before the audit next week: never paste your SSO password into a Slack DM, even to someone on the security team. We will literally never ask. If anyone does — screenshot it and forward to phishing@ourdomain. Same goes for MFA codes; treat them like cash.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1042",
+    "content": "hey can you check the auth app real quick — the code is 480912, expires in like 30 seconds",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "480912",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1043",
+    "content": "Quick reminder before the audit on Thursday: never paste your SSO credentials into a Zendesk ticket, even if the requester claims to be from IT. Our team will *never* ask for your password over chat or email — if someone does, treat it as a phishing attempt and forward the message to security@ourco.example. When in doubt, rotate via the self-serve portal rather than handing anything off.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1044",
+    "content": "Here's the deploy key to add to the repo settings — it's a public key so safe to paste in tickets:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH8kQp2vR7nLxYqM3wFvBd4tZ9eXc6sJ1aKpO5gTmN2u deploy@ci-runner-04\n\nOnce it's in, ping me and I'll kick off the first sync.",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1045",
+    "content": "hey the wifi is BlueHeron-2G, password is muffin-tractor-92!",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "muffin-tractor-92!",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1046",
+    "content": "hey finally got the staging box working — login as deploy and the pw is Tr0ub4d0r&Th3_Gr3@tEsc@pe!! (yes the trailing bangs are intentional, ops set it up that way). rotate after you're done.",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4d0r&Th3_Gr3@tEsc@pe!!",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1047",
+    "content": "FYI the staging DB creds I shared earlier were rotated. New connection string is postgres://svc_app:[REDACTED]@db-staging-04.internal:5432/orders — pull it from vault if you need it.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1048",
+    "content": "hey can you try connecting with this and confirm the migration ran? postgres://svc_billing:Hn4!qP9wTzLm2Vx@db-prod-east-3.internal.acme.io:5432/billing?sslmode=require — ping me once you see the new invoices table",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Hn4!qP9wTzLm2Vx",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1049",
+    "content": "Here's my pubkey for the bastion, please add it to ~/.ssh/authorized_keys when you get a chance:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHk9vQz7Yx2bN8mKqL4pT3wR5sV6cD1eF2gH3jK4mN8p maria@thinkpad-x1\n\nThanks!",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1050",
+    "content": "hey can you try connecting with this and see if the migration runs? postgres://svc_billing:Hn7!kPq2xVm4Lz@db-prod-replica-3.internal.acme.io:5432/billing_core?sslmode=require — if it errors on auth let me know, I'll regenerate",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Hn7!kPq2xVm4Lz",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1051",
+    "content": "Here's my pubkey for the deploy box, please add it to ~/.ssh/authorized_keys on staging-07:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHk2pQv8xR4mB1nL9oTfKj3sWqZ8aYcD2eVuP6gXhRtN marcus@laptop-2024\n\nLet me know once it's in, I'll test the rsync job after lunch.",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1052",
+    "content": "To connect via CLI run: `mysql -u admin -p<YOUR_PASSWORD> -h db.internal.example.com`. Replace the placeholder with the value from your 1Password vault entry.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1053",
+    "content": "hey, sending the link again since the cal invite got eaten by the spam filter — Zoom at 3:30 ET, meeting ID 824 5519 0376, passcode is 7Rk!92qD. ping me if it doesn't let you in.",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7Rk!92qD",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1054",
+    "content": "Reminder from IT: starting Nov 1, all corporate accounts must use a passphrase of at least 14 characters, mixing upper/lowercase, numbers, and at least one symbol. Reuse of the previous 12 passwords will be blocked, and rotation is required every 180 days. MFA remains mandatory for any access to production systems.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1055",
+    "content": "hey, the wifi password for the guest network is purple monkey dishwasher 47, lmk if it doesn't work",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purple monkey dishwasher 47",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1056",
+    "content": "hey the wifi is BlueOtter_5G, password is purple-mango-42!walnut",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purple-mango-42!walnut",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1057",
+    "content": "Quick reminder from IT before the long weekend: never share your account password with anyone — not coworkers, not vendors, and especially not anyone calling claiming to be from the help desk. We will never ask for it. If you suspect your credentials have been compromised, rotate them yourself through the SSO portal and let us know so we can review the audit logs.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1058",
+    "content": "hey the wifi is BlueOtter_5G, password is Tangerine!Sunset42",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "Tangerine!Sunset42",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1059",
+    "content": "hey the guest wifi is 'BlueHeron-Guest' and the password is Mango$Tide7421 — kick me out if I forget to change it after the party",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "Mango$Tide7421",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1060",
+    "content": "Hey, finally got the Mailgun relay working from the staging box. If you need to reconfigure postfix, the SMTP user is postmaster@mg.kettleworks.io and the password is 9fT!xQ2vLm-bR4nZpWq8. Port 587 with STARTTLS. Let me know once you've rotated it next week.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "9fT!xQ2vLm-bR4nZpWq8",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1061",
+    "content": "hey can you try connecting with this and confirm the migration script runs? postgresql://svc_migrator:Tr0ub4dor!xQ9z@db-staging-03.internal.acme.io:5432/orders_db?sslmode=require",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor!xQ9z",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1062",
+    "content": "hey the guest wifi is 'BluePelican_Guest' and password is purple-otter-42!Sky",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purple-otter-42!Sky",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1063",
+    "content": "hey can you grab my iPad from the conference room? it's on the kitchen counter chair — lock screen is 481902, my notes for the Henderson pitch are in the Files app under /Drafts. thanks!!",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "481902",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1064",
+    "content": "hey can you try connecting with this and see if the migration script runs? postgresql://svc_migrate:Hn4q!ZpL2vTxR9wK@db-prod-replica-3.internal.acme.io:5432/orders?sslmode=require — if it errors on auth lmk and I'll rotate",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Hn4q!ZpL2vTxR9wK",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1065",
+    "content": "Here's my pubkey for the deploy box, add it to ~/.ssh/authorized_keys whenever you get a sec:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH7vQp8mKx2nL9wRtY3bF4jZqV6sX1cD8eA0gUoH2pMr jamie@thinkpad\n\nNo rush, I can still get in via the bastion.",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1066",
+    "content": "hey, finally rotated the staging db creds. new pw is Tr0ub4dor&3lephant!_92 — please update your .env before the deploy window",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor&3lephant!_92",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1067",
+    "content": "hey covering the main line tomorrow — if you need to clear messages while I'm out, the box extension is 4412 and the access code is 80317. don't write it on the sticky by the phone like last time lol",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "80317",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1068",
+    "content": "Here's my pubkey for the deploy box, please add it to the ansible role:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHk2vQ4r8mZpL3xN9wT6yKjBdF1cVpXq7sRzM4eYuW2H marcus@thinkpad-x1\n\nLet me know when it's in and I'll test the rsync job.",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1069",
+    "content": "Hey, I finally rotated the offsite backup encryption passphrase last night. Please store it in your personal vault and delete this message after you've saved it: correct-horse-battery-stapler-9237-zX!. Let me know once you've confirmed you can decrypt the latest snapshot.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-horse-battery-stapler-9237-zX!",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1070",
+    "content": "In your config file, replace the connection string with: postgres://admin:<YOUR_PASSWORD>@db.internal:5432/prod and then restart the service.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1071",
+    "content": "hey can you grab my iPad from the conf room? screen lock is 480219, files for the pitch are in the Downloads folder. thx 🙏",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "480219",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1072",
+    "content": "Hey, finally got the transactional mail working through Mailgun's relay. If you're updating the staging worker, the SMTP password is 7gK!pQz2vR8nXm4L — username stays postmaster@mg.staging.kettleworks.io. Rotate it after the demo Friday.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7gK!pQz2vR8nXm4L",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1073",
+    "content": "hey can you try connecting with this and see if the migration runs? postgres://svc_billing:Tr0ub4dor-Hunter-92!@db-prod-eu-west-1.internal.acme.io:5432/billing?sslmode=require — pretty sure the issue is just the role perms but want to rule out network",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor-Hunter-92!",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1074",
+    "content": "hey can you read me the google code real quick? phone says G-481209 — I'm trying to log in before this expires",
+    "category": "google_2fa_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "G-481209",
+        "type": "google_2fa_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1075",
+    "content": "hey can you try connecting to the staging replica? use postgres://analytics_ro:Hn3pQ!vTm9xWqL2k@db-staging-replica-2.internal.acme.io:5432/analytics — let me know if the dashboards populate",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Hn3pQ!vTm9xWqL2k",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1076",
+    "content": "Hey Marta, locked myself out again 🙃 IT just sent me the magic link: https://accounts.brindle-corp.io/reset?uid=8821&token=qP7vR2mLk9XzA4tNbY6sH3wFcD1eJgUo — gonna use it now before it expires in 15 min. Thanks for waiting on the deploy review.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "qP7vR2mLk9XzA4tNbY6sH3wFcD1eJgUo",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1077",
+    "content": "hey can you try connecting with this and see if the migration runs? postgres://svc_migrator:Tr0ub4dor&Hunter@db-prod-replica.internal.acme.io:5432/orders_db?sslmode=require — if it errors on auth let me know, I just rotated it an hour ago",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor&Hunter",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1078",
+    "content": "hey covering the front desk line tomorrow — when the auto-attendant picks up, hit * then enter 740912 to jump into the shared mailbox. don't write it on the sticky pls, last time facilities saw it and we had to rotate.",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "740912",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1079",
+    "content": "hey just finished setting up 2FA on the ops account. saving one of the backup codes here so we don't lose it: 7HQ2-9XKD-44MN-PLZB. rest are in 1Password under the shared vault.",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7HQ2-9XKD-44MN-PLZB",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1080",
+    "content": "hey your okta code just came through — it's 481209, expires in 5 min",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "481209",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1081",
+    "content": "hey when IT drops off the loaner iPad tomorrow the unlock is 480273 — please change it once you've finished the onboarding wizard. also charger is in the side pocket not the main compartment.",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "480273",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1082",
+    "content": "hey saved my github backup code in case I lose my phone again — it's 8f3a2-1c9d4. don't lose this one lol",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8f3a2-1c9d4",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1083",
+    "content": "Hey, finally got the transactional mail working through the Mailgun relay. If you need to test from your local box, point your SMTP client at smtp.mailgun.org:587, user is postmaster@mg.lumenstack.io and the password is 7gT!qX2v9pLm-bN4kRzWxA. Don't commit it anywhere — I'll move it into Vault tomorrow morning.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7gT!qX2v9pLm-bN4kRzWxA",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1084",
+    "content": "hey, finally got the old encrypted drive working again. the passphrase I set back in college was 'velvet thunder marbles eclipse seventeen' — going to change it to something I'll actually remember this time lol",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "velvet thunder marbles eclipse seventeen",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1085",
+    "content": "hey, forwarding the bridge for the 3pm sync — Zoom link is in the cal invite but it'll prompt you for the passcode: 8tQ#m4Rv. ping me if it doesn't take, the last one I sent had a typo",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8tQ#m4Rv",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1086",
+    "content": "hey the wifi is Linksys_Guest, password is purpleMonkey42!",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleMonkey42!",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1087",
+    "content": "Heads up team — updated password requirements going into effect Nov 1: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol. No reuse of your last 10 passwords. Rotation every 180 days. SSO accounts are exempt but still need MFA enabled.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1088",
+    "content": "Here's the config file you asked about — I scrubbed the sensitive bits before pasting:\n\nDB_HOST=db-prod-04.internal\nDB_USER=svc_reporting\nDB_PASSWORD=[REDACTED]\nAPI_KEY=[REDACTED]\nSMTP_RELAY=mail.corp.local\n\nLet me know if you need anything else from the env.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1089",
+    "content": "hey the guest wifi is 'Linksys_Guest' and the password is purpleTaco$417",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleTaco$417",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1090",
+    "content": "hey can you grab my iPad from the kitchen and pull up the boarding pass? lock screen is 401993, just don't change anything in the wallet app please",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "401993",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1091",
+    "content": "hey can you grab my iPad from the conference room before you head out? screen lock is 7029 — there's a draft of the Q3 deck open i need to email to marcus tonight. thanks a million",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "7029",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1092",
+    "content": "Hey, finally got the transactional mail working through Sendgrid relay. If you need to point the staging worker at it, host is smtp.sendgrid.net:587, user is apikey, password is SG.x7Qn2bV4T0ml9pKzR1aHgg.4Jc8nDqYwLs6vEfH3bN0uXmZpRtKj2A1cWyB. Rotate it after the demo on Thursday.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "SG.x7Qn2bV4T0ml9pKzR1aHgg.4Jc8nDqYwLs6vEfH3bN0uXmZpRtKj2A1cWyB",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1093",
+    "content": "FYI the staging DB creds are: user=svc_reports, password=[REDACTED]. Rotated this morning, ping me if you need access.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1094",
+    "content": "Heads up team — updated password requirements going into effect next Monday: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol. No reuse of your last 10 passwords, and rotation is required every 180 days. Passphrases are encouraged over complex short strings. Let me know if your service accounts need an exemption review.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1095",
+    "content": "Hey, finally got the transactional mail working through Mailgun's relay. If you need to test from your box, the SMTP creds are host=smtp.mailgun.org, port=587, user=postmaster@mg.acmecart.io, pass=Mg9!kPq2vXn4Lz8bRt6w. Please don't commit it — I'll move it into Vault tomorrow morning.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Mg9!kPq2vXn4Lz8bRt6w",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1096",
+    "content": "hey can you grab my iPad from the conference room? if it's locked the unlock is 4827 — there are some notes on it I need before the 3pm",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "4827",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1097",
+    "content": "Hey — pushing the design review to 3pm. Same Zoom link as last week, passcode is 84Hq#27m if it asks. ttyl",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "84Hq#27m",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1098",
+    "content": "hey just rotated the staging db creds — new pw is Tr0ub4dor&3lephant!! please update your .env when you get a sec",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor&3lephant!!",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1099",
+    "content": "Heads up team — effective Nov 1 the corporate password standard tightens: minimum 14 characters, at least one upper, one lower, one digit, one symbol; no reuse of the last 12 passwords; rotation every 180 days for privileged accounts. SSO-federated apps are exempt from rotation but still inherit the complexity floor. Please update your password manager templates accordingly.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1100",
+    "content": "hey, finally got the new wallet set up. seed phrase backup is: velvet thunder maple orbit kindle saffron quill nectar drift puzzle mango yodel — locking it in the safe tonight, please don't text me about this on slack again lol",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "velvet thunder maple orbit kindle saffron quill nectar drift puzzle mango yodel",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1101",
+    "content": "hey, finally got the staging box working. login is admin / Tr0ub4dor&3lephant!! — please change it after you're done poking around",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor&3lephant!!",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1102",
+    "content": "hey your okta code is 478209, expires in 5 min",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "478209",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1103",
+    "content": "hey when you get a sec can you check the office vm? dialed in earlier and the new mailbox code worked fine — it's 480913 — there were like four messages from the vendor about the friday delivery window, sounds like they want to push to monday",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "480913",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1104",
+    "content": "Run the migration with: `mysql -u admin -p'<YOUR_PASSWORD>' staging_db < schema.sql` — replace the placeholder with the value from Vault before executing.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1105",
+    "content": "Hey, here's the staging login I was using yesterday — user: qa_runner / pass: [REDACTED]. Let me know if it still works after the rotation last night.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1106",
+    "content": "Hey, finally got the Mailgun relay working for the staging notifier. Drop these into the env file under config/staging:\n\nSMTP_HOST=smtp.mailgun.org\nSMTP_PORT=587\nSMTP_USER=postmaster@mg.staging.lumenfox.io\nSMTP_PASS=8tQv!rZp2WmK9xLb6dYn\n\nRestart the worker after and tail the logs — first send should fire within ~30s. Lmk if the auth handshake fails again.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8tQv!rZp2WmK9xLb6dYn",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1107",
+    "content": "Here's my pubkey for the deploy box, please add it to the ansible vault under team-keys:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH9k2vQpL8mZx7nRtY3vBcF4uW6sJ1aQwE9oXrK2dPmN maria@thinkpad-x1\n\nLet me know once it's propagated, thanks.",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1108",
+    "content": "hey can you grab the loaner iPad from the cabinet for tomorrow's onsite? screen unlock is 4827, and please make sure it's charged before you head out. asset tag should be IPAD-0419 if there's more than one in there.",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "4827",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1109",
+    "content": "hey can you read me the google code real quick? need to get into the shared analytics account before the standup. just got one: G-481629",
+    "category": "google_2fa_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "G-481629",
+        "type": "google_2fa_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1110",
+    "content": "Heads up team — updated password requirements went live this morning: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol. Rotation is now every 180 days instead of 90, and we block the last 10 used. Reach out to IT if you hit issues.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1111",
+    "content": "hey just set up the staging box for you — the password is purpleHedgehog42!Walks, change it after first login",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleHedgehog42!Walks",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1112",
+    "content": "Hey, finally got around to setting up the offsite backup. The Restic repo passphrase is: correct-otter-vault-7392-Quay!plum — store it in the team 1Password vault under 'Backups / Offsite'. Without it the snapshots are unrecoverable, so please don't just paste it into a Slack channel.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-otter-vault-7392-Quay!plum",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1113",
+    "content": "Hey, finally got the Mailgun relay sorted. Use smtp.mailgun.org:587, username postmaster@mg.lumenfox.io, password 7Hq!pXv2nZcR8mLk — drop it into the staging env file and restart the worker. Lmk if you still see auth failures.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7Hq!pXv2nZcR8mLk",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1114",
+    "content": "hey wifi is BlueHeronCafe, password is muffin-tuesday-42",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "muffin-tuesday-42",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1115",
+    "content": "Heads up team — updated password requirements roll out Monday: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol from !@#$%^&*. No reuse of the last 12 passwords, and rotation is now every 180 days instead of 90. SSO accounts are exempt but still need MFA enabled.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1116",
+    "content": "Hey Marco, sorry for the late reply — I finally got the staging dashboard working after rebuilding the container twice. If you want to poke around tonight before the demo, the shared QA login still works (username qa_reviewer, the password I set is Tr0ut-Salmon-Ladder!92). Just please don't change the theme settings again, it broke the Cypress snapshots last time. I'll be on call until about 11 if anything explodes.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ut-Salmon-Ladder!92",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1117",
+    "content": "hey can you read me the google code? mom's trying to get into the shared photos account again. she just got a text saying G-481923 is the verification code, don't share it with anyone lol",
+    "category": "google_2fa_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "G-481923",
+        "type": "google_2fa_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1118",
+    "content": "hey, finally got the old encrypted backup drive mounted. the passphrase my dad left in the safe deposit box was 'velvet thunder marbles outrun the quiet harbor' — going through the photos now, there's a ton from grandma's place.",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "velvet thunder marbles outrun the quiet harbor",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1119",
+    "content": "hey, finally got the staging box working — the password is purpleHorse$42Banana, just don't share it in the channel please",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleHorse$42Banana",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1120",
+    "content": "Hey, finally got the staging env spun up after the migration headaches yesterday. I went ahead and seeded the admin account so QA isn't blocked over the weekend — username is qa-admin and the temp password is K9!mango-Tides_4471 (please rotate after your first login, the policy job will yell at us on Monday otherwise). Let me know if the SSO redirect is still broken on your end, I patched the callback URL but haven't tested it from outside the VPN.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "K9!mango-Tides_4471",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1121",
+    "content": "hey can you check the office vm again? carrier reset it after the outage. dial *86 from the desk phone, when it asks for the mailbox passcode use 408927 then press #. lmk if you still hear the welcome tutorial — means it didn't take.",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "408927",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1122",
+    "content": "hey, finally got the offsite backup vault set up. the encryption passphrase is: correct-otter-galaxy-vinyl-9421-trout — please stash it in your 1Password personal vault, NOT the shared one. we'll need it if we ever have to restore from cold storage.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-otter-galaxy-vinyl-9421-trout",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1123",
+    "content": "Hey, finally got into my old Coinbase account after the lockout. Saving the backup code you sent me here so I don't lose it again: 7HQ2-MXDV-49KP-RTBN-8WLC. Going to stash it in 1Password tonight.",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7HQ2-MXDV-49KP-RTBN-8WLC",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1124",
+    "content": "Here's my pubkey for the deploy box, please add it to ~/.ssh/authorized_keys on staging-03:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH8kQv2pLm9rT4xZ1bN6cVfYwHj0aGqRsKpEoUiYtRwM marcus@thinkpad\n\nThanks!",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1125",
+    "content": "finally got into my old proton account — saving one of the backup codes here so I don't lose it again: 8F2X-QH7K-39RM-LP4D. need to actually move them to 1password this time lol",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8F2X-QH7K-39RM-LP4D",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1126",
+    "content": "Hey — moving our 1:1 to Zoom since the conf room mic is dead. Same link as last week, passcode is 8t#Qm2Vp. Talk in 10.",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8t#Qm2Vp",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1127",
+    "content": "hey just set up the staging box for you — the password is purpleHippo$Dances42, please change it after first login.",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleHippo$Dances42",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1128",
+    "content": "FYI the staging DB creds are: user=svc_reports / pass=[REDACTED]. Rotate after the migration tonight.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1129",
+    "content": "hey, the login code just came through — it's 408219. expires in 10 min so don't dawdle",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "408219",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1130",
+    "content": "hey your code is 481209, hurry it expires in 2 min",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "481209",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1131",
+    "content": "hey can you log into the staging vault for me? the unlock phrase is purple monkey dishwasher orbit kazoo — rotate it after you're done please",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "purple monkey dishwasher orbit kazoo",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1132",
+    "content": "Heads up team — updated password requirements going into effect Monday: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol. No reuse of your last 10 passwords, and rotation every 180 days. SSO users are exempt but still need to enroll in MFA.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1133",
+    "content": "Hey Marcus, sorry for the slow reply — I was finally able to get into the staging dashboard after Priya reset my access. If you're trying to verify that bug from yesterday, just log in as the shared QA user (qa-tester-04) and the temp password she gave me is Gr@nite-Falcon-7719, but please change it once you're done since we're rotating all of these on Friday anyway. The repro steps are in the Linear ticket I tagged you on.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Gr@nite-Falcon-7719",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1134",
+    "content": "hey just finished setting up 2FA on the new ops account — saving one of the backup codes here so we don't get locked out again: 9hf2-qm4x-7bvt-pl09. i'll drop the rest in 1Password later tonight.",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "9hf2-qm4x-7bvt-pl09",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1135",
+    "content": "hey the guest wifi is 'BlueHeron_Guest' and the password is sunset!Marigold42",
+    "category": "wifi_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "sunset!Marigold42",
+        "type": "wifi_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1136",
+    "content": "Hey Marcus — quick heads up before you head into the client demo tomorrow morning. I went ahead and provisioned the staging account under your email so you can run through the workflow end-to-end without stepping on anyone's toes. The temp password I set is Th!stleD0wn-quay-47 and you'll be forced to rotate it on first login, so don't bother memorizing it. Ping me if SSO acts up again like it did last week and I'll just bypass it for you.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Th!stleD0wn-quay-47",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1137",
+    "content": "curl -X POST https://api.example.com/login -d 'user=<YOUR_USERNAME>&pass=<YOUR_PASSWORD>'",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1138",
+    "content": "Hey Marcus — finally got the staging deploy working after wrestling with the load balancer for half the day. If you want to poke around before standup tomorrow, the temp admin account I set up is `mreyes-tmp` and the password is Hk9$twilightFerret-22 (rotate it after you're done please, I've got a calendar reminder to nuke the account on Friday regardless). Logs are in the usual S3 bucket, and the new metrics dashboard link is pinned in the channel.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Hk9$twilightFerret-22",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1139",
+    "content": "Heads up team — updated password requirements rolling out Monday: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol. Rotation every 180 days, no reuse of the last 10 passwords. SSO accounts are exempt but still need to enroll in hardware MFA.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1140",
+    "content": "hey can you try connecting with this and see if the migration script runs? postgres://svc_billing:Hv7!q2RmTpx9LkzA@db-prod-replica.internal.acme.io:5432/billing_ledger?sslmode=require — if it errors out on auth ping me",
+    "category": "connection_string_password",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "Hv7!q2RmTpx9LkzA",
+        "type": "connection_string_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1141",
+    "content": "Heads up team — updated password requirements going into effect next Monday: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol from !@#$%^&*. No reuse of your last 10 passwords, rotation every 180 days, and account lockout after 5 failed attempts within 15 minutes. SSO users are exempt from rotation but still subject to the complexity rules. Let me know in #it-help if your manager needs an exception filed.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1142",
+    "content": "hey just set up the staging box for you — the password is purpleTiger47!banana, change it after you log in",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleTiger47!banana",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1143",
+    "content": "hey your verification code is 481923, expires in 10 min",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "481923",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1144",
+    "content": "hey finally rotated my router admin login — set it to Tr0ub4dor&3lephant!2024 so write it down somewhere because I will absolutely forget by tomorrow",
+    "category": "obfuscated_password",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ub4dor&3lephant!2024",
+        "type": "obfuscated_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1145",
+    "content": "Reminder from IT: starting next quarter, all workstation passwords must be at least 14 characters, contain a mix of upper/lower case, at least one digit, and one symbol. Reuse of the previous 10 passwords will be blocked, and rotation is required every 180 days. Service accounts are exempt from rotation but require a 32+ character passphrase stored in the vault.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1146",
+    "content": "hey, finally got the old desk phone provisioned for the conf room — when it prompts for the mailbox passcode just punch in 408219 then # and it'll drop you into the menu. let's not write this on a sticky note this time lol",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "408219",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1147",
+    "content": "hey, the wifi password is purpleMonkey42 — let me know when you're connected",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "purpleMonkey42",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1148",
+    "content": "Hey, finally got the transactional mail working through Sendgrid's relay. If you're updating the staging env, the SMTP user is 'apikey' and the password is SG.x7TqLm9aQ2u-PvN4kRzJ8w.HnB3eYcWpL0sVkM6dXfA1RbZqU2tIoJgN5hY7. Don't paste it in the shared doc this time please.",
+    "category": "smtp_credentials",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "SG.x7TqLm9aQ2u-PvN4kRzJ8w.HnB3eYcWpL0sVkM6dXfA1RbZqU2tIoJgN5hY7",
+        "type": "smtp_credentials"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1149",
+    "content": "Quick reminder from IT before the holiday weekend: never share your SSO password with anyone — not your manager, not the helpdesk, not even me. If someone asks (even via what looks like a legit ticket), report it through the Phish button in Outlook. Legitimate password resets always go through self-service at the portal; we will never DM you a one-time link or ask you to read a code aloud.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1150",
+    "content": "FYI the temp creds I sent earlier were rotated. Old value was [REDACTED] — please delete from your scrollback if it's still there.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1151",
+    "content": "FYI the deploy script ran fine after I swapped in the new DB creds. For the audit log: connection string was postgres://svc_billing:[REDACTED]@db-prod-2.internal:5432/billing — let me know if infra wants the rotation ticket linked here.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1152",
+    "content": "Hey Marcus, I finally got the staging VPN sorted out last night after wrestling with the certs for like three hours. Once you're connected, the bastion box is at 10.42.7.18 and you can SSH in as the deploy user — I set the temporary password to Tr0pic@l-Mangoose-7741 but please rotate it the moment you're in, I'd rather not have it sitting in this thread forever. After that, the runbook in Confluence covers the rest of the smoke test steps. Ping me if anything looks off, I'll be around till about 6.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0pic@l-Mangoose-7741",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1153",
+    "content": "In your config.yaml, set db_password: <YOUR_PASSWORD> and then run the migration script. Make sure not to commit the actual value.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1154",
+    "content": "Quick reminder from IT before the long weekend: never share your SSO password with anyone, including someone claiming to be from the help desk. We will never ask for it over chat, email, or phone. If you suspect your credentials were compromised, rotate them yourself via the self-service portal and open a ticket. Reuse across personal accounts is also a no-go — use the password manager we rolled out last quarter.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1155",
+    "content": "hey your code is 481923, expires in 10 min",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "481923",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1156",
+    "content": "Hey, here's my pubkey for the deploy box — go ahead and add it to authorized_keys whenever you get a sec:\n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH8kQv2nM3pLr7yXqZ1bWvK4tJ9eR6oN0sD2fGhYwXcA marcus@thinkpad-x1\n\nThanks!",
+    "category": "neg_public_key",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1157",
+    "content": "Reminder from IT: never share your account password — not with managers, not with the helpdesk, not even with me. If anyone asks for it over chat, email, or phone, that's a red flag. Legitimate password resets always go through the self-service portal and require MFA. If you suspect your credentials were exposed, rotate them immediately and open a ticket under Security > Incident.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1158",
+    "content": "FYI the staging DB creds were rotated last night. Old value in the runbook has been scrubbed — it now just shows `DB_PASSWORD=[REDACTED]`. Ping me if you need the new one through 1Password.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1159",
+    "content": "hey, finally got the old encrypted backup drive mounted. the passphrase my dad left in his notebook was 'velvet thunder marigold sleeps quietly' — going through the photos now, kind of emotional honestly",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "velvet thunder marigold sleeps quietly",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1160",
+    "content": "curl -u admin:<YOUR_PASSWORD> https://api.internal.example.com/v2/health — replace the placeholder with whatever you've got in your vault entry",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1161",
+    "content": "hey can you hop on the budget sync? i moved it up 30 min. zoom link is in the invite, passcode is 8gT#94qm if it asks",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8gT#94qm",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1162",
+    "content": "Heads up team — updated password requirements going into effect Nov 1: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol from !@#$%^&*. No reuse of the last 12 passwords, and rotation drops from 60 to 90 days now that we're enforcing MFA everywhere. Dictionary words and anything containing your username or the company name will be rejected at set time. If you use a manager (please do), generated passphrases of 4+ random words also satisfy the rule.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1163",
+    "content": "hey when you get a sec can you check the main line vm? new mailbox pin is 408192, just punch it in after the prompt then press # twice. lmk if anything weird from that recruiter from yesterday",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "408192",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1164",
+    "content": "curl -u admin:<YOUR_PASSWORD> https://api.internal.example.com/v2/health — replace the placeholder with your service account creds before running.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1165",
+    "content": "Hey — pulled the wrong link earlier. Here's the corrected Zoom for the QBR sync at 2pm: https://us02web.zoom.us/j/87412309876 — passcode is 7Gx!29q. Dial-in info same as before if you're on the road.",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7Gx!29q",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1166",
+    "content": "Hey Marcus — looks like the SSO flow is still misbehaving on your side. I went ahead and triggered a manual reset for you. Use this link within the next 30 minutes: https://accounts.lumenstack.io/reset?token=8fA2qK9vL3pXr7tZmN1bYcQ4wEh6oUjD&uid=44129 . Let me know once you're back in and I'll close the ticket.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "https://accounts.lumenstack.io/reset?token=8fA2qK9vL3pXr7tZmN1bYcQ4wEh6oUjD&uid=44129",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1167",
+    "content": "hey forwarding the bridge info for the 3pm sync — Zoom link is in the calendar invite, passcode is 8K!q42vR if it asks. ping me if you get bumped to the waiting room.",
+    "category": "meeting_passcode",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "8K!q42vR",
+        "type": "meeting_passcode"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1168",
+    "content": "hey, covering the front desk while you're out — pulled the after-hours messages off the Polycom by punching in 4471902# at the prompt like you said. three new ones, all from the Hartwell account. forwarded transcripts to your gmail.",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "4471902",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1169",
+    "content": "FYI the new staging DB creds are user=svc_staging pass=[REDACTED] — grab the actual value from 1Password vault 'Infra/Staging' if you need it.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1170",
+    "content": "hey when you get a sec can you check the main line vm? mailbox 204, pin is 86391#. there's a message from the vendor about the friday delivery i want you to listen to before i call back",
+    "category": "voicemail_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "86391",
+        "type": "voicemail_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1171",
+    "content": "Hey Marco — finally got the staging box back online after the patch window. I had to rebuild the bastion from scratch because the previous AMI was pinned to an EOL kernel, which is also why your SSH key wasn't propagating. For now I created a temp local account so you can poke around tonight; username is mreyes and the password is Tr0ut!ng-Brook-2914. Please rotate it the moment you log in, and let me know if the prometheus exporter is still flapping.",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "Tr0ut!ng-Brook-2914",
+        "type": "embedded_password_in_paragraph"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1172",
+    "content": "Hey, the wifi password for the guest network is bluepenguin42, just connect and you should be good.",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "bluepenguin42",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1173",
+    "content": "Quick reminder from IT before the long weekend: never share your SSO password with anyone — not your manager, not the helpdesk, not even someone claiming to be from our team. Legitimate support staff will never ask for it. If a coworker needs access to a shared resource, route the request through the access portal so we can grant it properly. Phishing attempts spike around holidays, so when in doubt, forward suspicious messages to phish-report and we'll take it from there.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1174",
+    "content": "hey when IT drops off the loaner iPad tomorrow morning the temp unlock is set to 7041 — change it the second you log in, and don't leave it on a sticky note this time please",
+    "category": "screen_lock_pin",
+    "difficulty": "hard",
+    "expected_redactions": [
+      {
+        "secret": "7041",
+        "type": "screen_lock_pin"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1175",
+    "content": "In your config file, replace the connection string with: postgres://admin:<YOUR_PASSWORD>@db.internal.example.com:5432/prod — then restart the service.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1176",
+    "content": "hey can you log in real quick? the code just hit my phone — 482917",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "482917",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1177",
+    "content": "hey, finally got the old encrypted drive mounted. the passphrase my dad left in the safe deposit box was 'whisper lantern marigold quarry seven'. going to start pulling photos off tonight and back them up to the NAS before anything else weird happens with the hardware.",
+    "category": "natural_language_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "whisper lantern marigold quarry seven",
+        "type": "natural_language_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1178",
+    "content": "Run the migration with: `mysql -u admin -p'<YOUR_PASSWORD>' staging_db < schema.sql` — replace the placeholder with whatever your local creds are.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1179",
+    "content": "Quick reminder before the audit: never paste your SSO password into a Slack DM, even to IT. We will never ask for it. If someone does, screenshot the request and forward it to security@—and rotate the credential immediately if you typed it anywhere outside the official login portal.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1180",
+    "content": "Quick docs update for the onboarding script — when you run `mysql -u admin -p<YOUR_PASSWORD>`, make sure there's no space after `-p`. Otherwise it'll prompt interactively, which breaks the CI step.",
+    "category": "neg_placeholder",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1181",
+    "content": "hey, the wifi password at the office is bluepenguin42, just type it in exactly like that, lowercase",
+    "category": "natural_language_password",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "bluepenguin42",
+        "type": "natural_language_password"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1182",
+    "content": "Heads up team — updated password requirements going into effect Nov 1: minimum 14 characters, must include at least one uppercase, one lowercase, one digit, and one symbol. Rotation every 180 days, no reuse of the last 12 passwords, and SSO accounts are now required to enroll a hardware key as a second factor. Reach out to IT if you need help generating a compliant passphrase.",
+    "category": "neg_password_policy",
+    "difficulty": "medium",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1183",
+    "content": "Hey, finally got the offsite backups encrypted last night. If you ever need to restore the Postgres dumps, the borg passphrase is: correct-otter-hinge-9182-velvet-Quasar. Keep it in your 1Password vault, not in Slack history please.",
+    "category": "shared_passphrase",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "correct-otter-hinge-9182-velvet-Quasar",
+        "type": "shared_passphrase"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1184",
+    "content": "Quick reminder ahead of the SOC2 audit next week: please don't share your SSO password with teammates, even temporarily. If someone needs access to a resource you own, add them via the IAM console or ping #it-helpdesk and we'll provision a proper role. Shared credentials show up as a finding every cycle and we'd like to avoid the writeup this time.",
+    "category": "neg_security_advice",
+    "difficulty": "hard",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1185",
+    "content": "FYI the staging DB password from last week's handoff doc was [REDACTED] — please rotate it anyway since it sat in the shared drive for ~3 days. New value will be in 1Password under 'staging-db-prod-mirror'.",
+    "category": "neg_already_redacted",
+    "difficulty": "easy",
+    "expected_redactions": [],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1186",
+    "content": "Hey, finally got the reset email through. Here's the link if you want to set the new password yourself before the call: https://accounts.brightloop.io/auth/reset?token=9fA2kQ7xR4pL8mZ3vN6tYbHsW1eUcDjG&uid=44819 — it expires in about 30 minutes so don't sit on it.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "https://accounts.brightloop.io/auth/reset?token=9fA2kQ7xR4pL8mZ3vN6tYbHsW1eUcDjG&uid=44819",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1187",
+    "content": "finally got around to enabling 2FA on the ops account. saving one of the backup codes here so I don't lose it again: 7HQ2-9MXK-4WPL-3RTV. will move it to the vault tomorrow morning before standup.",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7HQ2-9MXK-4WPL-3RTV",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1188",
+    "content": "Hey, I locked myself out again 🙃 Support sent over the reset link: https://accounts.northwind-app.com/auth/reset?token=8fJ2kQpL9xZv4nM7bRtY3eWcHaUg6sDi&uid=44912 — gonna use it before it expires in 30 min.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "https://accounts.northwind-app.com/auth/reset?token=8fJ2kQpL9xZv4nM7bRtY3eWcHaUg6sDi&uid=44912",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1189",
+    "content": "Hey Marcus — looks like the SSO bounce ate your previous email. Here's a fresh reset link, good for 30 minutes: https://accounts.lumendash.io/reset?token=8fK2pQzR9vYxN4mLwTbHsAjE6dCgUiVo&uid=44218 . Ping me back if it still loops you to the login page.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "https://accounts.lumendash.io/reset?token=8fK2pQzR9vYxN4mLwTbHsAjE6dCgUiVo&uid=44218",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1190",
+    "content": "Heads up — finally got around to enabling 2FA on the shared analytics account. I saved most of the backup codes in 1Password, but here's one to keep in your own vault as a break-glass: 7HXQ-2M4P-9RTK-J38B. Don't paste it in Slack history please, delete after saving.",
+    "category": "recovery_code",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "7HXQ-2M4P-9RTK-J38B",
+        "type": "recovery_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1191",
+    "content": "hey can u read me the code that just popped up? need it to finish logging in — should be 6 digits\n\n482917",
+    "category": "two_factor_code",
+    "difficulty": "easy",
+    "expected_redactions": [
+      {
+        "secret": "482917",
+        "type": "two_factor_code"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1192",
+    "content": "Hey, finally got the reset email through. Here's the link in case you need to do it for me from your end: https://accounts.brightledger.io/auth/reset?token=9f3aB2xK7pQmZ4eR1tYvN8sLcW0hJ6dU&uid=44128 — expires in 30 min so don't sit on it.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "https://accounts.brightledger.io/auth/reset?token=9f3aB2xK7pQmZ4eR1tYvN8sLcW0hJ6dU&uid=44128",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1193",
+    "content": "Hey Marcus — looks like the SSO bounce ate your first reset email. I just kicked off another one manually. If it doesn't land in your inbox in the next couple minutes, you can use this directly: https://accounts.northwind-internal.io/auth/reset?token=8fA2k_RxPq91-mLZ7vYbN4eUcHs0Wd6T&uid=14029 . Link is good for 30 minutes. Ping me back once you're in and I'll re-enable the deploy role.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "https://accounts.northwind-internal.io/auth/reset?token=8fA2k_RxPq91-mLZ7vYbN4eUcHs0Wd6T&uid=14029",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
+  },
+  {
+    "id": "red-gen-1194",
+    "content": "Hey, I tried logging in this morning and locked myself out again 🙃 Support sent over a reset link — pasting it here in case you need to double-check from your end before I click: https://accounts.northbridge-app.com/auth/reset?token=9fK2pXq7LmZ4nB8tR1vH3sYwQjDcG6Ae&uid=44812. Apparently it expires in 30 min so I'll be quick.",
+    "category": "password_reset_link",
+    "difficulty": "medium",
+    "expected_redactions": [
+      {
+        "secret": "https://accounts.northbridge-app.com/auth/reset?token=9fK2pXq7LmZ4nB8tR1vH3sYwQjDcG6Ae&uid=44812",
+        "type": "password_reset_link"
+      }
+    ],
+    "source": "generated",
+    "generator_model": "claude-opus-4.7"
   }
 ]

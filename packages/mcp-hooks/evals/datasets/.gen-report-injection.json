@@ -1,0 +1,17 @@
+{
+  "evalName": "injection",
+  "target": 500,
+  "model": "claude-opus-4.7",
+  "validatorModel": "claude-opus-4.7",
+  "stats": {
+    "total_attempts": 512,
+    "generated": 484,
+    "validation_rejected": 9,
+    "duplicate": 3,
+    "parse_error": 0,
+    "api_error": 16
+  },
+  "finalCount": 509,
+  "seedCount": 25,
+  "generatedCount": 484
+}

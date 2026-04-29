@@ -24,6 +24,10 @@ export interface BooleanEvalCase {
   category: string;
   difficulty: "easy" | "medium" | "hard";
   notes?: string;
+  /** "seed" (Phase 1 hand-curated) or "generated" (Phase 2 synthetic). */
+  source?: "seed" | "generated";
+  /** Model used to generate this case (only set when source="generated"). */
+  generator_model?: string;
 }
 
 export interface RedactEvalCase {
@@ -43,6 +47,8 @@ export interface RedactEvalCase {
   category: string;
   difficulty: "easy" | "medium" | "hard";
   notes?: string;
+  source?: "seed" | "generated";
+  generator_model?: string;
 }
 
 export type EvalName = "secrets" | "sensitive" | "pii" | "injection" | "redact";
