@@ -1,66 +1,64 @@
 {
   "eval": "redact",
   "model": "claude-haiku-4.5",
-  "createdAt": "2026-04-26T00:56:54.855Z",
-  "gitSha": "e5d247824142013eb69d31d9822d939490d853b0",
+  "createdAt": "2026-04-29T05:22:21.327Z",
+  "gitSha": "428628b9ded251e8714b7dd41cf2f2eca5fa73b1",
   "promptHash": "b6807b20550a",
-  "datasetHash": "92212b067d64",
-  "datasetSize": 20,
+  "datasetHash": "5f7b7606007e",
+  "datasetSize": 215,
   "concurrency": 4,
   "retries": 2,
   "metricsProduction": {
-    "n": 20,
-    "tp": 15,
-    "fp": 2,
-    "tn": 3,
+    "n": 215,
+    "tp": 150,
+    "fp": 23,
+    "tn": 42,
     "fn": 0,
-    "precision": 0.882,
+    "precision": 0.867,
     "recall": 1,
-    "f1": 0.938,
-    "fpr": 0.4
+    "f1": 0.929,
+    "fpr": 0.354
   },
   "metricsValidOnly": {
-    "n": 20,
-    "tp": 15,
-    "fp": 2,
-    "tn": 3,
+    "n": 215,
+    "tp": 150,
+    "fp": 23,
+    "tn": 42,
     "fn": 0,
-    "precision": 0.882,
+    "precision": 0.867,
     "recall": 1,
-    "f1": 0.938,
-    "fpr": 0.4
+    "f1": 0.929,
+    "fpr": 0.354
   },
   "byCategory": [
     {
       "key": "connection_string_password",
-      "n": 1,
-      "tp": 1,
+      "n": 10,
+      "tp": 10,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "embedded_password_in_paragraph",
-      "n": 1,
-      "tp": 1,
+      "n": 10,
+      "tp": 10,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "google_2fa_code",
-      "n": 1,
-      "tp": 1,
+      "n": 5,
+      "tp": 5,
       "fp": 0,
       "tn": 0,
       "fn": 0,
@@ -72,29 +70,39 @@
     },
     {
       "key": "meeting_passcode",
-      "n": 1,
-      "tp": 1,
+      "n": 11,
+      "tp": 11,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
+    },
+    {
+      "key": "natural_language_passphrase",
+      "n": 10,
+      "tp": 10,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "fpr": null
     },
     {
       "key": "natural_language_password",
-      "n": 1,
-      "tp": 1,
+      "n": 11,
+      "tp": 11,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "natural_language_password_phrase",
@@ -111,86 +119,92 @@
     },
     {
       "key": "neg_already_redacted",
-      "n": 1,
+      "n": 13,
       "tp": 0,
-      "fp": 0,
-      "tn": 1,
+      "fp": 5,
+      "tn": 8,
       "fn": 0,
-      "precision": null,
+      "precision": 0,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0.385
     },
     {
       "key": "neg_password_policy",
-      "n": 1,
+      "n": 13,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 13,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "neg_placeholder",
-      "n": 1,
+      "n": 13,
       "tp": 0,
-      "fp": 1,
-      "tn": 0,
+      "fp": 6,
+      "tn": 7,
       "fn": 0,
       "precision": 0,
       "recall": null,
       "f1": null,
-      "fpr": 1,
-      "warning": "low_sample_size"
+      "fpr": 0.462
     },
     {
       "key": "neg_public_key",
-      "n": 1,
+      "n": 13,
       "tp": 0,
-      "fp": 1,
-      "tn": 0,
+      "fp": 12,
+      "tn": 1,
       "fn": 0,
       "precision": 0,
       "recall": null,
       "f1": null,
-      "fpr": 1,
-      "warning": "low_sample_size"
+      "fpr": 0.923
     },
     {
       "key": "neg_security_advice",
-      "n": 1,
+      "n": 13,
       "tp": 0,
       "fp": 0,
-      "tn": 1,
+      "tn": 13,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "obfuscated_password",
-      "n": 1,
-      "tp": 1,
+      "n": 10,
+      "tp": 10,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "password_reset_link",
-      "n": 1,
-      "tp": 1,
+      "n": 10,
+      "tp": 10,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "fpr": null
+    },
+    {
+      "key": "recovery_code",
+      "n": 9,
+      "tp": 9,
       "fp": 0,
       "tn": 0,
       "fn": 0,
@@ -215,121 +229,113 @@
     },
     {
       "key": "screen_lock_pin",
-      "n": 1,
-      "tp": 1,
+      "n": 10,
+      "tp": 10,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "shared_passphrase",
-      "n": 1,
-      "tp": 1,
+      "n": 10,
+      "tp": 10,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "smtp_credentials",
-      "n": 1,
-      "tp": 1,
+      "n": 10,
+      "tp": 10,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "two_factor_code",
-      "n": 1,
-      "tp": 1,
+      "n": 11,
+      "tp": 11,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "voicemail_pin",
-      "n": 1,
-      "tp": 1,
+      "n": 10,
+      "tp": 10,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     },
     {
       "key": "wifi_password",
-      "n": 1,
-      "tp": 1,
+      "n": 11,
+      "tp": 11,
       "fp": 0,
       "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": null,
-      "warning": "low_sample_size"
+      "fpr": null
     }
   ],
   "byDifficulty": [
     {
       "key": "easy",
-      "n": 5,
-      "tp": 3,
-      "fp": 1,
-      "tn": 1,
+      "n": 59,
+      "tp": 33,
+      "fp": 11,
+      "tn": 15,
       "fn": 0,
       "precision": 0.75,
       "recall": 1,
       "f1": 0.857,
-      "fpr": 0.5,
-      "warning": "low_sample_size"
+      "fpr": 0.423
     },
     {
       "key": "hard",
-      "n": 5,
-      "tp": 4,
+      "n": 53,
+      "tp": 40,
       "fp": 0,
-      "tn": 1,
+      "tn": 13,
       "fn": 0,
       "precision": 1,
       "recall": 1,
       "f1": 1,
-      "fpr": 0,
-      "warning": "low_sample_size"
+      "fpr": 0
     },
     {
       "key": "medium",
-      "n": 10,
-      "tp": 8,
-      "fp": 1,
-      "tn": 1,
+      "n": 103,
+      "tp": 77,
+      "fp": 12,
+      "tn": 14,
       "fn": 0,
-      "precision": 0.889,
+      "precision": 0.865,
       "recall": 1,
-      "f1": 0.941,
-      "fpr": 0.5
+      "f1": 0.928,
+      "fpr": 0.462
     }
   ],
   "errorCounts": {
@@ -343,6 +349,90 @@
     },
     {
       "id": "red-018",
+      "category": "neg_placeholder"
+    },
+    {
+      "id": "red-gen-1006",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1015",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1023",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1036",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1047",
+      "category": "neg_already_redacted"
+    },
+    {
+      "id": "red-gen-1049",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1051",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1052",
+      "category": "neg_placeholder"
+    },
+    {
+      "id": "red-gen-1065",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1068",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1070",
+      "category": "neg_placeholder"
+    },
+    {
+      "id": "red-gen-1093",
+      "category": "neg_already_redacted"
+    },
+    {
+      "id": "red-gen-1104",
+      "category": "neg_placeholder"
+    },
+    {
+      "id": "red-gen-1105",
+      "category": "neg_already_redacted"
+    },
+    {
+      "id": "red-gen-1107",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1124",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1128",
+      "category": "neg_already_redacted"
+    },
+    {
+      "id": "red-gen-1151",
+      "category": "neg_already_redacted"
+    },
+    {
+      "id": "red-gen-1156",
+      "category": "neg_public_key"
+    },
+    {
+      "id": "red-gen-1175",
+      "category": "neg_placeholder"
+    },
+    {
+      "id": "red-gen-1180",
       "category": "neg_placeholder"
     }
   ],
