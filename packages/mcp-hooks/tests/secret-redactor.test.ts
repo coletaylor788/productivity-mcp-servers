@@ -323,4 +323,125 @@ MIIEvgIBADANBgkqhkiG9w0BAQ
       expect(result.content).not.toContain("mysecretpassword");
     });
   });
+
+  describe("prefilter option", () => {
+    it("no prefilter (default): LLM sees full post-Phase-1 content (parity with prior behavior)", async () => {
+      llm.classify.mockResolvedValue(JSON.stringify({ findings: [] }));
+      const r = new SecretRedactor({ llm });
+      const content = "subject: Hello\nbody: My password is hunter2";
+      await r.check("read_email", content);
+
+      expect(llm.classify).toHaveBeenCalledTimes(1);
+      expect(llm.classify.mock.calls[0][0]).toBe(content);
+    });
+
+    it("prefilter is invoked with (toolName, post-Phase-1 content) and its return value is sent to the LLM", async () => {
+      llm.classify.mockResolvedValue(JSON.stringify({ findings: [] }));
+      const prefilter = vi.fn((_tool: string, _c: string) => "BODY ONLY");
+      const r = new SecretRedactor({ llm, prefilter });
+      const content = "envelope-stuff\nbody-content";
+      await r.check("get_event", content);
+
+      expect(prefilter).toHaveBeenCalledWith("get_event", content);
+      expect(llm.classify).toHaveBeenCalledTimes(1);
+      expect(llm.classify.mock.calls[0][0]).toBe("BODY ONLY");
+    });
+
+    it("prefilter receives content with regex-redacted secrets already substituted", async () => {
+      llm.classify.mockResolvedValue(JSON.stringify({ findings: [] }));
+      const prefilter = vi.fn((_tool: string, c: string) => c);
+      const r = new SecretRedactor({ llm, prefilter });
+      const content = "ssh key in body: ghp_abcdefghijklmnopqrstuvwxyz1234567890ab";
+      await r.check("get_event", content);
+
+      const seen = prefilter.mock.calls[0][1];
+      expect(seen).toContain("[REDACTED:github_token]");
+      expect(seen).not.toContain("ghp_");
+    });
+
+    it("prefilter returning empty string skips the LLM call entirely", async () => {
+      const prefilter = vi.fn(() => "");
+      const r = new SecretRedactor({ llm, prefilter });
+      const result = await r.check("get_event", "anything");
+
+      expect(prefilter).toHaveBeenCalled();
+      expect(llm.classify).not.toHaveBeenCalled();
+      expect(result.action).toBe("allow");
+    });
+
+    it("prefilter empty string still allows Phase-1 regex findings to be reported", async () => {
+      const prefilter = vi.fn(() => "");
+      const r = new SecretRedactor({ llm, prefilter });
+      const content = "body: ghp_abcdefghijklmnopqrstuvwxyz1234567890ab";
+      const result = await r.check("get_event", content);
+
+      expect(llm.classify).not.toHaveBeenCalled();
+      expect(result.action).toBe("modify");
+      expect(result.content).toContain("[REDACTED:github_token]");
+    });
+
+    it("LLM findings are applied to the FULL content, not just the prefilter slice", async () => {
+      // The prefilter returns just the body, but the LLM-found secret string
+      // appears in the full content too — replaceAll covers all occurrences.
+      llm.classify.mockResolvedValue(
+        JSON.stringify({ findings: [{ secret: "hunter2", type: "password" }] }),
+      );
+      const prefilter = (_tool: string, c: string) => {
+        // pretend the body is everything after a literal marker
+        const i = c.indexOf("BODY:");
+        return i >= 0 ? c.slice(i) : c;
+      };
+      const r = new SecretRedactor({ llm, prefilter });
+      const content = "ENVELOPE id=evt-123 hunter2-mention\nBODY: my password is hunter2";
+      const result = await r.check("get_event", content);
+
+      expect(result.action).toBe("modify");
+      expect(result.content).not.toContain("hunter2");
+      expect(result.content).toContain("[REDACTED:password]");
+      // envelope was preserved (id stays put)
+      expect(result.content).toContain("ENVELOPE id=evt-123");
+    });
+
+    it("LLM findings whose secret is not present in the full content are dropped (existing guard)", async () => {
+      llm.classify.mockResolvedValue(
+        JSON.stringify({
+          findings: [
+            { secret: "this-string-was-never-in-content", type: "password" },
+          ],
+        }),
+      );
+      const prefilter = (_tool: string, _c: string) => "irrelevant slice";
+      const r = new SecretRedactor({ llm, prefilter });
+      const content = "clean envelope, nothing leaked";
+      const result = await r.check("get_event", content);
+
+      expect(result.action).toBe("allow");
+    });
+
+    it("prefilter throwing an error falls back to scanning the full post-Phase-1 content", async () => {
+      llm.classify.mockResolvedValue(JSON.stringify({ findings: [] }));
+      const prefilter = vi.fn(() => {
+        throw new Error("boom");
+      });
+      const r = new SecretRedactor({ llm, prefilter });
+      const content = "some content";
+      await r.check("get_event", content);
+
+      expect(prefilter).toHaveBeenCalled();
+      expect(llm.classify).toHaveBeenCalledTimes(1);
+      expect(llm.classify.mock.calls[0][0]).toBe(content);
+    });
+
+    it("prefilter is called per check() invocation (no shared state)", async () => {
+      llm.classify.mockResolvedValue(JSON.stringify({ findings: [] }));
+      const prefilter = vi.fn((_tool: string, c: string) => c);
+      const r = new SecretRedactor({ llm, prefilter });
+      await r.check("get_event", "a");
+      await r.check("get_event", "b");
+
+      expect(prefilter).toHaveBeenCalledTimes(2);
+      expect(prefilter.mock.calls[0][1]).toBe("a");
+      expect(prefilter.mock.calls[1][1]).toBe("b");
+    });
+  });
 });
