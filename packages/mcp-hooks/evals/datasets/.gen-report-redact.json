@@ -1,17 +1,17 @@
 {
   "evalName": "redact",
-  "target": 200,
+  "target": 280,
   "model": "claude-opus-4.7",
   "validatorModel": "claude-opus-4.7",
   "stats": {
-    "total_attempts": 213,
-    "generated": 195,
-    "validation_rejected": 12,
+    "total_attempts": 298,
+    "generated": 280,
+    "validation_rejected": 17,
     "duplicate": 1,
-    "parse_error": 3,
-    "api_error": 2
+    "parse_error": 0,
+    "api_error": 0
   },
-  "finalCount": 215,
+  "finalCount": 300,
   "seedCount": 20,
-  "generatedCount": 195
+  "generatedCount": 280
 }

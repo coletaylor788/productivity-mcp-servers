@@ -84,6 +84,19 @@ Look for:
 - Obfuscated or encoded secrets
 - Any other credential, token, code, or key that could grant access
 
+DO NOT flag opaque object identifiers used by APIs and tools — these are NOT secrets:
+- Email message IDs and thread IDs (e.g. Gmail "19c97070eff64d1e", Outlook IDs)
+- Calendar event IDs (single UUIDs OR colon-joined UUID pairs like "4EF9A6A3-64CC-46BF-A5AD-8ACF8FDE00EC:036F68C5-0D87-47FC-B7C2-9E123414DBDB")
+- Calendar IDs themselves (e.g. Apple Calendar UUIDs like "858F4E3B-A5EF-418B-AD11-14C92A4FBF88", Google calendar IDs)
+- Contact IDs, file IDs (Drive/Dropbox), document IDs (Notion), issue/PR numbers, commit SHAs
+- UUIDs, ULIDs, MongoDB ObjectIds, database row IDs, primary keys (in any format: bare, colon-joined, slash-joined)
+- URL slugs, short links, room codes, channel IDs (Slack C0..., D0..., etc.)
+- Trace IDs, request IDs, correlation IDs, span IDs
+- Hex strings or base64 strings used as identifiers (not as auth material)
+- Email addresses (e.g. "alice@example.com") — these are contact identifiers, not credentials. They may be PII handled elsewhere, but they are NOT secrets and must not be redacted by this classifier.
+
+These identifiers are publicly routable handles inside an API and grant no access on their own. Only flag if the identifier is explicitly described as a credential or paired with auth context (e.g. "use this as the bearer token", "this is your access key").
+
 For each secret found, return the EXACT string as it appears in the content, and its type.
 
 Respond with JSON only: {"findings": [{"secret": "exact string from content", "type": "category"}]}

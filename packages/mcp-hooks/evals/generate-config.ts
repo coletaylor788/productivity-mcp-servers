@@ -239,8 +239,8 @@ export const GEN_CONFIGS: Record<string, EvalGenConfig> = {
     kind: "redact",
     taskDescription:
       "whether the content contains a redactable secret — password, passphrase, PIN, recovery code, 2FA code, reset link — that should be removed before showing the content downstream",
-    totalTarget: 200,
-    positiveRatio: 0.7,
+    totalTarget: 280,
+    positiveRatio: 0.55,
     positiveCategories: [
       { key: "natural_language_password", description: "Plain-English statement of a password", difficulty: "easy" },
       { key: "natural_language_passphrase", description: "Multi-word passphrase ('correct horse battery staple')", difficulty: "medium" },
@@ -264,6 +264,18 @@ export const GEN_CONFIGS: Record<string, EvalGenConfig> = {
       { key: "neg_placeholder", description: "<YOUR_PASSWORD> placeholder", difficulty: "easy" },
       { key: "neg_security_advice", description: "Advice not to share passwords", difficulty: "hard" },
       { key: "neg_password_policy", description: "Password policy rules", difficulty: "medium" },
+      // Opaque API identifiers — must NOT be redacted (they are routable handles, not secrets).
+      // Subagent flows fail when downstream tool calls receive [REDACTED:...] in place of these.
+      { key: "neg_gmail_msg_id", description: "Gmail message/thread ID (16-char lowercase hex like 19c97070eff64d1e) mentioned in prose, e.g. 'open email 19c97070eff64d1e' or 'IDs: 19c970..., 19c981...'", difficulty: "hard" },
+      { key: "neg_apple_calendar_event_id", description: "Apple Calendar event ID (UUID:UUID, two uppercase UUIDs joined by colon, e.g. 4EF9A6A3-64CC-46BF-A5AD-8ACF8FDE00EC:036F68C5-0D87-47FC-B7C2-9E123414DBDB) referenced in tool/agent context", difficulty: "hard" },
+      { key: "neg_apple_calendar_id", description: "Apple Calendar calendar ID (single uppercase UUID, e.g. 858F4E3B-A5EF-418B-AD11-14C92A4FBF88) referenced in agent context like 'calendar 858F4E3B-...'", difficulty: "hard" },
+      { key: "neg_google_calendar_event_id", description: "Google Calendar event ID (long opaque base32-ish string, e.g. 'abc123def456_20260101T120000Z') in tool output", difficulty: "hard" },
+      { key: "neg_uuid_record_id", description: "Generic UUID used as a record/document/object ID in API responses or agent prose, NOT as auth material", difficulty: "medium" },
+      { key: "neg_object_id_hex", description: "Mongo ObjectId / opaque hex identifier (24-char hex, or 12-32 char hex) used as a primary key, NOT auth", difficulty: "medium" },
+      { key: "neg_email_address_attendee", description: "Email address(es) appearing as attendees, contact identifiers, sender/recipient — NOT a credential. e.g. 'attendees: alice@example.com, bob@example.com'", difficulty: "easy" },
+      { key: "neg_slack_channel_id", description: "Slack channel/DM/user ID like C0ABC1234, D0XYZ7890, U02ABC123", difficulty: "medium" },
+      { key: "neg_commit_sha", description: "Git commit SHA (7-40 char lowercase hex) referenced in PR/issue/agent prose", difficulty: "easy" },
+      { key: "neg_trace_request_id", description: "Trace ID / request ID / correlation ID in logs or agent context (often hex or base32)", difficulty: "medium" },
     ],
   },
 };
