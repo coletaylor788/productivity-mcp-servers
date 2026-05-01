@@ -44,12 +44,48 @@ const REGEX_PATTERNS: Array<{ pattern: RegExp; type: string }> = [
   { pattern: /\b(\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4})\b/g, type: "credit_card" },
 ];
 
+/**
+ * Optional transform that scopes which slice of the tool's response is sent
+ * to the Phase-2 LLM redaction scan.
+ *
+ * The plugin owns the structure of its tool output (envelope fields vs
+ * untrusted free-text payload), and is therefore the right layer to decide
+ * which substring(s) the LLM should judge. Returning a narrower slice both
+ * focuses LLM attention on the high-signal surface (where credentials would
+ * actually leak — e.g. `body`, `notes`, `description`) and reduces false
+ * positives on opaque object identifiers (e.g. `id`, `event_id`, `etag`)
+ * that are routable handles, not secrets.
+ *
+ * Contract:
+ *   - Receives the regex-redacted content (Phase-1 has already run).
+ *   - Returns the substring to scan; may be empty (skips the LLM call) or
+ *     reformatted free text. Findings the LLM emits are still applied to
+ *     the FULL post-Phase-1 content; any finding whose `secret` substring
+ *     does not appear verbatim in the full content is dropped.
+ *   - Must be synchronous and side-effect free.
+ *
+ * Security boundary: this is a SCOPING knob, not an authorization knob.
+ * Anything excluded from the returned slice is NOT scanned for secrets.
+ * Plugin authors must therefore only exclude content they trust to be
+ * structural envelope (e.g. opaque object IDs from a verified upstream),
+ * never user/attacker-controlled payload.
+ */
+export type SecretRedactorPrefilter = (
+  toolName: string,
+  content: string,
+) => string;
+
 export class SecretRedactor {
   readonly name = "SecretRedactor";
   private llm: CopilotLLMClient;
+  private prefilter?: SecretRedactorPrefilter;
 
-  constructor(options: { llm: CopilotLLMClient }) {
+  constructor(options: {
+    llm: CopilotLLMClient;
+    prefilter?: SecretRedactorPrefilter;
+  }) {
     this.llm = options.llm;
+    this.prefilter = options.prefilter;
   }
 
   async check(toolName: string, content: string): Promise<HookResult> {
@@ -70,29 +106,41 @@ export class SecretRedactor {
       }
     }
 
-    // Phase 2: LLM (on already-redacted content)
-    try {
-      const raw = await this.llm.classify(redacted, REDACT_PROMPT, { label: "secret-redact" });
-      const parsed = JSON.parse(raw);
+    // Phase 2: LLM (on already-redacted content, optionally scoped by prefilter)
+    let llmInput = redacted;
+    if (this.prefilter) {
+      try {
+        llmInput = this.prefilter(toolName, redacted);
+      } catch {
+        // Prefilter failure: fall back to scanning the full post-Phase-1 content.
+        llmInput = redacted;
+      }
+    }
 
-      if (Array.isArray(parsed.findings)) {
-        for (const finding of parsed.findings) {
-          if (
-            typeof finding.secret === "string" &&
-            typeof finding.type === "string" &&
-            redacted.includes(finding.secret)
-          ) {
-            redacted = redacted.replaceAll(
-              finding.secret,
-              `[REDACTED:${finding.type}]`,
-            );
-            findingTypes.push(finding.type);
-            findingCount += 1;
+    if (llmInput.length > 0) {
+      try {
+        const raw = await this.llm.classify(llmInput, REDACT_PROMPT, { label: "secret-redact" });
+        const parsed = JSON.parse(raw);
+
+        if (Array.isArray(parsed.findings)) {
+          for (const finding of parsed.findings) {
+            if (
+              typeof finding.secret === "string" &&
+              typeof finding.type === "string" &&
+              redacted.includes(finding.secret)
+            ) {
+              redacted = redacted.replaceAll(
+                finding.secret,
+                `[REDACTED:${finding.type}]`,
+              );
+              findingTypes.push(finding.type);
+              findingCount += 1;
+            }
           }
         }
+      } catch {
+        // LLM failure: return regex-only results
       }
-    } catch {
-      // LLM failure: return regex-only results
     }
 
     if (findingCount > 0) {

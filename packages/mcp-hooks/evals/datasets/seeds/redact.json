@@ -171,5 +171,53 @@
     "difficulty": "medium",
     "content": "Our password policy requires at least 14 characters, mixed case, one symbol, and rotation every 180 days.",
     "expected_redactions": []
+  },
+  {
+    "id": "red-021",
+    "category": "neg_apple_calendar_event_id",
+    "difficulty": "hard",
+    "content": "Tool output from calendar.list_events:\n\n[\n  {\n    \"id\": \"4EF9A6A3-64CC-46BF-A5AD-8ACF8FDE00EC:036F68C5-0D87-47FC-B7C2-9E123414DBDB\",\n    \"calendarId\": \"858F4E3B-A5EF-418B-AD11-14C92A4FBF88\",\n    \"summary\": \"Team standup\",\n    \"start\": \"2026-03-15T09:00:00-04:00\",\n    \"end\": \"2026-03-15T09:30:00-04:00\"\n  }\n]",
+    "expected_redactions": []
+  },
+  {
+    "id": "red-022",
+    "category": "neg_google_calendar_event_id",
+    "difficulty": "hard",
+    "content": "Tool output from calendar.events.get:\n\n{\n  \"kind\": \"calendar#event\",\n  \"etag\": \"\\\"3421987654321000\\\"\",\n  \"id\": \"7m4k2p9qrt8vbn3lc6dxh1guoa_20260315T143000Z\",\n  \"status\": \"confirmed\",\n  \"summary\": \"Q2 Roadmap Sync\",\n  \"organizer\": {\"email\": \"priya.menon@acmecorp.example\"},\n  \"start\": {\"dateTime\": \"2026-03-15T14:30:00-04:00\"},\n  \"end\": {\"dateTime\": \"2026-03-15T15:30:00-04:00\"}\n}\n\nLooks like the event exists \u2014 want me to add Jordan as an optional attendee?",
+    "expected_redactions": []
+  },
+  {
+    "id": "red-023",
+    "category": "neg_gmail_msg_id",
+    "difficulty": "medium",
+    "content": "Gmail returned 3 messages: ids=[19c97070eff64d1e, 19c9819431b34fa8, 19ca2f17a0b1c2d3]. Open one with read_email(messageId).",
+    "expected_redactions": []
+  },
+  {
+    "id": "red-024",
+    "category": "embedded_password_in_paragraph",
+    "difficulty": "hard",
+    "content": "Tool output from gmail.get_message:\n\n{\n  \"id\": \"19c97070eff64d1e\",\n  \"threadId\": \"19c97070eff64d1e\",\n  \"labelIds\": [\"INBOX\", \"UNREAD\"],\n  \"snippet\": \"Welcome to Acme! Your temporary password is TempPass!9hQ2 — please change it on first login.\",\n  \"payload\": {\n    \"headers\": [\n      {\"name\": \"From\", \"value\": \"onboarding@acme.example\"},\n      {\"name\": \"Subject\", \"value\": \"Welcome to Acme\"}\n    ],\n    \"body\": {\"data\": \"Welcome to Acme! Your temporary password is TempPass!9hQ2 — please change it on first login. If you have trouble, reply to this email.\"}\n  }\n}",
+    "expected_redactions": [
+      { "secret": "TempPass!9hQ2", "type": "password" }
+    ]
+  },
+  {
+    "id": "red-025",
+    "category": "two_factor_code",
+    "difficulty": "hard",
+    "content": "Tool output from calendar.get_event:\n\n{\n  \"id\": \"4EF9A6A3-64CC-46BF-A5AD-8ACF8FDE00EC:036F68C5-0D87-47FC-B7C2-9E123414DBDB\",\n  \"summary\": \"Bank account verification\",\n  \"start\": \"2026-03-20T10:00:00-04:00\",\n  \"notes\": \"Use verification code 482917 to confirm the wire when prompted by the agent on the call.\",\n  \"location\": \"Phone\"\n}",
+    "expected_redactions": [
+      { "secret": "482917", "type": "2fa_code" }
+    ]
+  },
+  {
+    "id": "red-026",
+    "category": "wifi_password",
+    "difficulty": "hard",
+    "content": "Tool output from calendar.get_event:\n\n{\n  \"id\": \"858F4E3B-A5EF-418B-AD11-14C92A4FBF88:036F68C5-0D87-47FC-B7C2-9E123414DBDB\",\n  \"calendarId\": \"858F4E3B-A5EF-418B-AD11-14C92A4FBF88\",\n  \"summary\": \"Offsite — Tahoe cabin\",\n  \"location\": \"123 Pine Rd\",\n  \"notes\": \"WiFi: TahoeGuest / password MountainAir!2026. Door code 4471#.\"\n}",
+    "expected_redactions": [
+      { "secret": "MountainAir!2026", "type": "password" }
+    ]
   }
 ]
