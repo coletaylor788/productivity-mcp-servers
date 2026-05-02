@@ -4,14 +4,14 @@
   "model": "claude-opus-4.7",
   "validatorModel": "claude-opus-4.7",
   "stats": {
-    "total_attempts": 512,
-    "generated": 484,
-    "validation_rejected": 9,
-    "duplicate": 3,
+    "total_attempts": 518,
+    "generated": 482,
+    "validation_rejected": 17,
+    "duplicate": 1,
     "parse_error": 0,
-    "api_error": 16
+    "api_error": 18
   },
-  "finalCount": 509,
-  "seedCount": 25,
-  "generatedCount": 484
+  "finalCount": 513,
+  "seedCount": 31,
+  "generatedCount": 482
 }
