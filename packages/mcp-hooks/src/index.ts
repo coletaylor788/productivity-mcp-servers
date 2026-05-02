@@ -16,5 +16,5 @@ export {
   type ContactsLogger,
 } from "./contacts/contacts-trust.js";
 
-export { InjectionGuard } from "./ingress/injection-guard.js";
+export { InjectionGuard, type InjectionGuardPrefilter } from "./ingress/injection-guard.js";
 export { SecretRedactor, type SecretRedactorPrefilter } from "./ingress/secret-redactor.js";
