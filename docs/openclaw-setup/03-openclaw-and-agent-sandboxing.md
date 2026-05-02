@@ -417,6 +417,61 @@ When the gateway sees a session for an agent with `sandbox.mode: "all"`, it:
 4. Routes any tool call the agent makes to the gateway's tool proxy on the host's loopback. The proxy enforces `tools.sandbox.tools.alsoAllow`.
 5. When the agent yields, the agent process ends but the container persists (per `scope: "agent"`).
 
+### Bundled skills can't be read from the sandbox — and how we fix it
+
+There's a gap in the sandbox model worth knowing about, because it bit me the first time Puddles tried to send an iMessage attachment.
+
+OpenClaw ships dozens of "skills" — short Markdown files that teach the agent how to use a specific channel or tool (`bluebubbles`, `apple-notes`, `slack`, etc). The system prompt advertises every eligible skill in an `<available_skills>` block with its absolute file path and tells the agent: *"Use the `read` tool to load a skill's file when the task matches its description."*
+
+For bundled skills, those paths live under the npm-global install — `~/.npm-global/lib/node_modules/openclaw/skills/<name>/SKILL.md` — which is **outside the sandbox workspace root**. So the prompt tells `main` to read a file the sandbox immediately rejects:
+
+```
+Path escapes sandbox root (~/.openclaw/workspace):
+  /Users/puddles/.npm-global/lib/node_modules/openclaw/skills/bluebubbles/SKILL.md
+```
+
+OpenClaw has a built-in mirror (`syncSkillsToWorkspace`) that copies all bundled skills into `<workspace>/skills/`. But it's gated on `workspaceAccess !== "rw"`, and our `main` agent is `rw` because it needs to persist `TODO.md`, `MEMORY.md`, projects, recipes, etc. The skip is defensive — the built-in mirror is wipe-and-rebuild, which would destroy any hand-authored skills in the workspace. So in `rw` mode the agent ends up with a system prompt that names skills it can't read.
+
+I patched this with a small no-clobber mirror script in `scripts/mac-mini/`:
+
+```
+scripts/mac-mini/mirror-openclaw-skills.sh         # idempotent mirror
+scripts/mac-mini/ai.openclaw.skills-mirror.plist   # LaunchAgent
+scripts/mac-mini/install-openclaw-skills-mirror.sh # one-shot installer
+```
+
+What it does:
+
+- Copies each bundled skill into `~/.openclaw/workspace/skills/<name>/` and drops a `.openclaw-mirror` marker file inside (source path, openclaw version, content fingerprint, timestamp).
+- **Never touches a destination directory that doesn't have the marker** — so any skill you wrote by hand (`email-triage/`, etc) is left alone. Same-name collision goes to your version, every time.
+- Re-runs every 6 hours from a per-user `LaunchAgent`, plus an instant refresh whenever the openclaw npm directory changes (so `npm i -g openclaw@latest` picks up new skills within seconds via `WatchPaths`).
+- Garbage-collects marker-owned dirs whose source upstream has disappeared.
+
+Install it:
+
+```bash
+cd ~/git/puddles/scripts/mac-mini
+./install-openclaw-skills-mirror.sh
+```
+
+Verify:
+
+```bash
+# Workspace populated with bundled skills + your own ones intact
+ls ~/.openclaw/workspace/skills/
+
+# Marker shows openclaw version + content fingerprint
+cat ~/.openclaw/workspace/skills/bluebubbles/.openclaw-mirror
+
+# OpenClaw now reports the workspace path (not the npm-global path)
+openclaw skills info bluebubbles --json | grep filePath
+# → "filePath": "/Users/puddles/.openclaw/workspace/skills/bluebubbles/SKILL.md"
+```
+
+Restart the gateway (`launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway`) and the next session's system prompt advertises the workspace path, which the sandbox can read.
+
+> **Heads up: poisoned history is sticky.** If your existing session contains old `read` failures with the npm-global path, the model may keep parroting those even after the prompt is fixed. Start a fresh session if you see this — the system prompt is correct, the agent just doesn't trust it over its own recent memory.
+
 ---
 
 ## 8. Hardening AGENTS.md against adversarial input

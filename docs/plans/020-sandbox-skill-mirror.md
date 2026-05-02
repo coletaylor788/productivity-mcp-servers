@@ -1,6 +1,6 @@
 # Plan 020 — Sandbox skill mirror for rw workspaces
 
-**Status:** Draft, awaiting approval
+**Status:** ✅ Complete (2026-05-02)
 **Owner:** cole + Copilot
 **Related:** docs/openclaw-setup/03-openclaw-and-agent-sandboxing.md, docs/openclaw-setup/04-secure-gmail.md
 
@@ -220,32 +220,42 @@ After installing on the mini:
 
 ### Implementation
 
-- [ ] Create `scripts/mac-mini/mirror-openclaw-skills.sh`
-- [ ] Create `scripts/mac-mini/ai.openclaw.skills-mirror.plist`
-- [ ] Create `scripts/mac-mini/install-openclaw-skills-mirror.sh`
-- [ ] Local lint/shellcheck the bash scripts (no new tooling)
-- [ ] Manually test mirror script on the mini via `--dry-run` flag
+- [x] Create `scripts/mac-mini/mirror-openclaw-skills.sh`
+- [x] Create `scripts/mac-mini/ai.openclaw.skills-mirror.plist`
+- [x] Create `scripts/mac-mini/install-openclaw-skills-mirror.sh`
+- [x] Local lint/shellcheck the bash scripts (no new tooling)
+- [x] Manually test mirror script on the mini via `--dry-run` flag
 
 ### Deployment
 
-- [ ] `git push`
-- [ ] Pull on mini, run installer
-- [ ] Verify `<workspace>/skills/` populated (validation steps 1–3)
-- [ ] Restart gateway via `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway`
+- [x] `git push`
+- [x] Pull on mini, run installer
+- [x] Verify `<workspace>/skills/` populated (validation steps 1–3)
+- [x] Restart gateway via `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway`
 
 ### Behavioral validation
 
-- [ ] Ask Puddles to send a test image via iMessage; confirm it works
-      (validation step 4)
-- [ ] Inspect audit logs for clean findings (validation step 5)
-- [ ] Run no-clobber test (validation step 6)
+- [x] Ask Puddles to send a test image via iMessage; confirm it works
+      (validation step 4) — fresh session needed because old session had
+      poisoned `read` failures in history
+- [x] Inspect audit logs for clean findings (validation step 5)
+- [x] Run no-clobber test (validation step 6) — `email-triage/` left
+      untouched
 
 ### Documentation
 
-- [ ] Add §  to `docs/openclaw-setup/03-openclaw-and-agent-sandboxing.md`
-- [ ] Add iMessage-attachments paragraph to `docs/openclaw-setup/04-secure-gmail.md`
-      (or its successor — confirm the right home before writing)
-- [ ] Update root `README.md` mention of mac-mini scripts if it lists them
+- [x] Add § "Bundled skills can't be read from the sandbox" to
+      `docs/openclaw-setup/03-openclaw-and-agent-sandboxing.md`
+- [x] iMessage-attachments paragraph not added to `04-secure-gmail.md`
+      (out of scope for that doc; new § in 03 is the right home)
+- [x] Root `README.md` mention of mac-mini scripts is directory-level
+      only — no update needed
+
+### Follow-ups discovered during validation
+
+- [x] Add `message` to `agents.list[main].tools.sandbox.tools.alsoAllow`
+      so the sandboxed agent can actually call the tool the bluebubbles
+      skill describes (was filtered out by the sandbox tool proxy)
 
 ### Upstream
 
@@ -254,5 +264,5 @@ After installing on the mini:
 
 ### Cleanup
 
-- [ ] Mark plan complete with date
-- [ ] Commit + push
+- [x] Mark plan complete with date
+- [x] Commit + push
