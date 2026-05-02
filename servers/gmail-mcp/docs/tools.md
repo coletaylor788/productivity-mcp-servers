@@ -97,31 +97,39 @@ List emails from Gmail with optional filters.
 
 ### Output
 
+Returns a JSON document on stdout. The shape is stable across success and error paths so plugins can route it through structural prefilters.
+
 **Success:**
-```
-Found 3 emails:
-
-1. ID: 18d5a2b3c4d5e6f7
-   From: sender@example.com
-   Subject: Meeting tomorrow
-   Date: 2026-02-01 10:30 AM
-   Snippet: Hey, just wanted to confirm our meeting...
-
-2. ID: 18d5a2b3c4d5e6f8
-   From: newsletter@company.com
-   Subject: Weekly Update
-   Date: 2026-02-01 09:00 AM
-   Snippet: This week's highlights...
+```json
+{
+  "count": 2,
+  "emails": [
+    {
+      "id": "18d5a2b3c4d5e6f7",
+      "from": "sender@example.com",
+      "subject": "Meeting tomorrow",
+      "date": "Mon, 1 Feb 2026 10:30:00 -0800",
+      "snippet": "Hey, just wanted to confirm our meeting..."
+    },
+    {
+      "id": "18d5a2b3c4d5e6f8",
+      "from": "newsletter@company.com",
+      "subject": "Weekly Update",
+      "date": "Mon, 1 Feb 2026 09:00:00 -0800",
+      "snippet": "This week's highlights..."
+    }
+  ]
+}
 ```
 
 **No emails:**
-```
-No emails found.
+```json
+{"count": 0, "emails": []}
 ```
 
 **Error - Not authenticated:**
-```
-Error: Not authenticated. Please call the 'authenticate' tool first.
+```json
+{"error": "Not authenticated. Please call the 'authenticate' tool first."}
 ```
 
 ### Filter Examples
@@ -225,18 +233,31 @@ Get the full contents of an email by ID.
 
 ### Output
 
+Returns a JSON document on stdout. `body_html` and `cc` are present only when the requested format includes them and the message has them.
+
 **Success:**
+```json
+{
+  "from": "sender@example.com",
+  "to": "you@gmail.com",
+  "cc": "carol@example.com",
+  "subject": "Meeting tomorrow",
+  "date": "Mon, 1 Feb 2026 10:00:00 -0800",
+  "body_text": "Hi, let's meet tomorrow at 2pm.",
+  "body_html": "<p>Hi, let's meet tomorrow at 2pm.</p>",
+  "attachments": [
+    {
+      "filename": "agenda.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 46285
+    }
+  ]
+}
 ```
-From: sender@example.com
-To: you@gmail.com
-Subject: Meeting tomorrow
-Date: 2026-02-01
 
---- Body (Text) ---
-Hi, let's meet tomorrow at 2pm.
-
---- Attachments (1) ---
-- agenda.pdf (application/pdf, 45.2 KB, ID: att123)
+**Error:**
+```json
+{"error": "Error getting email: <details>"}
 ```
 
 ### Usage Examples

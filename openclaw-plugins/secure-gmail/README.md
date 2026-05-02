@@ -4,12 +4,27 @@ OpenClaw plugin that wraps the [gmail-mcp](../../servers/gmail-mcp/) server's
 tools with security hooks from [`mcp-hooks`](../../packages/mcp-hooks/).
 
 For each gmail tool it discovers via MCP it registers an OpenClaw `AnyAgentTool`
-whose `execute()` runs the MCP call and then pipes the text result through
+whose `execute()` runs the MCP call and then pipes the JSON result through
 ingress hooks before returning to the agent:
 
-- **InjectionGuard** — flags prompt-injection attempts in email bodies
-- **SecretRedactor** — redacts 2FA codes, secrets, and similar high-risk
-  strings before they reach the agent
+- **InjectionGuard** — flags prompt-injection attempts in attacker-controlled
+  fields (subject, body, sender headers)
+- **SecretRedactor** — redacts 2FA codes, API keys, reset links, and similar
+  high-risk strings before they reach the agent
+
+Both hooks are wired with `gmailPrefilter` (`src/prefilter.ts`), built from
+the shared `makeUntrustedKeysPrefilter` helper in `mcp-hooks`. It walks the
+gmail-mcp JSON response and sends only sender-controlled fields to the LLM
+scans:
+
+```
+from, to, cc, subject, snippet, body_text, body_html, filename, error
+```
+
+Envelope fields (`id`, `date`, `count`, `mime_type`, `size_bytes`) are
+gmail-issued and are **not** sent to the LLMs — this eliminates false
+positives on opaque message IDs while preserving all real findings.
+SecretRedactor's Phase-1 regex sweep still runs on the full content.
 
 If any hook returns `block`, the agent receives a sentinel message instead of
 the raw content. If all hooks return `allow` the original MCP result passes

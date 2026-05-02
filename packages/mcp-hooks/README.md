@@ -70,6 +70,78 @@ const redactResult = await secretRedactor.check("get_email", emailContent);
 // redactResult.content: redacted text (if "modify")
 ```
 
+### Scoping ingress LLM scans with a prefilter
+
+Both `InjectionGuard` and `SecretRedactor` accept an optional `prefilter`
+that decides which slice of the tool response is sent to the LLM. The
+plugin owns the schema of its tool output (envelope vs untrusted free
+text), so it's the right layer to pick that slice. Scoping focuses LLM
+attention on the actual attack surface and reduces false positives on
+benign envelope fields (opaque IDs, etags, dates).
+
+The shared helper `makeUntrustedKeysPrefilter` walks JSON tool responses
+and emits only values whose key is in a configured set:
+
+```typescript
+import {
+  CopilotLLMClient,
+  InjectionGuard,
+  SecretRedactor,
+  makeUntrustedKeysPrefilter,
+} from "mcp-hooks";
+
+const llm = new CopilotLLMClient({ model: "claude-haiku-4.5" });
+
+// Sender-controlled JSON keys for a Gmail-like response.
+// Keys NOT listed here are treated as trusted envelope and are not
+// sent to the LLM scans.
+const gmailPrefilter = makeUntrustedKeysPrefilter({
+  untrustedKeys: new Set([
+    "from", "to", "cc", "subject", "snippet",
+    "body_text", "body_html", "filename", "error",
+  ]),
+});
+
+const injectionGuard = new InjectionGuard({ llm, prefilter: gmailPrefilter });
+const secretRedactor = new SecretRedactor({ llm, prefilter: gmailPrefilter });
+```
+
+Behavior:
+
+- The prefilter parses the tool response as JSON. If parsing fails it
+  returns the **full** content unchanged (defence in depth — never
+  silently skip a scan because we couldn't parse).
+- It walks the parsed tree recursively and emits `key: value` lines
+  for every value whose key is in `untrustedKeys`. Nested matches are
+  found regardless of depth.
+- An empty result skips the LLM call (the hook returns `allow`).
+- For `SecretRedactor`, the prefilter only scopes Phase-2 (LLM). Phase-1
+  (regex sweep for `sk-…`, JWTs, AWS keys, SSNs, credit cards, etc.)
+  always runs on the full content.
+- When the LLM identifies a secret in a scanned slice, `SecretRedactor`
+  replaces every occurrence of that string anywhere in the full
+  response — detection is scoped, replacement is not.
+
+> **Security boundary:** the prefilter is a *scoping* knob, not an
+> *authorization* knob. Anything excluded from the returned slice is
+> NOT scanned by the LLM. Plugin authors must only exclude content they
+> trust to be structural envelope (opaque IDs from a verified upstream,
+> server-set status fields), never user/attacker-controlled payload.
+> When in doubt, include the key.
+
+For a custom shape, write your own `SimplePrefilter`:
+
+```typescript
+import type { SimplePrefilter } from "mcp-hooks";
+
+const myPrefilter: SimplePrefilter = (toolName, content) => {
+  // Return the substring(s) you want the LLM to scan.
+  // Empty string => skip the LLM call.
+  // Anything you don't return is NOT scanned.
+  return extractAttackerControlledFields(content);
+};
+```
+
 ## Trust Model
 
 `ContactsEgressGuard` treats **membership in iCloud Contacts** as the

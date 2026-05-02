@@ -524,8 +524,8 @@ openclaw agent --agent main   --list-tools | grep -E "list_emails|get_email" \
 When `reader` calls `list_emails`, here's what happens before any output reaches the agent's context window:
 
 1. `secure-gmail` forwards the call to the gmail-mcp subprocess, which makes the Gmail API request.
-2. The MCP response (a `text` content item with the listing) comes back.
-3. The plugin extracts the text and runs `InjectionGuard.check("list_emails", text)` and `SecretRedactor.check("list_emails", text)` **in parallel** against that text.
+2. The MCP response (a `text` content item containing a JSON document — see [`servers/gmail-mcp/docs/tools.md`](../../servers/gmail-mcp/docs/tools.md) for the schema) comes back.
+3. The plugin extracts the text and runs `InjectionGuard.check("list_emails", text)` and `SecretRedactor.check("list_emails", text)` **in parallel** against that text. Both hooks are wired with `gmailPrefilter` (a `makeUntrustedKeysPrefilter` from `mcp-hooks`), which scopes their LLM scans to attacker-controlled JSON fields only — see §9a.
 4. Each hook returns one of:
    - `allow` — content passes through unchanged.
    - `block` — content is replaced with a sentinel before the agent sees it. The exact string from `wrap-tool.ts` is `[secure-gmail] blocked <tool>: <reason>` (or a default reason if the hook didn't supply one).
@@ -543,6 +543,34 @@ Two important properties:
 The two read tools (`list_emails`, `get_email`) we expose to `reader` go through this same wrapper. The wrapper applies ingress hooks to **every** registered tool — `plugin.ts` does not currently honour the `skipTools` knob you'll see in `openclaw.plugin.json` and the plugin's README. (Manifest/README ahead of code; if you set `skipTools` it's silently ignored today.)
 
 > **`authenticate` is intentionally not exposed.** The OAuth flow opens a browser and waits for human consent. It is not an agent-driven operation. If you ever need to re-authenticate, run the Python helper from §4.3.
+
+## 9a. Prefilter scoping (which fields the LLMs actually scan)
+
+Both ingress hooks share `gmailPrefilter` (`openclaw-plugins/secure-gmail/src/prefilter.ts`), built from `mcp-hooks`' `makeUntrustedKeysPrefilter` helper. The prefilter:
+
+1. Parses the tool response as JSON (gmail-mcp emits JSON for `list_emails` and `get_email`; falls back to scanning the full content if parsing fails — defence in depth).
+2. Walks the parsed tree recursively.
+3. Emits `key: value` lines **only for keys in the untrusted-key set**.
+
+For secure-gmail the untrusted-key set is:
+
+```
+from, to, cc, subject, snippet, body_text, body_html, filename, error
+```
+
+These are sender-controlled (the `error` key is included because Google API error strings can echo subjects/IDs). Everything else — `id`, `date`, `count`, `mime_type`, `size_bytes` — is gmail-issued envelope and is **not** sent to the LLM scans.
+
+What this changes per scan:
+
+| | Scope |
+|---|---|
+| `SecretRedactor` Phase 1 (regex sweep for `sk-…`, JWTs, AWS keys, SSNs, etc.) | **full content** — every field |
+| `SecretRedactor` Phase 2 (LLM scan via `REDACT_PROMPT`) | only untrusted-key values |
+| `InjectionGuard` (LLM scan via `INJECTION_PROMPT`) | only untrusted-key values |
+
+When the Phase-2 LLM finds a secret in (say) `body_text`, the redactor still **replaces every occurrence** of that exact string anywhere in the full response — so if the same secret accidentally appears in an envelope field too, it gets masked there as well. Detection is scoped; replacement isn't.
+
+The same architecture applies to `secure-apple-calendar`, with its own untrusted-key set: `title, notes, location, url, name, email, error`.
 
 ## 10. Audit logging
 
