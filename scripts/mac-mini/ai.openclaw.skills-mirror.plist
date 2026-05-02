@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>ai.openclaw.skills-mirror</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/mirror-openclaw-skills.sh</string>
+    </array>
+
+    <!-- Run once at login/boot so the workspace is populated before the
+         OpenClaw gateway gets its first request. -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Refresh every 6 hours as a safety net. -->
+    <key>StartInterval</key>
+    <integer>21600</integer>
+
+    <!-- Trigger an immediate refresh whenever the openclaw npm package is
+         (re)installed or upgraded. The whole package dir is watched so we
+         catch both `npm i -g openclaw` and skill-only patch releases. -->
+    <key>WatchPaths</key>
+    <array>
+        <string>/Users/puddles/.npm-global/lib/node_modules/openclaw</string>
+    </array>
+
+    <!-- Don't pile up runs if a previous one is still going. -->
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/puddles/.openclaw/logs/skills-mirror.launchd.out</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/puddles/.openclaw/logs/skills-mirror.launchd.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>
