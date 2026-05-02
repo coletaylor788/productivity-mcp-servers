@@ -44,6 +44,7 @@ vi.mock("mcp-hooks", () => {
         super("SecretRedactor");
       }
     },
+    makeUntrustedKeysPrefilter: () => (_t: string, c: string) => c,
   };
 });
 

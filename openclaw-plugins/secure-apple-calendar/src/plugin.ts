@@ -12,6 +12,7 @@ import {
 } from "mcp-hooks";
 import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js";
 import { connectMcpBridge, McpBridge } from "./mcp-bridge.js";
+import { calendarPrefilter } from "./prefilter.js";
 import {
   wrapMcpTool,
   type AuditEntry,
@@ -323,8 +324,8 @@ const secureAppleCalendarPlugin = {
       .filter((d) => d.length > 0);
 
     const ingress: IngressHook[] = [
-      new InjectionGuard({ llm }),
-      new SecretRedactor({ llm }),
+      new InjectionGuard({ llm, prefilter: calendarPrefilter }),
+      new SecretRedactor({ llm, prefilter: calendarPrefilter }),
     ];
     const egressGuard = new ContactsEgressGuard({
       contacts,

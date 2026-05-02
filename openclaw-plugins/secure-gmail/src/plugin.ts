@@ -11,6 +11,7 @@ import {
   type IngressHook,
 } from "mcp-hooks";
 import { connectMcpBridge, McpBridge } from "./mcp-bridge.js";
+import { gmailPrefilter } from "./prefilter.js";
 import { wrapMcpTool, type AuditEntry, type AuditLogger } from "./wrap-tool.js";
 import type {
   CallToolResult,
@@ -263,8 +264,8 @@ const secureGmailPlugin = {
       model: config.model ?? "claude-haiku-4.5",
     });
     const ingress: IngressHook[] = [
-      new InjectionGuard({ llm }),
-      new SecretRedactor({ llm }),
+      new InjectionGuard({ llm, prefilter: gmailPrefilter }),
+      new SecretRedactor({ llm, prefilter: gmailPrefilter }),
     ];
 
     // Lazy MCP bridge: only spawn the gmail-mcp subprocess on first tool
