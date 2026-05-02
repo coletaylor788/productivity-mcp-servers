@@ -259,8 +259,8 @@ After installing on the mini:
 
 ### Upstream
 
-- [ ] Open issue against OpenClaw repo with title above
-- [ ] Link issue back into this plan as resolved-when
+- [ ] ~~Open issue against OpenClaw repo~~ — deferred; mirror is a fine
+      local solution, not pursuing upstream change for now.
 
 ### Cleanup
 
