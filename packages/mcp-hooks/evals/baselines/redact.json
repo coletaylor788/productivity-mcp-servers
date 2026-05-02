@@ -1,34 +1,34 @@
 {
   "eval": "redact",
   "model": "claude-haiku-4.5",
-  "createdAt": "2026-05-01T03:51:35.191Z",
-  "gitSha": "bc1a65bd016ffbdf6b020362319d050f0d984c10",
-  "promptHash": "27a7942eaec8",
+  "createdAt": "2026-05-02T21:20:13.227Z",
+  "gitSha": "599d4474615c75d2c44991e8c148d119e6aa07df",
+  "promptHash": "eca2eb9a6714",
   "datasetHash": "974fd1339746",
   "datasetSize": 300,
   "concurrency": 10,
   "retries": 2,
   "metricsProduction": {
     "n": 300,
-    "tp": 169,
-    "fp": 16,
-    "tn": 115,
-    "fn": 0,
-    "precision": 0.914,
-    "recall": 1,
-    "f1": 0.955,
-    "fpr": 0.122
+    "tp": 168,
+    "fp": 3,
+    "tn": 128,
+    "fn": 1,
+    "precision": 0.982,
+    "recall": 0.994,
+    "f1": 0.988,
+    "fpr": 0.023
   },
   "metricsValidOnly": {
     "n": 300,
-    "tp": 169,
-    "fp": 16,
-    "tn": 115,
-    "fn": 0,
-    "precision": 0.914,
-    "recall": 1,
-    "f1": 0.955,
-    "fpr": 0.122
+    "tp": 168,
+    "fp": 3,
+    "tn": 128,
+    "fn": 1,
+    "precision": 0.982,
+    "recall": 0.994,
+    "f1": 0.988,
+    "fpr": 0.023
   },
   "byCategory": [
     {
@@ -120,13 +120,13 @@
       "key": "neg_already_redacted",
       "n": 10,
       "tp": 0,
-      "fp": 1,
-      "tn": 9,
+      "fp": 0,
+      "tn": 10,
       "fn": 0,
-      "precision": 0,
+      "precision": null,
       "recall": null,
       "f1": null,
-      "fpr": 0.1
+      "fpr": 0
     },
     {
       "key": "neg_apple_calendar_event_id",
@@ -235,25 +235,25 @@
       "key": "neg_placeholder",
       "n": 10,
       "tp": 0,
-      "fp": 5,
-      "tn": 5,
+      "fp": 1,
+      "tn": 9,
       "fn": 0,
       "precision": 0,
       "recall": null,
       "f1": null,
-      "fpr": 0.5
+      "fpr": 0.1
     },
     {
       "key": "neg_public_key",
       "n": 10,
       "tp": 0,
-      "fp": 9,
-      "tn": 1,
+      "fp": 1,
+      "tn": 9,
       "fn": 0,
       "precision": 0,
       "recall": null,
       "f1": null,
-      "fpr": 0.9
+      "fpr": 0.1
     },
     {
       "key": "neg_security_advice",
@@ -333,13 +333,13 @@
     {
       "key": "recovery_code",
       "n": 10,
-      "tp": 10,
+      "tp": 9,
       "fp": 0,
       "tn": 0,
-      "fn": 0,
+      "fn": 1,
       "precision": 1,
-      "recall": 1,
-      "f1": 1,
+      "recall": 0.9,
+      "f1": 0.947,
       "fpr": null
     },
     {
@@ -433,13 +433,13 @@
       "key": "easy",
       "n": 71,
       "tp": 35,
-      "fp": 6,
-      "tn": 30,
+      "fp": 1,
+      "tn": 35,
       "fn": 0,
-      "precision": 0.854,
+      "precision": 0.972,
       "recall": 1,
-      "f1": 0.921,
-      "fpr": 0.167
+      "f1": 0.986,
+      "fpr": 0.028
     },
     {
       "key": "hard",
@@ -456,14 +456,14 @@
     {
       "key": "medium",
       "n": 142,
-      "tp": 90,
-      "fp": 9,
-      "tn": 43,
-      "fn": 0,
-      "precision": 0.909,
-      "recall": 1,
-      "f1": 0.952,
-      "fpr": 0.173
+      "tp": 89,
+      "fp": 1,
+      "tn": 51,
+      "fn": 1,
+      "precision": 0.989,
+      "recall": 0.989,
+      "f1": 0.989,
+      "fpr": 0.019
     }
   ],
   "errorCounts": {
@@ -476,65 +476,18 @@
       "category": "neg_public_key"
     },
     {
-      "id": "red-018",
-      "category": "neg_placeholder"
-    },
-    {
-      "id": "red-gen-1026",
-      "category": "neg_placeholder"
-    },
-    {
-      "id": "red-gen-1048",
-      "category": "neg_public_key"
-    },
-    {
-      "id": "red-gen-1060",
-      "category": "neg_placeholder"
-    },
-    {
-      "id": "red-gen-1065",
-      "category": "neg_public_key"
-    },
-    {
-      "id": "red-gen-1067",
-      "category": "neg_public_key"
-    },
-    {
       "id": "red-gen-1119",
       "category": "neg_google_calendar_event_id"
     },
     {
-      "id": "red-gen-1161",
-      "category": "neg_public_key"
-    },
-    {
-      "id": "red-gen-1167",
-      "category": "neg_public_key"
-    },
-    {
-      "id": "red-gen-1183",
-      "category": "neg_placeholder"
-    },
-    {
-      "id": "red-gen-1187",
-      "category": "neg_public_key"
-    },
-    {
-      "id": "red-gen-1203",
-      "category": "neg_public_key"
-    },
-    {
       "id": "red-gen-1215",
       "category": "neg_placeholder"
-    },
-    {
-      "id": "red-gen-1261",
-      "category": "neg_already_redacted"
-    },
-    {
-      "id": "red-gen-1262",
-      "category": "neg_public_key"
     }
   ],
-  "falseNegatives": []
+  "falseNegatives": [
+    {
+      "id": "red-gen-1014",
+      "category": "recovery_code"
+    }
+  ]
 }

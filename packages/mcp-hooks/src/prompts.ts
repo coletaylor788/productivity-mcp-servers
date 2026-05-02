@@ -79,29 +79,13 @@ Do NOT flag as injection:
 
 Respond with JSON only: {"detected": true/false, "evidence": "brief description of what was found"}`;
 
-export const REDACT_PROMPT = `You are a security classifier. The following content has already been partially redacted by regex. Identify any remaining secrets that the regex missed.
+export const REDACT_PROMPT = `You are a security classifier. The content below has already been partially redacted by regex. Identify any remaining SECRETS the regex missed.
 
-Look for:
-- Secrets in unusual formats not caught by standard regex patterns
-- Context-dependent secrets (strings that are only secrets in certain contexts)
-- Passwords or credentials in natural language ("the password is hunter2")
-- Obfuscated or encoded secrets
-- Any other credential, token, code, or key that could grant access
+A secret is a string that grants access if disclosed: passwords, passphrases, PINs, API keys, tokens, private keys, OAuth client secrets, session cookies, recovery codes, 2FA codes, password reset links — the kind of thing an attacker could use to impersonate the owner or read protected data.
 
-DO NOT flag opaque object identifiers used by APIs and tools — these are NOT secrets:
-- Email message IDs and thread IDs (e.g. Gmail "19c97070eff64d1e", Outlook IDs)
-- Calendar event IDs (single UUIDs OR colon-joined UUID pairs like "4EF9A6A3-64CC-46BF-A5AD-8ACF8FDE00EC:036F68C5-0D87-47FC-B7C2-9E123414DBDB")
-- Calendar IDs themselves (e.g. Apple Calendar UUIDs like "858F4E3B-A5EF-418B-AD11-14C92A4FBF88", Google calendar IDs)
-- Contact IDs, file IDs (Drive/Dropbox), document IDs (Notion), issue/PR numbers, commit SHAs
-- UUIDs, ULIDs, MongoDB ObjectIds, database row IDs, primary keys (in any format: bare, colon-joined, slash-joined)
-- URL slugs, short links, room codes, channel IDs (Slack C0..., D0..., etc.)
-- Trace IDs, request IDs, correlation IDs, span IDs
-- Hex strings or base64 strings used as identifiers (not as auth material)
-- Email addresses (e.g. "alice@example.com") — these are contact identifiers, not credentials. They may be PII handled elsewhere, but they are NOT secrets and must not be redacted by this classifier.
+Identifiers are NOT secrets, even if they look credential-shaped. An identifier names something but does not grant access on its own: message IDs, calendar IDs, UUIDs, commit SHAs, public keys, certificates, email addresses, usernames, channel IDs, trace/request IDs, file IDs, template placeholders like <YOUR_PASSWORD>, content already marked [REDACTED]. When unsure, ask: "if I posted this string publicly, could someone misuse it to access something they shouldn't?" If no, leave it.
 
-These identifiers are publicly routable handles inside an API and grant no access on their own. Only flag if the identifier is explicitly described as a credential or paired with auth context (e.g. "use this as the bearer token", "this is your access key").
-
-For each secret found, return the EXACT string as it appears in the content, and its type.
-
-Respond with JSON only: {"findings": [{"secret": "exact string from content", "type": "category"}]}
-If no additional secrets found: {"findings": []}`;
+Return the EXACT string from the content with a short type label.
+Respond with JSON only:
+{"findings": [{"secret": "exact string from content", "type": "category"}]}
+If none: {"findings": []}`;
