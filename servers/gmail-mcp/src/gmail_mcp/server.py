@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import json
 import os
 import re
 import time
@@ -280,11 +281,10 @@ async def _list_emails(arguments: dict[str, Any]) -> list[TextContent]:
 
         messages = results.get("messages", [])
         if not messages:
-            return [TextContent(type="text", text="No emails found.")]
+            return [TextContent(type="text", text=json.dumps({"count": 0, "emails": []}))]
 
-        output = [f"Found {len(messages)} emails:\n"]
-
-        for i, msg in enumerate(messages, 1):
+        emails = []
+        for msg in messages:
             msg_id = msg["id"]
             msg_data = await run_blocking(
                 lambda mid=msg_id: service.users()
@@ -294,20 +294,23 @@ async def _list_emails(arguments: dict[str, Any]) -> list[TextContent]:
                 op="messages.get.metadata",
             )
             headers = {h["name"]: h["value"] for h in msg_data["payload"]["headers"]}
-            snippet = msg_data.get("snippet", "")
-
-            output.append(
-                f"{i}. ID: {msg['id']}\n"
-                f"   From: {headers.get('From', 'Unknown')}\n"
-                f"   Subject: {headers.get('Subject', 'No Subject')}\n"
-                f"   Date: {headers.get('Date', 'Unknown')}\n"
-                f"   Snippet: {snippet[:100]}{'...' if len(snippet) > 100 else ''}\n"
+            emails.append(
+                {
+                    "id": msg["id"],
+                    "from": headers.get("From", "Unknown"),
+                    "subject": headers.get("Subject", "No Subject"),
+                    "date": headers.get("Date", "Unknown"),
+                    "snippet": msg_data.get("snippet", ""),
+                }
             )
 
-        return [TextContent(type="text", text="\n".join(output))]
+        payload = {"count": len(emails), "emails": emails}
+        return [TextContent(type="text", text=json.dumps(payload, ensure_ascii=False, indent=2))]
 
     except Exception as e:
-        return [TextContent(type="text", text=f"Error listing emails: {e}")]
+        return [
+            TextContent(type="text", text=json.dumps({"error": f"Error listing emails: {e}"}))
+        ]
 
 
 def _extract_body_parts(payload: dict) -> tuple[str | None, str | None, list[dict]]:
@@ -396,53 +399,42 @@ async def _get_email(arguments: dict[str, Any]) -> list[TextContent]:
         headers = {h["name"]: h["value"] for h in msg["payload"]["headers"]}
         text_body, html_body, attachments = _extract_body_parts(msg["payload"])
 
-        # Build output
-        output = [
-            f"From: {headers.get('From', 'Unknown')}",
-            f"To: {headers.get('To', 'Unknown')}",
-            f"Subject: {headers.get('Subject', 'No Subject')}",
-            f"Date: {headers.get('Date', 'Unknown')}",
-            "",
-        ]
+        payload: dict[str, Any] = {
+            "from": headers.get("From", "Unknown"),
+            "to": headers.get("To", "Unknown"),
+            "subject": headers.get("Subject", "No Subject"),
+            "date": headers.get("Date", "Unknown"),
+        }
+        cc = headers.get("Cc")
+        if cc:
+            payload["cc"] = cc
 
-        # Add body based on format
         if format_type == "text_only":
-            if text_body:
-                output.append("--- Body (Text) ---")
-                output.append(text_body)
-            else:
-                output.append("(No plain text body available)")
+            payload["body_text"] = text_body or ""
         elif format_type == "html_only":
-            if html_body:
-                output.append("--- Body (HTML) ---")
-                output.append(html_body)
-            else:
-                output.append("(No HTML body available)")
-        else:  # full
-            if text_body:
-                output.append("--- Body (Text) ---")
-                output.append(text_body)
-            if html_body:
-                output.append("")
-                output.append("--- Body (HTML) ---")
-                output.append(html_body)
-            if not text_body and not html_body:
-                output.append("(No body content available)")
+            payload["body_html"] = html_body or ""
+        else:
+            if text_body is not None:
+                payload["body_text"] = text_body
+            if html_body is not None:
+                payload["body_html"] = html_body
 
-        # Add attachments list
         if attachments:
-            output.append("")
-            output.append(f"--- Attachments ({len(attachments)}) ---")
-            for att in attachments:
-                size_kb = att["size"] / 1024
-                output.append(
-                    f"- {att['filename']} ({att['mimeType']}, {size_kb:.1f} KB)"
-                )
+            payload["attachments"] = [
+                {
+                    "filename": att["filename"],
+                    "mime_type": att["mimeType"],
+                    "size_bytes": att["size"],
+                }
+                for att in attachments
+            ]
 
-        return [TextContent(type="text", text="\n".join(output))]
+        return [TextContent(type="text", text=json.dumps(payload, ensure_ascii=False, indent=2))]
 
     except Exception as e:
-        return [TextContent(type="text", text=f"Error getting email: {e}")]
+        return [
+            TextContent(type="text", text=json.dumps({"error": f"Error getting email: {e}"}))
+        ]
 
 
 def _sanitize_filename(filename: str) -> str:

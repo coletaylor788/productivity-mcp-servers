@@ -1,5 +1,6 @@
 """Unit tests for server module."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -90,11 +91,12 @@ class TestListEmails:
             result = await _list_emails({})
 
             assert len(result) == 1
-            assert "No emails found" in result[0].text
+            payload = json.loads(result[0].text)
+            assert payload == {"count": 0, "emails": []}
 
     @pytest.mark.asyncio
     async def test_returns_formatted_emails(self):
-        """Returns formatted list of emails."""
+        """Returns JSON list of emails with id/from/subject/date/snippet."""
         mock_service = MagicMock()
         mock_list = mock_service.users.return_value.messages.return_value.list
         mock_list.return_value.execute.return_value = {"messages": [{"id": "msg1"}]}
@@ -117,11 +119,15 @@ class TestListEmails:
             result = await _list_emails({"max_results": 5})
 
             assert len(result) == 1
-            text = result[0].text
-            assert "Found 1 emails" in text
-            assert "sender@example.com" in text
-            assert "Test Subject" in text
-            assert "This is a test email" in text
+            payload = json.loads(result[0].text)
+            assert payload["count"] == 1
+            assert len(payload["emails"]) == 1
+            email = payload["emails"][0]
+            assert email["id"] == "msg1"
+            assert email["from"] == "sender@example.com"
+            assert email["subject"] == "Test Subject"
+            assert email["date"] == "2026-02-01"
+            assert email["snippet"] == "This is a test email snippet"
 
     @pytest.mark.asyncio
     async def test_respects_max_results_limit(self):
@@ -442,7 +448,7 @@ class TestGetEmail:
 
     @pytest.mark.asyncio
     async def test_returns_full_email_content(self):
-        """Returns formatted email with headers and body."""
+        """Returns JSON email payload with headers and body."""
         import base64
         body_text = "Test email body"
         encoded_body = base64.urlsafe_b64encode(body_text.encode()).decode()
@@ -468,9 +474,12 @@ class TestGetEmail:
         ):
             result = await _get_email({"email_id": "123"})
 
-            assert "From: sender@test.com" in result[0].text
-            assert "Subject: Test Subject" in result[0].text
-            assert "Test email body" in result[0].text
+            payload = json.loads(result[0].text)
+            assert payload["from"] == "sender@test.com"
+            assert payload["to"] == "recipient@test.com"
+            assert payload["subject"] == "Test Subject"
+            assert payload["date"] == "2026-02-01"
+            assert payload["body_text"] == "Test email body"
 
     @pytest.mark.asyncio
     async def test_text_only_format(self):
@@ -500,8 +509,9 @@ class TestGetEmail:
         ):
             result = await _get_email({"email_id": "123", "format": "text_only"})
 
-            assert "Plain text" in result[0].text
-            assert "<p>HTML</p>" not in result[0].text
+            payload = json.loads(result[0].text)
+            assert payload["body_text"] == "Plain text"
+            assert "body_html" not in payload
 
 
 class TestGetAttachments:

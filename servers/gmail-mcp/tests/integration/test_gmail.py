@@ -182,19 +182,21 @@ class TestListEmailsTool:
     @pytest.mark.asyncio
     async def test_list_emails_returns_results(self, ensure_authenticated):
         """Test that list_emails returns actual emails from Gmail."""
+        import json as _json
         result = await _list_emails({"max_results": 5})
 
         assert len(result) == 1
-        text = result[0].text
+        payload = _json.loads(result[0].text)
 
-        # Should either find emails or say no emails found
-        assert "Found" in text or "No emails found" in text
+        assert "count" in payload
+        assert isinstance(payload.get("emails"), list)
 
-        # If emails found, verify format
-        if "Found" in text:
-            assert "ID:" in text
-            assert "From:" in text
-            assert "Subject:" in text
+        # If emails found, verify shape
+        if payload["count"] > 0:
+            email = payload["emails"][0]
+            assert "id" in email
+            assert "from" in email
+            assert "subject" in email
             # Email contents not logged for security
 
     @pytest.mark.asyncio
