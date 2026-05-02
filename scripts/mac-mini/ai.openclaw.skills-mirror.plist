@@ -7,7 +7,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/mirror-openclaw-skills.sh</string>
+        <string>/Users/puddles/.local/bin/mirror-openclaw-skills.sh</string>
     </array>
 
     <!-- Run once at login/boot so the workspace is populated before the

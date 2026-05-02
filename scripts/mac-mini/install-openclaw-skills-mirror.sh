@@ -1,8 +1,8 @@
 #!/bin/bash
 # One-time installer (run as the user who owns the OpenClaw workspace, e.g.
-# `puddles` on the mini; sudo required for the script copy).
+# `puddles` on the mini; no sudo required).
 #
-# - Installs mirror-openclaw-skills.sh to /usr/local/bin
+# - Installs mirror-openclaw-skills.sh to ~/.local/bin
 # - Installs the LaunchAgent into ~/Library/LaunchAgents (per-user, since
 #   ~/.openclaw and ~/.npm-global are user-scoped)
 # - Bootstraps the agent into the user's launchd domain
@@ -13,7 +13,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SH_SRC="$SCRIPT_DIR/mirror-openclaw-skills.sh"
-SH_DEST="/usr/local/bin/mirror-openclaw-skills.sh"
+SH_DEST="$HOME/.local/bin/mirror-openclaw-skills.sh"
 PLIST_SRC="$SCRIPT_DIR/ai.openclaw.skills-mirror.plist"
 PLIST_NAME="ai.openclaw.skills-mirror.plist"
 PLIST_DEST="$HOME/Library/LaunchAgents/$PLIST_NAME"
@@ -27,7 +27,8 @@ if [ "${USER:-}" != "puddles" ]; then
 fi
 
 echo "→ Installing $SH_DEST..."
-sudo install -m 0755 "$SH_SRC" "$SH_DEST"
+mkdir -p "$HOME/.local/bin"
+install -m 0755 "$SH_SRC" "$SH_DEST"
 
 echo "→ Installing LaunchAgent at $PLIST_DEST..."
 mkdir -p "$HOME/Library/LaunchAgents"
