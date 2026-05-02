@@ -18,3 +18,8 @@ export {
 
 export { InjectionGuard, type InjectionGuardPrefilter } from "./ingress/injection-guard.js";
 export { SecretRedactor, type SecretRedactorPrefilter } from "./ingress/secret-redactor.js";
+export {
+  makeUntrustedKeysPrefilter,
+  type UntrustedKeysPrefilterOptions,
+  type SimplePrefilter,
+} from "./ingress/untrusted-keys-prefilter.js";
